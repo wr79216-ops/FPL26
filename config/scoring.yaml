@@ -1,0 +1,49 @@
+model_version: "v1.1"
+default_horizon: 5
+
+feature_engineering:
+  minimum_minutes: 270
+  minutes_security_window: 5
+
+availability_penalty:
+  available: 1.00
+  doubtful: 0.80
+  injured: 0.20
+  suspended: 0.10
+  unavailable: 0.00
+
+position_weights:
+  GK:
+    fixture: 0.30
+    minutes: 0.20
+    saves: 0.15
+    history: 0.10
+    bonus: 0.10
+    form: 0.10
+    value: 0.05
+  DEF:
+    fixture: 0.25
+    attacking_output: 0.20
+    minutes: 0.15
+    form: 0.15
+    history: 0.10
+    bonus: 0.05
+    value: 0.10
+  MID:
+    xgi: 0.25
+    fixture: 0.20
+    form: 0.15
+    minutes: 0.15
+    ppm: 0.10
+    history: 0.05
+    value: 0.07
+    ict: 0.03
+  FWD:
+    xg: 0.25
+    xgi: 0.15
+    fixture: 0.20
+    minutes: 0.15
+    form: 0.10
+    ppm: 0.05
+    history: 0.05
+    value: 0.05

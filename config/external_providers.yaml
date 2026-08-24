@@ -1,0 +1,14 @@
+providers:
+  fotmob:
+    display_name: "FotMob"
+    enabled: false
+    access_mode: "disabled"
+    terms_reviewed: false
+    adapter_implemented: false
+    identity_validation_required: true
+    capabilities:
+      - lineups
+      - availability_context
+      - match_events
+      - rotation_context
+    detail: "Future option only. Enable after documented permission or a licensed/user-supplied access route is available."

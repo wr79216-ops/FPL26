@@ -1,0 +1,10 @@
+# Runtime dependencies for the local MVP. Compatible with Python 3.9+.
+streamlit>=1.32,<2.0
+pandas>=2.0,<3.0
+SQLAlchemy>=2.0,<3.0
+requests>=2.31,<3.0
+urllib3>=1.26.18,<2.0
+PyYAML>=6.0,<7.0
+
+# Test tooling
+pytest>=8.0,<9.0

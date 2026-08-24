@@ -1,0 +1,60 @@
+# Manually confirmed mappings from the Phase 8 identity review queue.
+# Keys use normalized historical names and the historical position.
+overrides:
+  - historical_name: alejandro garnacho
+    position: MID
+    current_player_id: 160
+  - historical_name: alisson ramses becker
+    position: GK
+    current_player_id: 350
+  - historical_name: altay bayindir
+    position: GK
+    current_player_id: 413
+  - historical_name: daniel munoz
+    position: DEF
+    current_player_id: 201
+  - historical_name: hakon valdimarsson
+    position: GK
+    current_player_id: 83
+  - historical_name: jack cork
+    position: MID
+    current_player_id: 313
+  - historical_name: jaden philogene bidace
+    position: MID
+    current_player_id: 318
+  - historical_name: jamie mcdonnell
+    position: MID
+    current_player_id: 378
+  - historical_name: joshua king
+    position: MID
+    current_player_id: 268
+  - historical_name: konstantinos tsimikas
+    position: DEF
+    current_player_id: 364
+  - historical_name: marcos senesi
+    position: DEF
+    current_player_id: 498
+  - historical_name: mikel merino
+    position: MID
+    current_player_id: 17
+  - historical_name: murillo santiago costa dos santos
+    position: DEF
+    current_player_id: 472
+  - historical_name: oliver mcburnie
+    position: FWD
+    current_player_id: 295
+  - historical_name: olu aina
+    position: DEF
+    current_player_id: 473
+  - historical_name: omari giraud hutchinson
+    position: MID
+    current_player_id: 484
+  - historical_name: robert sanchez
+    position: GK
+    current_player_id: 140
+  - historical_name: rodrigo rodri hernandez
+    position: MID
+    current_player_id: 402
+  - historical_name: savio savinho moreira de oliveira
+    position: MID
+    current_player_id: 403

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.Python
+.venv/
+venv/
+
+# Test and tooling
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local application state
+.env
+data/*.db
+data/fpl_refresh_status.json
+data/raw/*
+!data/raw/.gitkeep
+data/historical/*
+!data/historical/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
