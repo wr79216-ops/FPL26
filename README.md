@@ -98,6 +98,10 @@ Every headline/column with an info tooltip has a short definition. **Data Status
 
 Layer responsibilities, schema versioning, and raw-data conventions are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Tech stack, scope, and limitations
+
+For a user-facing explanation of the technology stack, data sources, model meaning, feature coverage, history scope, privacy behavior, and known limitations, see [docs/TECHSTACK_AND_SCOPE.md](docs/TECHSTACK_AND_SCOPE.md).
+
 ## Data-source policy
 
 Official FPL endpoints will be the source of truth for FPL-specific fields such as price, ownership, points, and fixtures. Any third-party source, including FotMob, is a future enrichment layer only and must be used through an allowed access method.
