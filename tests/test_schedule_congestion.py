@@ -5,29 +5,42 @@ from datetime import date, datetime, timezone
 
 import pytest
 
-from src.domain.contracts import TeamRecord
+from src.domain.contracts import FixtureRecord, TeamRecord
 from src.domain.schedule_risk import (
+    AuditableProbabilityInput,
+    CandidateRescheduleSlot,
     CompetitionCode,
     CompetitionEvent,
     CompetitionStage,
+    FractionalOddsOutcome,
+    LicensedOddsMarket,
     ParticipationStatus,
+    ProbabilityConfidence,
+    ProbabilityTargetType,
+    ProjectionMethod,
     ScenarioOutcome,
     ScheduleRiskStatus,
     TeamCompetitionEntry,
 )
 from src.services.schedule_congestion import (
     ScheduleCalendarConfigError,
+    ScheduleProbabilityInputError,
     build_progression_scenario_tree,
+    calculate_blank_probability,
+    calculate_double_gameweek_probabilities,
     detect_structural_clashes,
     find_candidate_reschedule_slots,
     load_schedule_calendar_catalog,
+    load_manual_probability_catalog,
     load_team_competition_entries,
+    normalize_licensed_fractional_odds,
+    slot_allocation_target_id,
     summarize_official_gameweeks,
+    team_progression_target_id,
     validate_fpl_team_catalog,
     validate_participant_mappings,
     validate_scenario_tree,
 )
-from src.domain.contracts import FixtureRecord
 
 
 FPL_TEAM_CODES = (
@@ -341,3 +354,205 @@ def test_progression_scenario_tree_is_exhaustive_and_mutually_exclusive() -> Non
     invalid = (replace(scenarios[0], mutually_exclusive_with=()), *scenarios[1:])
     with pytest.raises(ValueError, match="pairwise mutually exclusive"):
         validate_scenario_tree(invalid)
+
+
+def _probability_input(
+    input_id: str,
+    target_type: ProbabilityTargetType,
+    target_id: str,
+    probability: float,
+    confidence: ProbabilityConfidence = ProbabilityConfidence.MEDIUM,
+    expires_at: datetime = datetime(2027, 1, 1, tzinfo=timezone.utc),
+) -> AuditableProbabilityInput:
+    return AuditableProbabilityInput(
+        input_id=input_id,
+        target_type=target_type,
+        target_id=target_id,
+        probability=probability,
+        confidence=confidence,
+        source_url="https://example.test/evidence",
+        as_of=datetime(2026, 8, 25, tzinfo=timezone.utc),
+        expires_at=expires_at,
+        note="Reviewed manual input for deterministic test coverage.",
+    )
+
+
+def _scenario_fixture_context() -> tuple[
+    object,
+    tuple[CandidateRescheduleSlot, ...],
+    tuple[object, ...],
+]:
+    event = _event(
+        CompetitionCode.FA_CUP,
+        CompetitionStage.SEMI_FINAL,
+        date(2027, 4, 24),
+        date(2027, 4, 25),
+        clash_matchweek=33,
+    )
+    fixture = _fixture(330, 33, 1, 2, datetime(2027, 4, 24, tzinfo=timezone.utc))
+    clash = detect_structural_clashes((fixture,), (event,))[0]
+    slots = (
+        CandidateRescheduleSlot(
+            slot_id="slot-gw33",
+            fixture_id=330,
+            source_gameweek=33,
+            target_gameweek=33,
+            candidate_date=date(2027, 4, 27),
+            would_create_double=False,
+            explanation="Fixture remains a single fixture in its source gameweek.",
+        ),
+        CandidateRescheduleSlot(
+            slot_id="slot-gw34",
+            fixture_id=330,
+            source_gameweek=33,
+            target_gameweek=34,
+            candidate_date=date(2027, 5, 4),
+            would_create_double=True,
+            explanation="Open midweek in GW34.",
+        ),
+        CandidateRescheduleSlot(
+            slot_id="slot-gw35",
+            fixture_id=330,
+            source_gameweek=33,
+            target_gameweek=35,
+            candidate_date=date(2027, 5, 11),
+            would_create_double=True,
+            explanation="Open midweek in GW35.",
+        ),
+    )
+    return clash, slots, build_progression_scenario_tree(clash, slots)
+
+
+def test_independent_blank_union_is_monotonic_and_bounded() -> None:
+    clash, _, scenarios = _scenario_fixture_context()
+    as_of = datetime(2026, 8, 26, tzinfo=timezone.utc)
+    base_inputs = (
+        _probability_input(
+            "home-base",
+            ProbabilityTargetType.TEAM_PROGRESSION,
+            team_progression_target_id(clash.home_team_id, clash.event),
+            0.2,
+        ),
+        _probability_input(
+            "away-base",
+            ProbabilityTargetType.TEAM_PROGRESSION,
+            team_progression_target_id(clash.away_team_id, clash.event),
+            0.3,
+        ),
+    )
+    higher_home_inputs = (replace(base_inputs[0], probability=0.6), base_inputs[1])
+
+    base = calculate_blank_probability(clash, scenarios, base_inputs, as_of)
+    higher_home = calculate_blank_probability(clash, scenarios, higher_home_inputs, as_of)
+
+    assert base is not None and higher_home is not None
+    assert base.method is ProjectionMethod.INDEPENDENT_UNION
+    assert base.blank_probability == pytest.approx(0.44)
+    assert 0 <= base.blank_probability <= 1
+    assert higher_home.blank_probability > base.blank_probability
+    assert higher_home.blank_probability == pytest.approx(0.72)
+
+
+def test_scenario_tree_blank_and_dgw_probabilities_sum_without_uniform_slots() -> None:
+    clash, slots, scenarios = _scenario_fixture_context()
+    as_of = datetime(2026, 8, 26, tzinfo=timezone.utc)
+    scenario_probabilities = (0.4, 0.2, 0.3, 0.1)
+    inputs = [
+        _probability_input(
+            f"scenario-{index}",
+            ProbabilityTargetType.SCENARIO,
+            scenario.scenario_id,
+            scenario_probabilities[index],
+        )
+        for index, scenario in enumerate(scenarios)
+    ]
+    allocation_by_outcome = {
+        ScenarioOutcome.HOME_ONLY_PROGRESS: (0.0, 0.6, 0.4),
+        ScenarioOutcome.AWAY_ONLY_PROGRESS: (0.0, 0.5, 0.5),
+        ScenarioOutcome.BOTH_PROGRESS: (0.0, 0.2, 0.8),
+    }
+    for scenario in scenarios:
+        if not scenario.requires_reschedule:
+            continue
+        for slot, probability in zip(slots, allocation_by_outcome[scenario.outcome]):
+            inputs.append(
+                _probability_input(
+                    f"{scenario.scenario_id}-{slot.slot_id}",
+                    ProbabilityTargetType.SLOT_ALLOCATION,
+                    slot_allocation_target_id(scenario.scenario_id, slot.slot_id),
+                    probability,
+                    ProbabilityConfidence.LOW,
+                )
+            )
+
+    blank = calculate_blank_probability(clash, scenarios, inputs, as_of)
+    dgw_projections = calculate_double_gameweek_probabilities(
+        clash, scenarios, slots, inputs, as_of
+    )
+
+    assert blank is not None
+    assert blank.method is ProjectionMethod.SCENARIO_TREE
+    assert blank.blank_probability == pytest.approx(0.6)
+    probabilities_by_gameweek = {
+        item.target_gameweek: item.double_probability for item in dgw_projections
+    }
+    assert probabilities_by_gameweek == {
+        34: pytest.approx(0.29),
+        35: pytest.approx(0.31),
+    }
+    assert sum(item.double_probability for item in dgw_projections) == pytest.approx(
+        blank.blank_probability
+    )
+    assert all(0 <= item.double_probability <= 1 for item in dgw_projections)
+    assert all(item.confidence is ProbabilityConfidence.LOW for item in dgw_projections)
+
+
+def test_licensed_odds_power_normalisation_sums_to_one_and_preserves_order() -> None:
+    market = LicensedOddsMarket(
+        market_id="cup-finalist-market",
+        outcomes=(
+            FractionalOddsOutcome("home", 1, 1),
+            FractionalOddsOutcome("away", 2, 1),
+            FractionalOddsOutcome("other", 3, 1),
+        ),
+        provider_id="licensed-test-provider",
+        licence_reference="TEST-LICENCE-001",
+        source_url="https://example.test/licensed-odds",
+        as_of=datetime(2026, 8, 25, tzinfo=timezone.utc),
+        expires_at=datetime(2026, 8, 26, tzinfo=timezone.utc),
+    )
+
+    normalized = normalize_licensed_fractional_odds(
+        market, datetime(2026, 8, 25, 12, tzinfo=timezone.utc)
+    )
+
+    probabilities = [item.probability for item in normalized]
+    assert sum(probabilities) == pytest.approx(1.0)
+    assert probabilities[0] > probabilities[1] > probabilities[2]
+    assert all(0 <= probability <= 1 for probability in probabilities)
+
+
+def test_stale_manual_probability_input_is_rejected(tmp_path) -> None:
+    config = tmp_path / "probability-inputs.yaml"
+    config.write_text(
+        """
+season: "2026-27"
+model_version: "schedule-probability-v1"
+inputs:
+  - input_id: stale-input
+    target_type: team_progression
+    target_id: team:1:fa_cup:semi_final
+    probability: 0.4
+    confidence: low
+    source_url: "https://example.test/evidence"
+    as_of: "2026-08-20T00:00:00+00:00"
+    expires_at: "2026-08-21T00:00:00+00:00"
+    note: "Expired manual estimate."
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ScheduleProbabilityInputError, match="have expired"):
+        load_manual_probability_catalog(
+            config, as_of=datetime(2026, 8, 25, tzinfo=timezone.utc)
+        )

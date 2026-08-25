@@ -1,0 +1,7 @@
+season: "2026-27"
+model_version: "schedule-probability-v1"
+
+# Inputs remain empty until a reviewer records a source, timestamp, expiry, and
+# confidence for a real scenario. The engine intentionally emits no projection
+# without these auditable inputs; it never invents cup or reschedule odds.
+inputs: []

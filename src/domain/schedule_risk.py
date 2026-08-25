@@ -60,6 +60,29 @@ class ScenarioOutcome(str, Enum):
     BOTH_PROGRESS = "both_progress"
 
 
+class ProbabilityConfidence(str, Enum):
+    """Confidence shown separately from the probability value."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class ProbabilityTargetType(str, Enum):
+    """The schedule-risk object a controlled probability input refers to."""
+
+    TEAM_PROGRESSION = "team_progression"
+    SCENARIO = "scenario"
+    SLOT_ALLOCATION = "slot_allocation"
+
+
+class ProjectionMethod(str, Enum):
+    """Method used to calculate a schedule-risk probability."""
+
+    INDEPENDENT_UNION = "independent_union"
+    SCENARIO_TREE = "scenario_tree"
+
+
 def _require_http_url(value: str, field_name: str) -> None:
     parsed = urlparse(value)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
@@ -69,6 +92,11 @@ def _require_http_url(value: str, field_name: str) -> None:
 def _require_timezone(value: datetime, field_name: str) -> None:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError(f"{field_name} must include a timezone")
+
+
+def _require_probability(value: float, field_name: str) -> None:
+    if not 0 <= value <= 1:
+        raise ValueError(f"{field_name} must be between 0 and 1")
 
 
 @dataclass(frozen=True)
@@ -240,3 +268,147 @@ class GameweekRiskSummary:
         _require_timezone(self.as_of, "as_of")
         if not self.explanation.strip():
             raise ValueError("summary explanation is required")
+
+
+@dataclass(frozen=True)
+class AuditableProbabilityInput:
+    """A manually supplied probability with evidence and a hard expiry."""
+
+    input_id: str
+    target_type: ProbabilityTargetType
+    target_id: str
+    probability: float
+    confidence: ProbabilityConfidence
+    source_url: str
+    as_of: datetime
+    expires_at: datetime
+    note: str
+
+    def __post_init__(self) -> None:
+        if not self.input_id.strip() or not self.target_id.strip() or not self.note.strip():
+            raise ValueError("input_id, target_id, and note are required")
+        _require_probability(self.probability, "probability")
+        _require_http_url(self.source_url, "source_url")
+        _require_timezone(self.as_of, "as_of")
+        _require_timezone(self.expires_at, "expires_at")
+        if self.expires_at <= self.as_of:
+            raise ValueError("expires_at must be after as_of")
+
+
+@dataclass(frozen=True)
+class FractionalOddsOutcome:
+    """One outcome in a licensed fractional-odds market."""
+
+    outcome_id: str
+    numerator: float
+    denominator: float
+
+    def __post_init__(self) -> None:
+        if not self.outcome_id.strip():
+            raise ValueError("outcome_id is required")
+        if self.numerator <= 0 or self.denominator <= 0:
+            raise ValueError("fractional odds numerator and denominator must be positive")
+
+    @property
+    def implied_probability(self) -> float:
+        return self.denominator / (self.numerator + self.denominator)
+
+
+@dataclass(frozen=True)
+class LicensedOddsMarket:
+    """Provider-supplied odds usable only when the licence is recorded."""
+
+    market_id: str
+    outcomes: tuple[FractionalOddsOutcome, ...]
+    provider_id: str
+    licence_reference: str
+    source_url: str
+    as_of: datetime
+    expires_at: datetime
+
+    def __post_init__(self) -> None:
+        if not self.market_id.strip() or not self.provider_id.strip():
+            raise ValueError("market_id and provider_id are required")
+        if not self.licence_reference.strip():
+            raise ValueError("licensed odds require a licence_reference")
+        if len(self.outcomes) < 2:
+            raise ValueError("licensed odds market requires at least two outcomes")
+        if len({outcome.outcome_id for outcome in self.outcomes}) != len(self.outcomes):
+            raise ValueError("licensed odds outcomes cannot contain duplicate IDs")
+        _require_http_url(self.source_url, "source_url")
+        _require_timezone(self.as_of, "as_of")
+        _require_timezone(self.expires_at, "expires_at")
+        if self.expires_at <= self.as_of:
+            raise ValueError("expires_at must be after as_of")
+
+
+@dataclass(frozen=True)
+class NormalizedOddsProbability:
+    """An overround-adjusted probability from a licensed odds market."""
+
+    market_id: str
+    outcome_id: str
+    probability: float
+    normalisation_power: float
+
+    def __post_init__(self) -> None:
+        if not self.market_id.strip() or not self.outcome_id.strip():
+            raise ValueError("market_id and outcome_id are required")
+        _require_probability(self.probability, "probability")
+        if self.normalisation_power <= 0:
+            raise ValueError("normalisation_power must be positive")
+
+
+@dataclass(frozen=True)
+class FixtureProbabilityProjection:
+    """An auditable blank probability for a structurally-clashing fixture."""
+
+    fixture_id: int
+    source_gameweek: int
+    blank_probability: float
+    method: ProjectionMethod
+    confidence: ProbabilityConfidence
+    input_ids: tuple[str, ...]
+    as_of: datetime
+    expires_at: datetime
+    explanation: str
+
+    def __post_init__(self) -> None:
+        if self.fixture_id <= 0 or not 1 <= self.source_gameweek <= 38:
+            raise ValueError("fixture_id and source_gameweek must be valid")
+        _require_probability(self.blank_probability, "blank_probability")
+        if not self.input_ids or len(set(self.input_ids)) != len(self.input_ids):
+            raise ValueError("input_ids must be a non-empty unique list")
+        _require_timezone(self.as_of, "as_of")
+        _require_timezone(self.expires_at, "expires_at")
+        if self.expires_at <= self.as_of:
+            raise ValueError("expires_at must be after as_of")
+        if not self.explanation.strip():
+            raise ValueError("projection explanation is required")
+
+
+@dataclass(frozen=True)
+class DoubleGameweekProbabilityProjection:
+    """An auditable probability of a rescheduled fixture creating a DGW."""
+
+    fixture_id: int
+    target_gameweek: int
+    double_probability: float
+    confidence: ProbabilityConfidence
+    input_ids: tuple[str, ...]
+    as_of: datetime
+    expires_at: datetime
+    explanation: str
+
+    def __post_init__(self) -> None:
+        if self.fixture_id <= 0 or not 1 <= self.target_gameweek <= 38:
+            raise ValueError("fixture_id and target_gameweek must be valid")
+        _require_probability(self.double_probability, "double_probability")
+        if not self.input_ids or len(set(self.input_ids)) != len(self.input_ids):
+            raise ValueError("input_ids must be a non-empty unique list")
+        _require_timezone(self.as_of, "as_of")
+        _require_timezone(self.expires_at, "expires_at")
+        if self.expires_at <= self.as_of:
+            raise ValueError("expires_at must be after as_of")
+        if not self.explanation.strip():
+            raise ValueError("projection explanation is required")

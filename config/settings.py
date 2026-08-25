@@ -28,6 +28,9 @@ COMPETITION_CALENDAR_CONFIG_PATH = Path(__file__).with_name(
 EUROPEAN_PARTICIPANTS_CONFIG_PATH = Path(__file__).with_name(
     "european_participants_2026_27.yaml"
 )
+SCHEDULE_PROBABILITY_INPUTS_CONFIG_PATH = Path(__file__).with_name(
+    "schedule_probability_inputs_2026_27.yaml"
+)
 SUPPORTED_POSITIONS = ("GK", "DEF", "MID", "FWD")
 
 

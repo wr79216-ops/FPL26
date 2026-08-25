@@ -17,18 +17,27 @@ import yaml
 from config.settings import (
     COMPETITION_CALENDAR_CONFIG_PATH,
     EUROPEAN_PARTICIPANTS_CONFIG_PATH,
+    SCHEDULE_PROBABILITY_INPUTS_CONFIG_PATH,
 )
 from src.database.connection import Database
 from src.database.repository import FPLRepository
 from src.domain.contracts import FixtureRecord, TeamRecord
 from src.domain.schedule_risk import (
+    AuditableProbabilityInput,
     CandidateRescheduleSlot,
     CompetitionCode,
     CompetitionEvent,
     CompetitionStage,
+    DoubleGameweekProbabilityProjection,
+    FixtureProbabilityProjection,
     FixtureRiskScenario,
+    LicensedOddsMarket,
+    NormalizedOddsProbability,
     GameweekRiskSummary,
     ParticipationStatus,
+    ProbabilityConfidence,
+    ProbabilityTargetType,
+    ProjectionMethod,
     ScenarioOutcome,
     ScheduleRiskStatus,
     StructuralFixtureClash,
@@ -43,6 +52,10 @@ MIDWEEK_DAYS = {1, 2, 3}
 
 class ScheduleCalendarConfigError(ValueError):
     """Raised when the controlled schedule-risk input is incomplete or unsafe."""
+
+
+class ScheduleProbabilityInputError(ValueError):
+    """Raised when a probability input is stale, incomplete, or inconsistent."""
 
 
 @dataclass(frozen=True)
@@ -63,6 +76,25 @@ class PhaseBScheduleSnapshot:
     structural_clashes: tuple[StructuralFixtureClash, ...]
     candidate_slots: tuple[CandidateRescheduleSlot, ...]
     scenarios: tuple[FixtureRiskScenario, ...]
+
+
+@dataclass(frozen=True)
+class ManualProbabilityCatalog:
+    """Controlled manual probabilities available to the current model run."""
+
+    season: str
+    model_version: str
+    inputs: tuple[AuditableProbabilityInput, ...]
+
+
+@dataclass(frozen=True)
+class PhaseCScheduleSnapshot:
+    """Phase B facts plus only those projections backed by current evidence."""
+
+    phase_b: PhaseBScheduleSnapshot
+    probability_catalog: ManualProbabilityCatalog
+    fixture_projections: tuple[FixtureProbabilityProjection, ...]
+    double_gameweek_projections: tuple[DoubleGameweekProbabilityProjection, ...]
 
 
 def _load_yaml_mapping(path: Path) -> Mapping[str, Any]:
@@ -279,6 +311,375 @@ def load_schedule_calendar_catalog(
         events=events,
         participants=participants,
     )
+
+
+def _probability_input_from_mapping(
+    raw: Mapping[str, Any], index: int
+) -> AuditableProbabilityInput:
+    context = f"inputs[{index}]"
+    try:
+        return AuditableProbabilityInput(
+            input_id=str(_required(raw, "input_id", context)),
+            target_type=_enum(
+                ProbabilityTargetType,
+                _required(raw, "target_type", context),
+                f"{context}.target_type",
+            ),
+            target_id=str(_required(raw, "target_id", context)),
+            probability=float(_required(raw, "probability", context)),
+            confidence=_enum(
+                ProbabilityConfidence,
+                _required(raw, "confidence", context),
+                f"{context}.confidence",
+            ),
+            source_url=str(_required(raw, "source_url", context)),
+            as_of=_parse_timestamp(_required(raw, "as_of", context), f"{context}.as_of"),
+            expires_at=_parse_timestamp(
+                _required(raw, "expires_at", context), f"{context}.expires_at"
+            ),
+            note=str(_required(raw, "note", context)),
+        )
+    except (TypeError, ValueError) as exc:
+        raise ScheduleProbabilityInputError(f"{context} is invalid: {exc}") from exc
+
+
+def validate_probability_input_freshness(
+    inputs: Iterable[AuditableProbabilityInput], as_of: datetime
+) -> None:
+    """Fail closed when any probability evidence is expired at model runtime."""
+    if as_of.tzinfo is None or as_of.utcoffset() is None:
+        raise ScheduleProbabilityInputError("as_of must include a timezone")
+    input_records = tuple(inputs)
+    future_ids = sorted(
+        input_.input_id for input_ in input_records if input_.as_of > as_of
+    )
+    if future_ids:
+        raise ScheduleProbabilityInputError(
+            "probability inputs are not yet current: " + ", ".join(future_ids)
+        )
+    stale_ids = sorted(
+        input_.input_id for input_ in input_records if input_.expires_at <= as_of
+    )
+    if stale_ids:
+        raise ScheduleProbabilityInputError(
+            "probability inputs have expired: " + ", ".join(stale_ids)
+        )
+
+
+def load_manual_probability_catalog(
+    path: Path = SCHEDULE_PROBABILITY_INPUTS_CONFIG_PATH,
+    as_of: datetime | None = None,
+) -> ManualProbabilityCatalog:
+    """Load manual probabilities only when every supplied input is auditable."""
+    payload = _load_yaml_mapping(path)
+    season = str(_required(payload, "season", path.name))
+    model_version = str(_required(payload, "model_version", path.name))
+    raw_inputs = payload.get("inputs", [])
+    if not isinstance(raw_inputs, list):
+        raise ScheduleProbabilityInputError(f"{path.name} inputs must be a list")
+    if not all(isinstance(input_, Mapping) for input_ in raw_inputs):
+        raise ScheduleProbabilityInputError(f"{path.name} inputs must contain mappings")
+
+    inputs = tuple(
+        _probability_input_from_mapping(input_, index)
+        for index, input_ in enumerate(raw_inputs)
+    )
+    if len({input_.input_id for input_ in inputs}) != len(inputs):
+        raise ScheduleProbabilityInputError(f"{path.name} contains duplicate input_id values")
+    target_keys = {(input_.target_type, input_.target_id) for input_ in inputs}
+    if len(target_keys) != len(inputs):
+        raise ScheduleProbabilityInputError(
+            f"{path.name} contains duplicate target_type and target_id values"
+        )
+    if as_of is not None:
+        validate_probability_input_freshness(inputs, as_of)
+    return ManualProbabilityCatalog(
+        season=season,
+        model_version=model_version,
+        inputs=inputs,
+    )
+
+
+def team_progression_target_id(
+    team_id: int, event: CompetitionEvent
+) -> str:
+    """Return the stable manual-input key for one team's cup progression."""
+    return f"team:{team_id}:{event.competition.value}:{event.stage.value}"
+
+
+def slot_allocation_target_id(scenario_id: str, slot_id: str) -> str:
+    """Return the stable manual-input key for a conditional reschedule slot."""
+    return f"scenario:{scenario_id}:slot:{slot_id}"
+
+
+def normalize_licensed_fractional_odds(
+    market: LicensedOddsMarket, as_of: datetime
+) -> tuple[NormalizedOddsProbability, ...]:
+    """Remove overround with power normalisation from licensed fractional odds."""
+    if as_of.tzinfo is None or as_of.utcoffset() is None:
+        raise ScheduleProbabilityInputError("as_of must include a timezone")
+    if market.as_of > as_of:
+        raise ScheduleProbabilityInputError(
+            f"licensed odds market is not yet current: {market.market_id}"
+        )
+    if market.expires_at <= as_of:
+        raise ScheduleProbabilityInputError(f"licensed odds market has expired: {market.market_id}")
+
+    implied = tuple(outcome.implied_probability for outcome in market.outcomes)
+
+    def probability_sum(power: float) -> float:
+        return sum(probability**power for probability in implied)
+
+    low_power = 0.0
+    high_power = 1.0
+    while probability_sum(high_power) > 1.0:
+        high_power *= 2.0
+    for _ in range(80):
+        mid_power = (low_power + high_power) / 2.0
+        if probability_sum(mid_power) > 1.0:
+            low_power = mid_power
+        else:
+            high_power = mid_power
+    power = (low_power + high_power) / 2.0
+
+    return tuple(
+        NormalizedOddsProbability(
+            market_id=market.market_id,
+            outcome_id=outcome.outcome_id,
+            probability=outcome.implied_probability**power,
+            normalisation_power=power,
+        )
+        for outcome in market.outcomes
+    )
+
+
+def _confidence_from_inputs(
+    inputs: Iterable[AuditableProbabilityInput],
+) -> ProbabilityConfidence:
+    ranks = {
+        ProbabilityConfidence.LOW: 0,
+        ProbabilityConfidence.MEDIUM: 1,
+        ProbabilityConfidence.HIGH: 2,
+    }
+    return min((input_.confidence for input_ in inputs), key=lambda value: ranks[value])
+
+
+def _projection_expiry(inputs: Iterable[AuditableProbabilityInput]) -> datetime:
+    return min(input_.expires_at for input_ in inputs)
+
+
+def _inputs_by_target(
+    inputs: Iterable[AuditableProbabilityInput],
+) -> dict[tuple[ProbabilityTargetType, str], AuditableProbabilityInput]:
+    return {(input_.target_type, input_.target_id): input_ for input_ in inputs}
+
+
+def _scenario_probability_inputs(
+    scenarios: Iterable[FixtureRiskScenario],
+    inputs_by_target: Mapping[tuple[ProbabilityTargetType, str], AuditableProbabilityInput],
+) -> tuple[AuditableProbabilityInput, ...] | None:
+    branches = tuple(scenarios)
+    scenario_inputs = tuple(
+        inputs_by_target.get((ProbabilityTargetType.SCENARIO, scenario.scenario_id))
+        for scenario in branches
+    )
+    if not any(scenario_inputs):
+        return None
+    if any(input_ is None for input_ in scenario_inputs):
+        raise ScheduleProbabilityInputError(
+            "scenario probabilities must provide every mutually-exclusive branch"
+        )
+    resolved_inputs = tuple(input_ for input_ in scenario_inputs if input_ is not None)
+    probability_sum = sum(input_.probability for input_ in resolved_inputs)
+    if abs(probability_sum - 1.0) > 1e-9:
+        raise ScheduleProbabilityInputError(
+            "mutually-exclusive scenario probabilities must sum to 1.0"
+        )
+    return resolved_inputs
+
+
+def calculate_blank_probability(
+    clash: StructuralFixtureClash,
+    scenarios: Iterable[FixtureRiskScenario],
+    inputs: Iterable[AuditableProbabilityInput],
+    as_of: datetime,
+) -> FixtureProbabilityProjection | None:
+    """Calculate blank probability from a full scenario tree or independent inputs."""
+    scenario_branches = tuple(scenarios)
+    input_records = tuple(inputs)
+    validate_scenario_tree(scenario_branches)
+    validate_probability_input_freshness(input_records, as_of)
+    by_target = _inputs_by_target(input_records)
+    scenario_inputs = _scenario_probability_inputs(scenario_branches, by_target)
+    if scenario_inputs is not None:
+        probability_by_scenario = {
+            input_.target_id: input_.probability for input_ in scenario_inputs
+        }
+        blank_probability = sum(
+            probability_by_scenario[scenario.scenario_id]
+            for scenario in scenario_branches
+            if scenario.requires_reschedule
+        )
+        return FixtureProbabilityProjection(
+            fixture_id=clash.fixture_id,
+            source_gameweek=clash.source_gameweek,
+            blank_probability=blank_probability,
+            method=ProjectionMethod.SCENARIO_TREE,
+            confidence=_confidence_from_inputs(scenario_inputs),
+            input_ids=tuple(input_.input_id for input_ in scenario_inputs),
+            as_of=as_of,
+            expires_at=_projection_expiry(scenario_inputs),
+            explanation=(
+                "Blank probability is the sum of reschedule branches in the "
+                "mutually-exclusive scenario tree."
+            ),
+        )
+
+    home_input = by_target.get(
+        (
+            ProbabilityTargetType.TEAM_PROGRESSION,
+            team_progression_target_id(clash.home_team_id, clash.event),
+        )
+    )
+    away_input = by_target.get(
+        (
+            ProbabilityTargetType.TEAM_PROGRESSION,
+            team_progression_target_id(clash.away_team_id, clash.event),
+        )
+    )
+    if home_input is None or away_input is None:
+        return None
+    blank_probability = 1 - (1 - home_input.probability) * (1 - away_input.probability)
+    evidence = (home_input, away_input)
+    return FixtureProbabilityProjection(
+        fixture_id=clash.fixture_id,
+        source_gameweek=clash.source_gameweek,
+        blank_probability=blank_probability,
+        method=ProjectionMethod.INDEPENDENT_UNION,
+        confidence=_confidence_from_inputs(evidence),
+        input_ids=tuple(input_.input_id for input_ in evidence),
+        as_of=as_of,
+        expires_at=_projection_expiry(evidence),
+        explanation=(
+            "Blank probability uses the independent union of the two manually "
+            "audited team-progression inputs."
+        ),
+    )
+
+
+def calculate_double_gameweek_probabilities(
+    clash: StructuralFixtureClash,
+    scenarios: Iterable[FixtureRiskScenario],
+    candidate_slots: Iterable[CandidateRescheduleSlot],
+    inputs: Iterable[AuditableProbabilityInput],
+    as_of: datetime,
+) -> tuple[DoubleGameweekProbabilityProjection, ...]:
+    """Allocate scenario probability to audited slots without uniform splitting."""
+    scenario_branches = tuple(scenarios)
+    slots = tuple(candidate_slots)
+    input_records = tuple(inputs)
+    validate_scenario_tree(scenario_branches)
+    validate_probability_input_freshness(input_records, as_of)
+    by_target = _inputs_by_target(input_records)
+    scenario_inputs = _scenario_probability_inputs(scenario_branches, by_target)
+    if scenario_inputs is None or not slots:
+        return ()
+
+    probability_by_scenario = {
+        input_.target_id: input_.probability for input_ in scenario_inputs
+    }
+    slots_by_id = {slot.slot_id: slot for slot in slots}
+    expected_allocation_keys = {
+        slot_allocation_target_id(scenario.scenario_id, slot_id)
+        for scenario in scenario_branches
+        if scenario.requires_reschedule
+        for slot_id in scenario.candidate_slot_ids
+    }
+    provided_allocation_keys = {
+        target_id
+        for target_type, target_id in by_target
+        if target_type is ProbabilityTargetType.SLOT_ALLOCATION
+        and target_id in expected_allocation_keys
+    }
+    if not provided_allocation_keys:
+        return ()
+    if provided_allocation_keys != expected_allocation_keys:
+        raise ScheduleProbabilityInputError(
+            "slot allocations must provide every feasible candidate slot"
+        )
+    projected_by_gameweek: dict[int, float] = {}
+    evidence_by_gameweek: dict[int, list[AuditableProbabilityInput]] = {}
+    for scenario in scenario_branches:
+        if not scenario.requires_reschedule:
+            continue
+        expected_slot_ids = set(scenario.candidate_slot_ids)
+        if not expected_slot_ids:
+            continue
+        if not expected_slot_ids <= set(slots_by_id):
+            raise ScheduleProbabilityInputError("scenario references an unknown candidate slot")
+        allocation_inputs = tuple(
+            by_target.get(
+                (
+                    ProbabilityTargetType.SLOT_ALLOCATION,
+                    slot_allocation_target_id(scenario.scenario_id, slot_id),
+                )
+            )
+            for slot_id in sorted(expected_slot_ids)
+        )
+        if any(input_ is None for input_ in allocation_inputs):
+            raise ScheduleProbabilityInputError(
+                "slot allocations must provide every feasible candidate slot"
+            )
+        resolved_allocations = tuple(
+            input_ for input_ in allocation_inputs if input_ is not None
+        )
+        if abs(sum(input_.probability for input_ in resolved_allocations) - 1.0) > 1e-9:
+            raise ScheduleProbabilityInputError(
+                "conditional slot allocations must sum to 1.0 per scenario"
+            )
+        for slot_id, allocation in zip(sorted(expected_slot_ids), resolved_allocations):
+            slot = slots_by_id[slot_id]
+            if not slot.would_create_double:
+                continue
+            target_gameweek = slot.target_gameweek
+            projected_by_gameweek[target_gameweek] = (
+                projected_by_gameweek.get(target_gameweek, 0.0)
+                + probability_by_scenario[scenario.scenario_id] * allocation.probability
+            )
+            evidence_by_gameweek.setdefault(target_gameweek, []).extend(
+                [
+                    next(
+                        input_
+                        for input_ in scenario_inputs
+                        if input_.target_id == scenario.scenario_id
+                    ),
+                    allocation,
+                ]
+            )
+
+    projections: list[DoubleGameweekProbabilityProjection] = []
+    for gameweek, probability in sorted(projected_by_gameweek.items()):
+        evidence = tuple(
+            {
+                input_.input_id: input_ for input_ in evidence_by_gameweek[gameweek]
+            }.values()
+        )
+        projections.append(
+            DoubleGameweekProbabilityProjection(
+                fixture_id=clash.fixture_id,
+                target_gameweek=gameweek,
+                double_probability=probability,
+                confidence=_confidence_from_inputs(evidence),
+                input_ids=tuple(input_.input_id for input_ in evidence),
+                as_of=as_of,
+                expires_at=_projection_expiry(evidence),
+                explanation=(
+                    "DGW probability sums each mutually-exclusive reschedule branch "
+                    "times its audited conditional slot allocation."
+                ),
+            )
+        )
+    return tuple(projections)
 
 
 def detect_structural_clashes(
@@ -626,6 +1027,63 @@ class ScheduleCongestionService:
             structural_clashes=structural_clashes,
             candidate_slots=tuple(candidate_slots),
             scenarios=tuple(scenarios),
+        )
+
+    def get_phase_c_snapshot(
+        self,
+        as_of: datetime | None = None,
+        probability_inputs_path: Path = SCHEDULE_PROBABILITY_INPUTS_CONFIG_PATH,
+    ) -> PhaseCScheduleSnapshot:
+        """Build projections only when controlled probability inputs are current."""
+        snapshot_at = as_of or datetime.now(timezone.utc)
+        phase_b = self.get_phase_b_snapshot(snapshot_at)
+        probability_catalog = load_manual_probability_catalog(
+            probability_inputs_path, snapshot_at
+        )
+        if probability_catalog.season != phase_b.catalog.season:
+            raise ScheduleProbabilityInputError(
+                "probability inputs and schedule calendar must use the same season"
+            )
+
+        slots_by_fixture: dict[int, tuple[CandidateRescheduleSlot, ...]] = {}
+        for slot in phase_b.candidate_slots:
+            slots_by_fixture[slot.fixture_id] = (
+                *slots_by_fixture.get(slot.fixture_id, ()),
+                slot,
+            )
+        scenarios_by_fixture: dict[int, tuple[FixtureRiskScenario, ...]] = {}
+        for scenario in phase_b.scenarios:
+            scenarios_by_fixture[scenario.fixture_id] = (
+                *scenarios_by_fixture.get(scenario.fixture_id, ()),
+                scenario,
+            )
+
+        fixture_projections: list[FixtureProbabilityProjection] = []
+        double_gameweek_projections: list[DoubleGameweekProbabilityProjection] = []
+        for clash in phase_b.structural_clashes:
+            scenarios = scenarios_by_fixture[clash.fixture_id]
+            slots = slots_by_fixture.get(clash.fixture_id, ())
+            fixture_projection = calculate_blank_probability(
+                clash, scenarios, probability_catalog.inputs, snapshot_at
+            )
+            if fixture_projection is None:
+                continue
+            fixture_projections.append(fixture_projection)
+            if fixture_projection.method is ProjectionMethod.SCENARIO_TREE:
+                double_gameweek_projections.extend(
+                    calculate_double_gameweek_probabilities(
+                        clash,
+                        scenarios,
+                        slots,
+                        probability_catalog.inputs,
+                        snapshot_at,
+                    )
+                )
+        return PhaseCScheduleSnapshot(
+            phase_b=phase_b,
+            probability_catalog=probability_catalog,
+            fixture_projections=tuple(fixture_projections),
+            double_gameweek_projections=tuple(double_gameweek_projections),
         )
 
 
