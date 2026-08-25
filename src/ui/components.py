@@ -161,7 +161,12 @@ def render_sidebar(scoring: ScoringConfig) -> str:
 
     with st.sidebar:
         st.markdown(
-            '<div class="sidebar-brand">FPL <span>Analyst</span></div>'
+            '<div class="sidebar-brand">'
+            '<svg class="sidebar-brand-mark" viewBox="0 0 40 40" role="img" aria-label="FPL Signal logo">'
+            '<circle cx="20" cy="20" r="17" fill="none" stroke="#18f59b" stroke-width="3"/>'
+            '<path d="M11 17.5 16.5 13l6 3.2 5.8-3.5 2.8 6.2-5.1 4.8-6-1.8-5.5 3.4L11 17.5Z" fill="none" stroke="#f7f7fb" stroke-width="2" stroke-linejoin="round"/>'
+            '<path d="M12 29h3v-5h3v5h3v-9h3v9h3v-13h3v13" fill="none" stroke="#18f59b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'
+            '</svg><span class="sidebar-brand-name">FPL <span>Signal</span></span></div>'
             '<div class="sidebar-caption">Decisions backed by transparent signals</div>',
             unsafe_allow_html=True,
         )

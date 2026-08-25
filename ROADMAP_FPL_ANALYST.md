@@ -1,4 +1,4 @@
-# Roadmap Eksekusi — FPL Analyst
+# Roadmap Eksekusi — FPL Signal
 
 **Prinsip:** buat alur aplikasi terlihat sejak awal, tetapi jadikan data dan model sebagai sumber kebenaran sebelum fitur analitik dianggap selesai.
 

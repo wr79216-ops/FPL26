@@ -9,7 +9,7 @@ from config.settings import LOG_DIR
 
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-LOG_FILE_NAME = "fpl_analyst.log"
+LOG_FILE_NAME = "fpl_signal.log"
 
 
 def configure_logging(log_level: str = "INFO") -> None:

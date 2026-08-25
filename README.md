@@ -1,4 +1,4 @@
-# FPL Analyst
+# FPL Signal
 
 A local-first Fantasy Premier League decision-support application combining official FPL data, fixture analysis, transparent recommendation scoring, historical enrichment, and time-safe backtesting.
 

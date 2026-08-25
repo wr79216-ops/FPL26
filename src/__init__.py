@@ -1,1 +1,1 @@
-"""FPL Analyst application modules."""
+"""FPL Signal application modules."""

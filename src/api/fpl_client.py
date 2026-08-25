@@ -69,7 +69,7 @@ class FPLClient:
         )
         adapter = HTTPAdapter(max_retries=retry_policy)
         session = requests.Session()
-        session.headers.update({"User-Agent": "FPL-Analyst/0.1 local-first"})
+        session.headers.update({"User-Agent": "FPL-Signal/0.1 local-first"})
         session.mount("https://", adapter)
         session.mount("http://", adapter)
         return session

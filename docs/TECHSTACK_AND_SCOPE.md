@@ -1,10 +1,10 @@
-# FPL Analyst — Tech Stack, Cakupan, dan Batasan
+# FPL Signal — Tech Stack, Cakupan, dan Batasan
 
 Dokumen ini adalah ringkasan yang dapat dipakai untuk menjelaskan aplikasi kepada user, reviewer, atau stakeholder non-teknis. Aplikasi ini adalah alat bantu keputusan FPL berbasis data, bukan autopilot dan bukan jaminan poin.
 
 ## Ringkasan satu kalimat
 
-FPL Analyst mengambil data publik resmi FPL, menyimpannya secara lokal, menghitung fixture dan sinyal pemain secara transparan, lalu menyajikan ranking, perbandingan, gameweek recap, wildcard draft, dan saran transfer yang dapat diaudit.
+FPL Signal mengambil data publik resmi FPL, menyimpannya secara lokal, menghitung fixture dan sinyal pemain secara transparan, lalu menyajikan ranking, perbandingan, gameweek recap, wildcard draft, dan saran transfer yang dapat diaudit.
 
 ## Tech stack
 
@@ -224,4 +224,3 @@ Gunakan jawaban singkat berikut bila ditanya:
 - [DECISION_TOOLS.md](DECISION_TOOLS.md) — transfer/captain proxy dan batasan.
 - [ADVANCED_PLANNER.md](ADVANCED_PLANNER.md) — squad import, wildcard, provider governance, dan constraints.
 - `config/scoring.yaml` — model version, horizon default, minimum minutes, penalty, dan position weights.
-

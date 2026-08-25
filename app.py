@@ -1,4 +1,4 @@
-"""Streamlit entry point for the FPL Analyst MVP."""
+"""Streamlit entry point for the FPL Signal MVP."""
 
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ def main() -> None:
             st.rerun()
 
     st.markdown(
-        '<div class="app-footer">© 2026 FPL Analyst · Local-first decision support · '
+        '<div class="app-footer">© 2026 FPL Signal · Local-first decision support · '
         '<a href="https://imam-dwi.vercel.app/" target="_blank" '
         'rel="noopener noreferrer">by idwp11</a></div>',
         unsafe_allow_html=True,

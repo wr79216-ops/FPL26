@@ -1,4 +1,4 @@
-"""Visual theme for the FPL Analyst Streamlit shell."""
+"""Visual theme for the FPL Signal Streamlit shell."""
 
 from __future__ import annotations
 
@@ -197,10 +197,11 @@ def apply_theme() -> None:
         .section-heading h3 { margin: 0; }
         .section-heading > span { color: var(--muted); font-size: .78rem; }
         .sidebar-brand {
-            color: white; font-size: 1.3rem; font-weight: 850;
-            letter-spacing: -.03em; margin-bottom: .1rem;
+            align-items: center; color: white; display: flex; font-size: 1.3rem;
+            font-weight: 850; gap: .5rem; letter-spacing: -.03em; margin-bottom: .1rem;
         }
-        .sidebar-brand span { color: var(--green); }
+        .sidebar-brand-mark { flex: 0 0 auto; height: 1.8rem; width: 1.8rem; }
+        .sidebar-brand-name span { color: var(--green); }
         .sidebar-caption { color: var(--muted); font-size: .76rem; margin-bottom: 1rem; }
         .app-footer {
             border-top: 1px solid var(--border); color: #777487; font-size: .72rem;

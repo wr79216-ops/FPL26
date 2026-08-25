@@ -29,7 +29,7 @@ SUPPORTED_POSITIONS = ("GK", "DEF", "MID", "FWD")
 class AppSettings:
     """Settings that do not require environment-specific secrets."""
 
-    app_name: str = "FPL Analyst"
+    app_name: str = "FPL Signal"
     log_level: str = "INFO"
     fpl_base_url: str = "https://fantasy.premierleague.com/api/"
     historical_base_url: str = (

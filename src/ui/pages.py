@@ -48,7 +48,7 @@ ATTRIBUTE_HELP = {
     "spearman": "Average rank correlation between recommendation score and future FPL points; 1 is perfect and higher is better.",
     "top_10_hit": "Average percentage overlap between the predicted top 10 and actual top 10 players.",
     "top_10_points": "Average future FPL points scored by the ten highest-ranked players at each cutoff.",
-    "model_lift": "Kenaikan skor rekomendasi FPL Analyst (0–100) dari pemain Out ke pemain In. Skor ini menggabungkan performa, fixture, value, minutes, riwayat, dan availability; bukan prediksi poin pasti.",
+    "model_lift": "Kenaikan skor rekomendasi FPL Signal (0–100) dari pemain Out ke pemain In. Skor ini menggabungkan performa, fixture, value, minutes, riwayat, dan availability; bukan prediksi poin pasti.",
     "fixture_lift": "Perubahan skor kemudahan fixture untuk horizon yang dipilih. Angka positif berarti jadwal pemain In dinilai lebih mudah.",
     "minutes_lift": "Perubahan skor keamanan menit bermain. Angka positif berarti pemain In dinilai lebih mungkin mendapat menit bermain reguler.",
     "price_change": "Selisih harga pemain In dikurangi pemain Out. Positif memakai bank, negatif menambah bank. Harga jual historis tidak tersedia dari public FPL picks endpoint.",

@@ -1,1 +1,1 @@
-"""Data providers for the FPL Analyst application."""
+"""Data providers for the FPL Signal application."""
