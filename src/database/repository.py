@@ -501,6 +501,17 @@ class FPLRepository:
     def list_teams(self) -> List[TeamModel]:
         return list(self.session.scalars(select(TeamModel).order_by(TeamModel.name)))
 
+    def list_fixtures(self) -> List[FixtureModel]:
+        return list(
+            self.session.scalars(
+                select(FixtureModel).order_by(
+                    FixtureModel.gameweek,
+                    FixtureModel.kickoff_time,
+                    FixtureModel.fixture_id,
+                )
+            )
+        )
+
     def list_upcoming_fixtures(self, start_gameweek: Optional[int] = None) -> List[FixtureModel]:
         statement = select(FixtureModel).where(
             FixtureModel.finished.is_(False), FixtureModel.started.is_(False)
