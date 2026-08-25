@@ -22,6 +22,12 @@ HISTORICAL_IDENTITY_OVERRIDES_PATH = Path(__file__).with_name(
 EXTERNAL_PROVIDERS_CONFIG_PATH = Path(__file__).with_name(
     "external_providers.yaml"
 )
+COMPETITION_CALENDAR_CONFIG_PATH = Path(__file__).with_name(
+    "competition_calendar_2026_27.yaml"
+)
+EUROPEAN_PARTICIPANTS_CONFIG_PATH = Path(__file__).with_name(
+    "european_participants_2026_27.yaml"
+)
 SUPPORTED_POSITIONS = ("GK", "DEF", "MID", "FWD")
 
 

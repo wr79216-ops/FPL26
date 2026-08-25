@@ -1,0 +1,163 @@
+season: "2026-27"
+
+# Controlled official calendar input for Phase A. These are competition windows,
+# not fixture rescheduling predictions. Confirmed FPL blanks/doubles remain the
+# responsibility of the official FPL fixtures endpoint in Phase B.
+events:
+  - competition: champions_league
+    stage: league_phase
+    start_date: "2026-09-08"
+    end_date: "2027-01-27"
+    source_url: "https://www.uefa.com/uefachampionsleague/news/02a6-20d57cfcd03e-407c22a7f465-1000--2026-27-champions-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - competition: champions_league
+    stage: knockout_play_off
+    start_date: "2027-02-16"
+    end_date: "2027-02-24"
+    source_url: "https://www.uefa.com/uefachampionsleague/news/02a6-20d57cfcd03e-407c22a7f465-1000--2026-27-champions-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - competition: champions_league
+    stage: round_of_16
+    start_date: "2027-03-09"
+    end_date: "2027-03-17"
+    source_url: "https://www.uefa.com/uefachampionsleague/news/02a6-20d57cfcd03e-407c22a7f465-1000--2026-27-champions-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - competition: champions_league
+    stage: quarter_final
+    start_date: "2027-04-06"
+    end_date: "2027-04-14"
+    source_url: "https://www.uefa.com/uefachampionsleague/news/02a6-20d57cfcd03e-407c22a7f465-1000--2026-27-champions-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - competition: champions_league
+    stage: semi_final
+    start_date: "2027-04-27"
+    end_date: "2027-05-05"
+    source_url: "https://www.uefa.com/uefachampionsleague/news/02a6-20d57cfcd03e-407c22a7f465-1000--2026-27-champions-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - competition: champions_league
+    stage: final
+    start_date: "2027-06-05"
+    end_date: "2027-06-05"
+    source_url: "https://www.uefa.com/uefachampionsleague/news/02a6-20d57cfcd03e-407c22a7f465-1000--2026-27-champions-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - competition: europa_league
+    stage: league_phase
+    start_date: "2026-09-16"
+    end_date: "2027-01-28"
+    source_url: "https://www.uefa.com/uefaeuropaleague/news/02a6-20d57d095740-e1e0b3de85df-1000--2026-27-europa-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - competition: europa_league
+    stage: knockout_play_off
+    start_date: "2027-02-18"
+    end_date: "2027-02-25"
+    source_url: "https://www.uefa.com/uefaeuropaleague/news/02a6-20d57d095740-e1e0b3de85df-1000--2026-27-europa-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - competition: europa_league
+    stage: round_of_16
+    start_date: "2027-03-11"
+    end_date: "2027-03-18"
+    source_url: "https://www.uefa.com/uefaeuropaleague/news/02a6-20d57d095740-e1e0b3de85df-1000--2026-27-europa-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - competition: europa_league
+    stage: quarter_final
+    start_date: "2027-04-08"
+    end_date: "2027-04-15"
+    source_url: "https://www.uefa.com/uefaeuropaleague/news/02a6-20d57d095740-e1e0b3de85df-1000--2026-27-europa-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - competition: europa_league
+    stage: semi_final
+    start_date: "2027-04-29"
+    end_date: "2027-05-06"
+    source_url: "https://www.uefa.com/uefaeuropaleague/news/02a6-20d57d095740-e1e0b3de85df-1000--2026-27-europa-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - competition: europa_league
+    stage: final
+    start_date: "2027-05-26"
+    end_date: "2027-05-26"
+    source_url: "https://www.uefa.com/uefaeuropaleague/news/02a6-20d57d095740-e1e0b3de85df-1000--2026-27-europa-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - competition: conference_league
+    stage: qualifying_play_off
+    start_date: "2026-08-20"
+    end_date: "2026-08-27"
+    source_url: "https://www.uefa.com/uefaconferenceleague/news/02a6-20d57d15f093-a90cf54c928f-1000--2026-27-conference-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2026-08-28T23:59:59+00:00"
+  - competition: conference_league
+    stage: league_phase
+    start_date: "2026-10-15"
+    end_date: "2026-12-17"
+    source_url: "https://www.uefa.com/uefaconferenceleague/news/02a6-20d57d15f093-a90cf54c928f-1000--2026-27-conference-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-03T23:59:59+00:00"
+  - competition: conference_league
+    stage: knockout_play_off
+    start_date: "2027-02-18"
+    end_date: "2027-02-25"
+    source_url: "https://www.uefa.com/uefaconferenceleague/news/02a6-20d57d15f093-a90cf54c928f-1000--2026-27-conference-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-03T23:59:59+00:00"
+  - competition: conference_league
+    stage: round_of_16
+    start_date: "2027-03-11"
+    end_date: "2027-03-18"
+    source_url: "https://www.uefa.com/uefaconferenceleague/news/02a6-20d57d15f093-a90cf54c928f-1000--2026-27-conference-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-03T23:59:59+00:00"
+  - competition: conference_league
+    stage: quarter_final
+    start_date: "2027-04-08"
+    end_date: "2027-04-15"
+    source_url: "https://www.uefa.com/uefaconferenceleague/news/02a6-20d57d15f093-a90cf54c928f-1000--2026-27-conference-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-03T23:59:59+00:00"
+  - competition: conference_league
+    stage: semi_final
+    start_date: "2027-04-29"
+    end_date: "2027-05-06"
+    source_url: "https://www.uefa.com/uefaconferenceleague/news/02a6-20d57d15f093-a90cf54c928f-1000--2026-27-conference-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-03T23:59:59+00:00"
+  - competition: conference_league
+    stage: final
+    start_date: "2027-06-02"
+    end_date: "2027-06-02"
+    source_url: "https://www.uefa.com/uefaconferenceleague/news/02a6-20d57d15f093-a90cf54c928f-1000--2026-27-conference-league-teams-dates-draws-format-final/"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-03T23:59:59+00:00"
+  - competition: efl_cup
+    stage: final
+    start_date: "2027-03-21"
+    end_date: "2027-03-21"
+    clash_matchweek: 30
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-24T23:59:59+00:00"
+  - competition: fa_cup
+    stage: semi_final
+    start_date: "2027-04-24"
+    end_date: "2027-04-25"
+    clash_matchweek: 33
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-24T23:59:59+00:00"
+  - competition: fa_cup
+    stage: final
+    start_date: "2027-05-22"
+    end_date: "2027-05-22"
+    clash_matchweek: 37
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-24T23:59:59+00:00"

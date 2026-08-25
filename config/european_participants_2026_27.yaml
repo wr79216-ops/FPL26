@@ -1,0 +1,87 @@
+season: "2026-27"
+
+# Team IDs are verified against the current official FPL bootstrap catalogue by
+# load_schedule_calendar_catalog(). Brighton remains conditional until its
+# Conference League play-off result is known.
+participants:
+  - team_code: ARS
+    fpl_team_id: 1
+    competition: champions_league
+    stage: league_phase
+    status: confirmed
+    qualification_conditional: false
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - team_code: AVL
+    fpl_team_id: 2
+    competition: champions_league
+    stage: league_phase
+    status: confirmed
+    qualification_conditional: false
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - team_code: LIV
+    fpl_team_id: 14
+    competition: champions_league
+    stage: league_phase
+    status: confirmed
+    qualification_conditional: false
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - team_code: MCI
+    fpl_team_id: 15
+    competition: champions_league
+    stage: league_phase
+    status: confirmed
+    qualification_conditional: false
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - team_code: MUN
+    fpl_team_id: 16
+    competition: champions_league
+    stage: league_phase
+    status: confirmed
+    qualification_conditional: false
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-06-06T23:59:59+00:00"
+  - team_code: BOU
+    fpl_team_id: 3
+    competition: europa_league
+    stage: league_phase
+    status: confirmed
+    qualification_conditional: false
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - team_code: CRY
+    fpl_team_id: 8
+    competition: europa_league
+    stage: league_phase
+    status: confirmed
+    qualification_conditional: false
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - team_code: SUN
+    fpl_team_id: 20
+    competition: europa_league
+    stage: league_phase
+    status: confirmed
+    qualification_conditional: false
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2027-05-27T23:59:59+00:00"
+  - team_code: BHA
+    fpl_team_id: 5
+    competition: conference_league
+    stage: qualifying_play_off
+    status: conditional
+    qualification_conditional: true
+    source_url: "https://www.premierleague.com/en/news/4675720/how-do-other-competitions-fixtures-affect-the-premier-league-and-its-clubs"
+    last_verified_at: "2026-08-25T00:00:00+00:00"
+    expires_at: "2026-08-28T23:59:59+00:00"

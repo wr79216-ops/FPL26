@@ -9,6 +9,13 @@ from src.domain.contracts import (
     RecommendationScoreRecord,
     TeamRecord,
 )
+from src.domain.schedule_risk import (
+    CompetitionCode,
+    CompetitionEvent,
+    CompetitionStage,
+    ParticipationStatus,
+    TeamCompetitionEntry,
+)
 
 __all__ = [
     "CurrentPlayerStatsRecord",
@@ -18,4 +25,9 @@ __all__ = [
     "Position",
     "RecommendationScoreRecord",
     "TeamRecord",
+    "CompetitionCode",
+    "CompetitionEvent",
+    "CompetitionStage",
+    "ParticipationStatus",
+    "TeamCompetitionEntry",
 ]
