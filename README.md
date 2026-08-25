@@ -102,6 +102,10 @@ Layer responsibilities, schema versioning, and raw-data conventions are document
 
 For a user-facing explanation of the technology stack, data sources, model meaning, feature coverage, history scope, privacy behavior, and known limitations, see [docs/TECHSTACK_AND_SCOPE.md](docs/TECHSTACK_AND_SCOPE.md).
 
+## Schedule congestion and Blank/Double Gameweek planning
+
+The proposed official-first congestion, BGW/DGW probability, and Advanced Planner integration are documented in [docs/SCHEDULE_CONGESTION_PLANNER_PLAN.md](docs/SCHEDULE_CONGESTION_PLANNER_PLAN.md).
+
 ## Data-source policy
 
 Official FPL endpoints will be the source of truth for FPL-specific fields such as price, ownership, points, and fixtures. Any third-party source, including FotMob, is a future enrichment layer only and must be used through an allowed access method.
