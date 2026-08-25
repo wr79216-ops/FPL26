@@ -29,6 +29,8 @@ from src.domain.schedule_risk import (
     ScenarioOutcome,
     ScheduleRiskStatus,
     ScheduleCongestionLeader,
+    SquadScheduleExposure,
+    SquadSchedulePlayerExposure,
     StructuralFixtureClash,
     TeamCompetitionEntry,
 )
@@ -60,6 +62,8 @@ __all__ = [
     "ScenarioOutcome",
     "ScheduleRiskStatus",
     "ScheduleCongestionLeader",
+    "SquadScheduleExposure",
+    "SquadSchedulePlayerExposure",
     "StructuralFixtureClash",
     "TeamCompetitionEntry",
 ]

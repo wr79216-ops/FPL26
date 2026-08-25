@@ -300,6 +300,89 @@ class ScheduleCongestionLeader:
 
 
 @dataclass(frozen=True)
+class SquadSchedulePlayerExposure:
+    """Schedule-risk exposure for a single imported, session-only squad pick."""
+
+    player_id: int
+    player_name: str
+    team_name: str
+    team_id: int | None
+    position: str
+    squad_weight: float
+    confirmed_blank_gameweeks: tuple[int, ...]
+    projected_blank_exposure: float
+    confirmed_extra_fixtures: float
+    projected_extra_fixtures: float
+    congestion_score: float | None
+    explanation: str
+
+    def __post_init__(self) -> None:
+        if self.player_id <= 0:
+            raise ValueError("player_id must be positive")
+        if not self.player_name.strip() or not self.team_name.strip() or not self.position.strip():
+            raise ValueError("player identity fields are required")
+        if self.team_id is not None and self.team_id <= 0:
+            raise ValueError("team_id must be positive when supplied")
+        if self.squad_weight <= 0:
+            raise ValueError("squad_weight must be positive")
+        if any(not 1 <= gameweek <= 38 for gameweek in self.confirmed_blank_gameweeks):
+            raise ValueError("confirmed blank gameweeks must be between 1 and 38")
+        for value, name in (
+            (self.projected_blank_exposure, "projected_blank_exposure"),
+            (self.confirmed_extra_fixtures, "confirmed_extra_fixtures"),
+            (self.projected_extra_fixtures, "projected_extra_fixtures"),
+        ):
+            if value < 0:
+                raise ValueError(f"{name} cannot be negative")
+        if self.congestion_score is not None and not 0 <= self.congestion_score <= 100:
+            raise ValueError("congestion_score must be between 0 and 100")
+        if not self.explanation.strip():
+            raise ValueError("exposure explanation is required")
+
+    @property
+    def expected_blank_fixtures(self) -> float:
+        return round(
+            self.squad_weight * len(self.confirmed_blank_gameweeks)
+            + self.projected_blank_exposure,
+            3,
+        )
+
+    @property
+    def expected_extra_fixtures(self) -> float:
+        return round(
+            self.confirmed_extra_fixtures + self.projected_extra_fixtures,
+            3,
+        )
+
+
+@dataclass(frozen=True)
+class SquadScheduleExposure:
+    """Auditable schedule-risk summary for one imported squad and GW window."""
+
+    manager_id: int
+    gameweeks: tuple[int, ...]
+    expected_blank_starters: float
+    expected_extra_fixtures: float
+    affected_players: tuple[SquadSchedulePlayerExposure, ...]
+    unresolved_player_ids: tuple[int, ...]
+    as_of: datetime
+    explanation: str
+
+    def __post_init__(self) -> None:
+        if self.manager_id <= 0:
+            raise ValueError("manager_id must be positive")
+        if not self.gameweeks or any(not 1 <= gameweek <= 38 for gameweek in self.gameweeks):
+            raise ValueError("gameweeks must be a non-empty GW1-GW38 list")
+        if self.expected_blank_starters < 0 or self.expected_extra_fixtures < 0:
+            raise ValueError("expected schedule exposures cannot be negative")
+        if len(set(self.unresolved_player_ids)) != len(self.unresolved_player_ids):
+            raise ValueError("unresolved_player_ids cannot contain duplicates")
+        _require_timezone(self.as_of, "as_of")
+        if not self.explanation.strip():
+            raise ValueError("exposure explanation is required")
+
+
+@dataclass(frozen=True)
 class AuditableProbabilityInput:
     """A manually supplied probability with evidence and a hard expiry."""
 

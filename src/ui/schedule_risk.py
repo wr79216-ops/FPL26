@@ -10,6 +10,7 @@ from src.domain.schedule_risk import (
     GameweekRiskSummary,
     ScheduleCongestionLeader,
     ScheduleRiskStatus,
+    SquadScheduleExposure,
 )
 
 
@@ -144,4 +145,27 @@ def build_congestion_leader_rows(
             "Why": leader.explanation,
         }
         for leader in tuple(leaders)[:limit]
+    )
+
+
+def build_squad_exposure_rows(
+    exposure: SquadScheduleExposure,
+) -> tuple[dict[str, object], ...]:
+    """Convert the session-only squad exposure into an auditable player table."""
+    return tuple(
+        {
+            "Player": item.player_name,
+            "Team": item.team_name,
+            "Pos": item.position,
+            "Squad weight": item.squad_weight,
+            "Confirmed blank": ", ".join(f"GW{gw}" for gw in item.confirmed_blank_gameweeks) or "—",
+            "Expected blank": item.expected_blank_fixtures,
+            "Expected extra fixtures": item.expected_extra_fixtures,
+            "Congestion": item.congestion_score,
+            "Why": item.explanation,
+        }
+        for item in exposure.affected_players
+        if item.expected_blank_fixtures > 0
+        or item.expected_extra_fixtures > 0
+        or (item.congestion_score or 0) > 0
     )

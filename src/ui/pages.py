@@ -10,6 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from config.settings import ScoringConfig
+from src.services.advanced_planner import ImportedSquad
 from src.ui.components import (
     fixture_strip,
     metric_tile,
@@ -24,9 +25,11 @@ from src.ui.components import (
     wrapped_metric_card,
 )
 from src.services.gameweek_wrapped import build_gameweek_wrapped, previous_completed_gameweek
+from src.services.squad_schedule_exposure import calculate_squad_schedule_exposure
 from src.ui.schedule_risk import (
     build_congestion_leader_rows,
     build_risk_strip_rows,
+    build_squad_exposure_rows,
     build_team_risk_matrix,
     risk_status_help,
 )
@@ -58,6 +61,9 @@ ATTRIBUTE_HELP = {
     "fixture_lift": "Perubahan skor kemudahan fixture untuk horizon yang dipilih. Angka positif berarti jadwal pemain In dinilai lebih mudah.",
     "minutes_lift": "Perubahan skor keamanan menit bermain. Angka positif berarti pemain In dinilai lebih mungkin mendapat menit bermain reguler.",
     "price_change": "Selisih harga pemain In dikurangi pemain Out. Positif memakai bank, negatif menambah bank. Harga jual historis tidak tersedia dari public FPL picks endpoint.",
+    "schedule_blank": "Eksposur fixture kosong. Confirmed hanya berasal dari alokasi fixture resmi FPL; proyeksi muncul hanya bila input probabilitasnya memiliki source, as-of, expiry, dan confidence.",
+    "schedule_double": "Eksposur fixture tambahan. Confirmed berarti FPL memasang minimal dua fixture; proyeksi tetap terpisah dan tidak mengubah status confirmed.",
+    "schedule_congestion": "Indikator workload 14 hari dari kepadatan jadwal, rest pendek, travel netral, dan tahap kompetisi. Ini bukan prediksi poin, cedera, atau menit bermain.",
 }
 
 
@@ -1422,6 +1428,12 @@ def render_advanced_planner(
             ),
         )
 
+        _render_imported_squad_schedule_exposure(
+            imported,
+            horizon,
+            st.session_state.get("schedule_congestion_service"),
+        )
+
         section_heading(
             "Transfer suggestions",
             "Personalised to your imported squad · No points hit",
@@ -1748,6 +1760,90 @@ def _render_schedule_risk_section(schedule_service: object) -> None:
             "Source: official FPL fixture cache + verified 2026/27 European participant calendar. "
             "As-of timestamps and source links remain available in the underlying schedule-risk contracts."
         )
+
+
+def _render_imported_squad_schedule_exposure(
+    imported: ImportedSquad,
+    horizon: int,
+    schedule_service: object,
+) -> None:
+    """Show a session-only schedule view for the user's imported official squad."""
+    section_heading(
+        "Your schedule exposure",
+        f"Imported squad · GW{imported.gameweek}–GW{min(38, imported.gameweek + horizon - 1)}",
+        "Uses the imported squad only in this browser session. It is a separate risk view and does not alter transfer priority in Phase E.",
+    )
+    if schedule_service is None:
+        st.info("Schedule exposure will appear after the schedule congestion service initializes.")
+        return
+    try:
+        snapshot = schedule_service.get_phase_c_snapshot()  # type: ignore[attr-defined]
+        exposure = calculate_squad_schedule_exposure(imported, snapshot, horizon)
+    except Exception as exc:
+        st.warning(f"Could not calculate squad schedule exposure: {exc}")
+        return
+
+    metrics = st.columns(3)
+    with metrics[0]:
+        metric_tile(
+            "Expected blank starters",
+            f"{exposure.expected_blank_starters:.2f}",
+            "Weighted across starter, bench, and captain exposure",
+            ATTRIBUTE_HELP["schedule_blank"],
+        )
+    with metrics[1]:
+        metric_tile(
+            "Expected extra fixtures",
+            f"{exposure.expected_extra_fixtures:.2f}",
+            "Confirmed allocation plus evidence-backed projections",
+            ATTRIBUTE_HELP["schedule_double"],
+        )
+    with metrics[2]:
+        highest_congestion = max(
+            (item.congestion_score or 0 for item in exposure.affected_players),
+            default=0,
+        )
+        metric_tile(
+            "Highest squad congestion",
+            f"{highest_congestion:.1f}/100",
+            "Highest club workload signal in the imported squad",
+            ATTRIBUTE_HELP["schedule_congestion"],
+        )
+
+    exposure_rows = build_squad_exposure_rows(exposure)
+    if exposure_rows:
+        st.dataframe(
+            pd.DataFrame(exposure_rows),
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "Squad weight": st.column_config.NumberColumn(
+                    "Squad weight", format="%.2f",
+                    help="Starter 1.00; bench outfield 0.35; bench goalkeeper 0.20; captain receives an additional 1.00.",
+                ),
+                "Expected blank": st.column_config.NumberColumn(
+                    "Expected blank", format="%.2f", help=ATTRIBUTE_HELP["schedule_blank"]
+                ),
+                "Expected extra fixtures": st.column_config.NumberColumn(
+                    "Expected extra fixtures", format="%.2f", help=ATTRIBUTE_HELP["schedule_double"]
+                ),
+                "Congestion": st.column_config.ProgressColumn(
+                    "Congestion", min_value=0, max_value=100, format="%.1f",
+                    help=ATTRIBUTE_HELP["schedule_congestion"],
+                ),
+            },
+        )
+    else:
+        st.success("No confirmed or evidence-backed blank/double exposure in this planning window.")
+    if exposure.unresolved_player_ids:
+        st.warning(
+            "Some imported players could not be mapped to an official FPL club, so their schedule exposure is omitted: "
+            + ", ".join(str(player_id) for player_id in exposure.unresolved_player_ids)
+        )
+    st.caption(
+        "Phase E does not change the transfer suggestions above or below this section. "
+        "Schedule-adjusted transfer priorities remain reserved for Phase F backtesting."
+    )
 
 
 def render_data_status(
