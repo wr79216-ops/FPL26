@@ -81,7 +81,7 @@ def deadline_countdown_markup(deadline: FPLDeadline) -> str:
         display: flex; font-family: Inter, ui-sans-serif, system-ui, sans-serif; gap: 1rem;
         justify-content: space-between; min-height: 76px; overflow: hidden; padding: .8rem 1rem;
       }}
-      .deadline-intro {{ min-width: 11rem; }}
+      .deadline-intro {{ flex: 1 1 auto; min-width: 0; }}
       .deadline-label {{ color: #18f59b; font-size: .66rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }}
       .deadline-title {{ font-size: 1rem; font-weight: 850; margin-top: .2rem; }}
       .deadline-date {{ color: #aaa7b7; font-size: .72rem; margin-top: .15rem; }}
@@ -90,9 +90,14 @@ def deadline_countdown_markup(deadline: FPLDeadline) -> str:
       .deadline-value {{ color: #18f59b; display: block; font-size: 1.18rem; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }}
       .deadline-unit span {{ color: #aaa7b7; display: block; font-size: .57rem; font-weight: 800; letter-spacing: .08em; margin-top: .22rem; text-transform: uppercase; }}
       @media (max-width: 640px) {{
-        .deadline-banner {{ align-items: flex-start; flex-direction: column; gap: .6rem; }}
-        .deadline-clock {{ justify-content: flex-start; width: 100%; }}
-        .deadline-unit {{ flex: 1; min-width: 0; }}
+        .deadline-banner {{ gap: .5rem; padding: .55rem .65rem; }}
+        .deadline-label {{ font-size: .57rem; letter-spacing: .09em; }}
+        .deadline-title {{ font-size: .9rem; }}
+        .deadline-date {{ font-size: .6rem; line-height: 1.2; }}
+        .deadline-clock {{ flex: 0 0 auto; gap: .18rem; }}
+        .deadline-unit {{ min-width: 2.65rem; padding: .27rem .22rem; }}
+        .deadline-value {{ font-size: 1rem; }}
+        .deadline-unit span {{ font-size: .5rem; letter-spacing: .04em; margin-top: .18rem; }}
       }}
     </style>
     <section class="deadline-banner" aria-label="Official FPL deadline countdown" data-deadline="{deadline_iso}">
