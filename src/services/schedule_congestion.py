@@ -40,6 +40,7 @@ from src.domain.schedule_risk import (
     ProjectionMethod,
     ScenarioOutcome,
     ScheduleRiskStatus,
+    ScheduleCongestionLeader,
     StructuralFixtureClash,
     TeamCompetitionEntry,
 )
@@ -76,6 +77,8 @@ class PhaseBScheduleSnapshot:
     structural_clashes: tuple[StructuralFixtureClash, ...]
     candidate_slots: tuple[CandidateRescheduleSlot, ...]
     scenarios: tuple[FixtureRiskScenario, ...]
+    team_names: tuple[tuple[int, str, str], ...] = ()
+    congestion_leaders: tuple[ScheduleCongestionLeader, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -800,6 +803,116 @@ def summarize_official_gameweeks(
     return tuple(summaries)
 
 
+def calculate_congestion_leaders(
+    fixtures: Iterable[FixtureRecord],
+    teams: Iterable[TeamRecord],
+    participants: Iterable[TeamCompetitionEntry],
+    as_of: datetime,
+    window_days: int = 14,
+) -> tuple[ScheduleCongestionLeader, ...]:
+    """Rank clubs using only fixture density, rest gaps, and known Europe entries.
+
+    This is a descriptive workload signal, not a prediction of minutes or points.
+    The fixed weights are deliberately visible and bounded so the UI can explain
+    exactly why a club appears in the list.
+    """
+    if as_of.tzinfo is None or as_of.utcoffset() is None:
+        raise ValueError("as_of must include a timezone")
+    if window_days < 1:
+        raise ValueError("window_days must be positive")
+
+    start_date = as_of.date()
+    end_date = start_date + timedelta(days=window_days)
+    records = tuple(fixtures)
+    dates_by_team: dict[int, list[date]] = {}
+    for fixture in records:
+        if fixture.kickoff_time is None:
+            continue
+        kickoff_date = fixture.kickoff_time.date()
+        if not start_date <= kickoff_date <= end_date:
+            continue
+        for team_id in (fixture.home_team_id, fixture.away_team_id):
+            dates_by_team.setdefault(team_id, []).append(kickoff_date)
+
+    participants_by_team: dict[int, list[TeamCompetitionEntry]] = {}
+    for participant in participants:
+        participants_by_team.setdefault(participant.fpl_team_id, []).append(participant)
+
+    competition_labels = {
+        CompetitionCode.CHAMPIONS_LEAGUE: "Champions League",
+        CompetitionCode.EUROPA_LEAGUE: "Europa League",
+        CompetitionCode.CONFERENCE_LEAGUE: "Conference League",
+    }
+    leaders: list[ScheduleCongestionLeader] = []
+    for team in teams:
+        match_dates = sorted(dates_by_team.get(team.team_id, []))
+        gaps = [
+            (later - earlier).days
+            for earlier, later in zip(match_dates, match_dates[1:])
+        ]
+        shortest_rest = min(gaps) if gaps else None
+        short_rest_count = sum(gap <= 3 for gap in gaps)
+        european = participants_by_team.get(team.team_id, [])
+        competition_text = ", ".join(
+            f"{competition_labels.get(item.competition, item.competition.value)}"
+            f"{' (conditional)' if item.qualification_conditional else ''}"
+            for item in european
+            if item.competition in competition_labels
+        ) or None
+        match_pressure = min(len(match_dates) / 4, 1.0)
+        rest_pressure = 0.0 if shortest_rest is None else max(0.0, 1 - shortest_rest / 6)
+        # Travel is neutral (0.5) while draw/venue data is unavailable. Stage
+        # importance is deliberately coarse: knockout/final > league phase.
+        travel_pressure = 0.5 if european else 0.0
+        stage_pressure = (
+            max(
+                1.0 if item.stage in {
+                    CompetitionStage.KNOCKOUT_PLAY_OFF,
+                    CompetitionStage.ROUND_OF_16,
+                    CompetitionStage.QUARTER_FINAL,
+                    CompetitionStage.SEMI_FINAL,
+                    CompetitionStage.FINAL,
+                } else 0.6
+                for item in european
+            )
+            if european
+            else 0.0
+        )
+        score = round(
+            100 * (
+                0.40 * match_pressure
+                + 0.30 * rest_pressure
+                + 0.15 * travel_pressure
+                + 0.15 * stage_pressure
+            ),
+            1,
+        )
+        explanation = (
+            f"{len(match_dates)} match(es) in the next {window_days} days; "
+            f"shortest rest {shortest_rest if shortest_rest is not None else 'n/a'} days; "
+            f"{short_rest_count} short-rest interval(s)."
+        )
+        leaders.append(
+            ScheduleCongestionLeader(
+                team_id=team.team_id,
+                team_name=team.name,
+                team_code=team.short_name,
+                matches_next_14_days=len(match_dates),
+                shortest_rest_days=shortest_rest,
+                short_rest_count=short_rest_count,
+                european_competition=competition_text,
+                congestion_score=score,
+                explanation=explanation,
+            )
+        )
+    return tuple(
+        sorted(
+            leaders,
+            key=lambda item: (-item.congestion_score, -item.matches_next_14_days, item.team_name),
+        )
+    )
+
+
 def _gameweek_bounds(
     fixtures: Iterable[FixtureRecord],
 ) -> tuple[tuple[int, date, date], ...]:
@@ -1027,6 +1140,10 @@ class ScheduleCongestionService:
             structural_clashes=structural_clashes,
             candidate_slots=tuple(candidate_slots),
             scenarios=tuple(scenarios),
+            team_names=tuple((team.team_id, team.name, team.short_name) for team in teams),
+            congestion_leaders=calculate_congestion_leaders(
+                fixtures, teams, catalog.participants, snapshot_at
+            ),
         )
 
     def get_phase_c_snapshot(

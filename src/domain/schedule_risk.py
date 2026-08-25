@@ -271,6 +271,35 @@ class GameweekRiskSummary:
 
 
 @dataclass(frozen=True)
+class ScheduleCongestionLeader:
+    """A transparent congestion signal for one club over the next 14 days."""
+
+    team_id: int
+    team_name: str
+    team_code: str
+    matches_next_14_days: int
+    shortest_rest_days: int | None
+    short_rest_count: int
+    european_competition: str | None
+    congestion_score: float
+    explanation: str
+
+    def __post_init__(self) -> None:
+        if self.team_id <= 0:
+            raise ValueError("team_id must be positive")
+        if not self.team_name.strip() or not self.team_code.strip():
+            raise ValueError("team name and team code are required")
+        if self.matches_next_14_days < 0 or self.short_rest_count < 0:
+            raise ValueError("match and rest counts cannot be negative")
+        if self.shortest_rest_days is not None and self.shortest_rest_days < 0:
+            raise ValueError("shortest_rest_days cannot be negative")
+        if not 0 <= self.congestion_score <= 100:
+            raise ValueError("congestion_score must be between 0 and 100")
+        if not self.explanation.strip():
+            raise ValueError("congestion explanation is required")
+
+
+@dataclass(frozen=True)
 class AuditableProbabilityInput:
     """A manually supplied probability with evidence and a hard expiry."""
 

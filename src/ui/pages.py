@@ -24,6 +24,12 @@ from src.ui.components import (
     wrapped_metric_card,
 )
 from src.services.gameweek_wrapped import build_gameweek_wrapped, previous_completed_gameweek
+from src.ui.schedule_risk import (
+    build_congestion_leader_rows,
+    build_risk_strip_rows,
+    build_team_risk_matrix,
+    risk_status_help,
+)
 
 
 PageRenderer = Callable[[pd.DataFrame, pd.DataFrame, ScoringConfig], None]
@@ -1346,6 +1352,8 @@ def render_advanced_planner(
             "Fixture cells show opponent followed by official/custom difficulty. Recommendation Engine v1.1 continues to use official FDR; custom difficulty is a comparison signal only."
         )
 
+    _render_schedule_risk_section(st.session_state.get("schedule_congestion_service"))
+
     section_heading(
         "Squad import & wildcard planner",
         "2 GK · 5 DEF · 5 MID · 3 FWD · max 3 per club",
@@ -1622,6 +1630,124 @@ def render_advanced_planner(
             st.markdown(
                 "It does not execute transfers and does not model selling-price history, free transfers, transfer hits, chips, future price changes, or late team news. Verify the final draft in official FPL before acting."
             )
+
+
+def _render_schedule_risk_section(schedule_service: object) -> None:
+    """Render Phase D schedule-risk signals without changing transfer priorities."""
+    section_heading(
+        "Schedule congestion & GW risk",
+        "Phase D · official facts first, projections only with evidence",
+        risk_status_help(),
+    )
+    if schedule_service is None:
+        render_empty_state("Schedule risk unavailable", "Reopen the app to initialize the schedule congestion service.")
+        return
+    try:
+        snapshot = schedule_service.get_phase_c_snapshot()  # type: ignore[attr-defined]
+    except Exception as exc:
+        st.warning(f"Schedule risk is waiting for a valid official calendar snapshot: {exc}")
+        return
+
+    phase_b = snapshot.phase_b
+    strip_rows = build_risk_strip_rows(
+        phase_b.gameweek_risks,
+        snapshot.fixture_projections,
+        snapshot.double_gameweek_projections,
+    )
+    strip_html = "".join(
+        (
+            f'<div class="schedule-risk-pill risk-{row["status_class"]}" title="{row["title"]}">'
+            f'<strong>GW{row["gameweek"]}</strong><span>{row["status_label"]}</span>'
+            f'<small>B {row["blank_count"]} · D {row["double_count"]}</small>'
+            f'<small>{row["probability"]}</small></div>'
+        )
+        for row in strip_rows
+    )
+    st.markdown(f'<div class="schedule-risk-strip">{strip_html}</div>', unsafe_allow_html=True)
+    st.caption(
+        "Hover a GW pill for the status definition. B = blank exposure, D = double exposure. "
+        "Green means one official fixture per club; gray means the official schedule is incomplete."
+    )
+    if not snapshot.fixture_projections and not snapshot.double_gameweek_projections:
+        st.info(
+            "No probability projections are active yet. Confirmed blanks/doubles remain visible from the official FPL fixture allocation; projected likelihoods appear only after current audited inputs are added."
+        )
+    with st.expander("Definitions, source & as-of"):
+        source_url = phase_b.gameweek_risks[0].source_url if phase_b.gameweek_risks else "Unavailable"
+        as_of = phase_b.gameweek_risks[0].as_of.isoformat() if phase_b.gameweek_risks else "Unavailable"
+        st.markdown(
+            f"**Model:** Phase D descriptive schedule-risk view; it does not alter Recommendation Engine scores.  \n"
+            f"**Probability:** an evidence-gated likelihood, currently unavailable because no current audited input is configured.  \n"
+            f"**Confidence:** shown with any future projection and inherited from its weakest evidence input.  \n"
+            f"**Blank / Double:** confirmed only when official FPL allocates zero / at least two fixtures in a GW.  \n"
+            f"**Congestion:** bounded workload score from match density, rest gaps, and verified European participation.  \n"
+            f"**Source:** [{source_url}]({source_url}) · **As-of:** `{as_of}` · **Probability inputs:** `{snapshot.probability_catalog.model_version}` ({len(snapshot.probability_catalog.inputs)} records)."
+        )
+
+    european_ids = {entry.fpl_team_id for entry in phase_b.catalog.participants}
+    matrix_controls = st.columns([1, 1, 1])
+    with matrix_controls[0]:
+        team_filter = st.selectbox(
+            "Team filter", ("All clubs", "European clubs"),
+            key="schedule_risk_team_filter",
+            help="European clubs are the verified participant list in the 2026/27 calendar input.",
+        )
+    with matrix_controls[1]:
+        matrix_window = st.selectbox(
+            "Matrix window", ("Next 5 GW", "Next 8 GW", "Full season"),
+            key="schedule_risk_matrix_window",
+            help="Limits the visible columns only; it does not alter the underlying risk calculation.",
+        )
+    with matrix_controls[2]:
+        st.checkbox(
+            "Confirmed only", value=True, key="schedule_risk_confirmed_only",
+            help="Confirmed statuses come from official FPL fixture allocation. Projections are not converted into confirmed statuses.",
+        )
+    matrix_end = {"Next 5 GW": 5, "Next 8 GW": 8, "Full season": 38}[matrix_window]
+    matrix_rows = build_team_risk_matrix(
+        phase_b.gameweek_risks, phase_b.team_names, tuple(range(1, matrix_end + 1)),
+        european_ids if team_filter == "European clubs" else None,
+    )
+    if not matrix_rows:
+        render_empty_state("No clubs in this view", "Switch the team filter or refresh official FPL data.")
+    else:
+        st.dataframe(
+            pd.DataFrame(matrix_rows), hide_index=True, width="stretch",
+            height=min(560, 115 + 35 * len(matrix_rows)),
+            column_config={
+                "Club": st.column_config.TextColumn("Club", help="Official FPL club name."),
+                "Code": st.column_config.TextColumn("Code", help="Official FPL short code."),
+            },
+        )
+        st.caption(
+            "Matrix legend: B = confirmed blank, D = confirmed double, · = one official fixture. "
+            "Probability is a separate, evidence-gated signal and never silently changes these cells."
+        )
+
+    section_heading(
+        "Congestion leaders", "Next 14 days · descriptive workload signal",
+        "Score blends match count (40%), shortest-rest pressure (30%), neutral travel (15%), and stage importance (15%). It is not a points or minutes prediction.",
+    )
+    leader_rows = build_congestion_leader_rows(phase_b.congestion_leaders)
+    if not leader_rows:
+        render_empty_state("No congestion signal", "Upcoming kickoff dates are not available in the official cache.")
+    else:
+        st.dataframe(
+            pd.DataFrame(leader_rows), hide_index=True, width="stretch",
+            column_config={
+                "Congestion score": st.column_config.ProgressColumn(
+                    "Congestion score", min_value=0, max_value=100, format="%.1f",
+                    help="Bounded descriptive score: match density, short-rest intervals, and European participation.",
+                ),
+                "Shortest rest (days)": st.column_config.NumberColumn(
+                    "Shortest rest (days)", help="Smallest calendar-day gap between two official fixtures in the 14-day window."
+                ),
+            },
+        )
+        st.caption(
+            "Source: official FPL fixture cache + verified 2026/27 European participant calendar. "
+            "As-of timestamps and source links remain available in the underlying schedule-risk contracts."
+        )
 
 
 def render_data_status(

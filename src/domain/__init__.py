@@ -28,6 +28,7 @@ from src.domain.schedule_risk import (
     ProjectionMethod,
     ScenarioOutcome,
     ScheduleRiskStatus,
+    ScheduleCongestionLeader,
     StructuralFixtureClash,
     TeamCompetitionEntry,
 )
@@ -58,6 +59,7 @@ __all__ = [
     "ProjectionMethod",
     "ScenarioOutcome",
     "ScheduleRiskStatus",
+    "ScheduleCongestionLeader",
     "StructuralFixtureClash",
     "TeamCompetitionEntry",
 ]

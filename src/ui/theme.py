@@ -137,6 +137,23 @@ def apply_theme() -> None:
         }
         .fixture-pill strong { display: block; font-size: .82rem; }
         .fixture-pill span { color: var(--muted); font-size: .68rem; }
+        .schedule-risk-strip {
+            display: grid; gap: .35rem; grid-template-columns: repeat(19, minmax(58px, 1fr));
+            margin: .8rem 0 .35rem; overflow-x: auto; padding-bottom: .35rem;
+        }
+        .schedule-risk-pill {
+            border: 1px solid var(--border); border-radius: 10px; min-width: 58px;
+            padding: .45rem .25rem; text-align: center; transition: transform .12s ease;
+        }
+        .schedule-risk-pill:hover { transform: translateY(-2px); }
+        .schedule-risk-pill strong, .schedule-risk-pill span, .schedule-risk-pill small { display: block; }
+        .schedule-risk-pill strong { font-size: .75rem; }
+        .schedule-risk-pill span { font-size: .58rem; font-weight: 800; line-height: 1.2; margin: .22rem 0; }
+        .schedule-risk-pill small { color: var(--muted); font-size: .57rem; line-height: 1.25; }
+        .risk-normal { background: rgba(24,245,155,.12); border-color: rgba(24,245,155,.34); }
+        .risk-blank { background: rgba(255,82,116,.16); border-color: rgba(255,82,116,.65); color: #ffd9df; }
+        .risk-double { background: rgba(167,139,250,.18); border-color: rgba(167,139,250,.65); color: #e6ddff; }
+        .risk-incomplete { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.14); color: var(--muted); }
         .squad-visual {
             background: linear-gradient(145deg, rgba(27,25,39,.96), rgba(17,28,30,.96));
             border: 1px solid var(--border); border-radius: 18px; margin: 1rem 0 1.35rem;
