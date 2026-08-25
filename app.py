@@ -7,7 +7,7 @@ from dataclasses import asdict
 import streamlit as st
 import pandas as pd
 
-from config.settings import ensure_directories, load_app_settings, load_scoring_config
+from config.settings import PROJECT_ROOT, ensure_directories, load_app_settings, load_scoring_config
 from src.services.advanced_planner import get_advanced_planner_service
 from src.services.application import initialize_core
 from src.services.backtesting import get_backtesting_service
@@ -33,7 +33,7 @@ def main() -> None:
 
     st.set_page_config(
         page_title=settings.app_name,
-        page_icon="⚽",
+        page_icon=str(PROJECT_ROOT / "src" / "ui" / "assets" / "fpl_signal_mark.svg"),
         layout="wide",
         initial_sidebar_state="expanded",
     )
