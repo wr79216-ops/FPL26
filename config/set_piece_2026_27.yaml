@@ -1,0 +1,142 @@
+season: "2026/27"
+as_of: "2026-08-26"
+
+# Expected roles are a decision-support snapshot, not a guarantee of the next
+# kick. They are intentionally separate from official FPL player statistics.
+source:
+  label: "User-supplied 2026/27 set-piece taker snapshot"
+  source_url: "https://fantasy.premierleague.com/the-scout/set-piece-takers"
+  cross_check_url: "https://www.fantasyfootballscout.co.uk/fantasy-premier-league-set-piece-takers"
+  limitations: "Roles can change with line-ups, injuries, transfers, match state, and manager decisions. An asterisk marks a conditional or less-certain role from the supplied snapshot."
+
+# Context only: SPG = team set-piece goals in Premier League 2023/24, including
+# the source's set-piece definition. These values do not alter the base FPL
+# model and are unavailable for clubs without a comparable Premier League sample.
+historical_context:
+  season: "2023/24"
+  source_url: "https://www.bettingexpert.com/news/analysis/premier-league-set-pieces-goals-corners-and-free-kick-stats"
+  metric_label: "Set-piece goals (SPG)"
+  definition: "Team-level historical context only; do not attribute every goal to the listed taker."
+  goals:
+    Arsenal: 20
+    "Aston Villa": 14
+    Bournemouth: 11
+    Brentford: 10
+    Brighton: 8
+    Chelsea: 12
+    "Crystal Palace": 5
+    Everton: 19
+    Fulham: 11
+    Leeds: null
+    Liverpool: 15
+    "Man City": 16
+    "Man Utd": 9
+    Newcastle: 15
+    "Nott'm Forest": 7
+    Sunderland: null
+    Spurs: 11
+    Coventry: null
+    Hull: null
+    Ipswich: null
+
+teams:
+  Arsenal:
+    aliases: ["Arsenal"]
+    penalties: ["Saka", "Gyokeres", "Odegaard"]
+    direct_free_kicks: ["Saka", "Rice", "Odegaard"]
+    corners_indirect_free_kicks: ["Rice", "Saka", "Bruno G"]
+  "Aston Villa":
+    aliases: ["Aston Villa"]
+    penalties: ["Buendia", "Watkins"]
+    direct_free_kicks: ["Buendia", "McGinn", "Gomes*"]
+    corners_indirect_free_kicks: ["Cash", "McGinn", "Gomes*"]
+  Bournemouth:
+    aliases: ["Bournemouth"]
+    penalties: ["Kroupi*", "Kluivert", "Tavernier"]
+    direct_free_kicks: ["Tavernier", "Scott", "Kluivert"]
+    corners_indirect_free_kicks: ["Tavernier", "Scott", "Kluivert"]
+  Brentford:
+    aliases: ["Brentford"]
+    penalties: ["Thiago", "Schade"]
+    direct_free_kicks: ["Lewis Potter", "Jensen", "Damsgaard"]
+    corners_indirect_free_kicks: ["Jensen", "Damsgaard", "Janelt", "Ouattara"]
+  Brighton:
+    aliases: ["Brighton", "Brighton & Hove Albion"]
+    penalties: ["Groß", "Promise David"]
+    direct_free_kicks: ["Groß", "De Cuyper", "Ayari"]
+    corners_indirect_free_kicks: ["Groß", "De Cuyper", "Kadioglu", "Minteh*"]
+  Chelsea:
+    aliases: ["Chelsea"]
+    penalties: ["Palmer", "Pedro", "Enzo"]
+    direct_free_kicks: ["James", "Neto", "Enzo", "Palmer"]
+    corners_indirect_free_kicks: ["James", "Neto", "Enzo"]
+  Coventry:
+    aliases: ["Coventry", "Coventry City"]
+    penalties: ["Wright*", "Awoniyi", "Grimes"]
+    direct_free_kicks: ["Grimes", "Rudoni", "Torp"]
+    corners_indirect_free_kicks: ["Grimes", "Torp", "Rudoni"]
+  "Crystal Palace":
+    aliases: ["Crystal Palace"]
+    penalties: ["Mateta", "Sarr"]
+    direct_free_kicks: ["Pino", "Wharton", "Devenney"]
+    corners_indirect_free_kicks: ["Wharton", "Pino", "Kamada", "Hughes"]
+  Everton:
+    aliases: ["Everton"]
+    penalties: ["Ndiaye", "Barry", "Garner*"]
+    direct_free_kicks: ["Garner*", "Dewsbury Hall"]
+    corners_indirect_free_kicks: ["Garner*", "Dewsbury Hall"]
+  Fulham:
+    aliases: ["Fulham"]
+    penalties: ["Garcia", "Iwobi", "Robinson"]
+    direct_free_kicks: ["Iwobi"]
+    corners_indirect_free_kicks: ["Iwobi", "Bobb"]
+  Hull:
+    aliases: ["Hull", "Hull City"]
+    penalties: ["McBurnie"]
+    direct_free_kicks: ["Giles", "Belloumi", "Slater"]
+    corners_indirect_free_kicks: ["Giles", "Belloumi", "Slater"]
+  Ipswich:
+    aliases: ["Ipswich", "Ipswich Town"]
+    penalties: ["Clarke*", "Philogene", "Hirst"]
+    direct_free_kicks: ["Nunez", "Davis", "Lukic"]
+    corners_indirect_free_kicks: ["Nunez", "Clarke*", "Davis", "Philogene"]
+  Leeds:
+    aliases: ["Leeds", "Leeds United"]
+    penalties: ["Calvert-Lewin", "Nmecha"]
+    direct_free_kicks: ["Stach", "Wilson", "Longstaff"]
+    corners_indirect_free_kicks: ["Stach", "Wilson", "Longstaff"]
+  Liverpool:
+    aliases: ["Liverpool"]
+    penalties: ["Isak", "Szoboszlai", "Gakpo"]
+    direct_free_kicks: ["Szoboszlai", "Wirtz"]
+    corners_indirect_free_kicks: ["Szoboszlai", "Wirtz", "Mac Allister"]
+  "Man City":
+    aliases: ["Man City", "Manchester City"]
+    penalties: ["Haaland", "Semenyo", "Marmoush"]
+    direct_free_kicks: ["Cherki", "Foden", "Marmoush"]
+    corners_indirect_free_kicks: ["Cherki", "Foden", "Anderson"]
+  "Man Utd":
+    aliases: ["Man Utd", "Manchester United"]
+    penalties: ["Fernandes", "Mbeumo", "Tielemans"]
+    direct_free_kicks: ["Fernandes", "Mbeumo"]
+    corners_indirect_free_kicks: ["Fernandes", "Mbeumo", "Shaw"]
+  Newcastle:
+    aliases: ["Newcastle", "Newcastle United"]
+    penalties: ["Woltemade", "Osula", "Wissa"]
+    direct_free_kicks: ["Hall", "Schär"]
+    corners_indirect_free_kicks: ["Hall", "Elanga", "Murphy"]
+  "Nott'm Forest":
+    aliases: ["Nott'm Forest", "Nottingham Forest"]
+    penalties: ["Gibbs-White", "Wood"]
+    direct_free_kicks: ["Gibbs-White", "N Williams", "Murillo"]
+    corners_indirect_free_kicks: ["N Williams", "Hutchinson", "Ndoye"]
+  Sunderland:
+    aliases: ["Sunderland"]
+    penalties: ["Le Fee", "Diarra"]
+    direct_free_kicks: ["Xhaka", "Le Fee"]
+    corners_indirect_free_kicks: ["Xhaka", "Le Fee", "Hume"]
+  Spurs:
+    aliases: ["Spurs", "Tottenham", "Tottenham Hotspur"]
+    penalties: ["Solanke*", "Richarlison", "Kudus*"]
+    direct_free_kicks: ["Porro", "Simons*", "Kudus*", "Tonali"]
+    corners_indirect_free_kicks: ["Porro", "Tonali", "Kudus*", "Robbo"]

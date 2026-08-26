@@ -164,3 +164,32 @@ def test_schedule_transfer_adjustment_requires_validation_and_is_auditable() -> 
     assert plan.schedule_adjustment_active is True
     assert plan.transfers[0].schedule_adjustment == 5.0
     assert "validated schedule +5.0" in plan.transfers[0].reason
+
+
+def test_set_piece_transfer_adjustment_is_small_and_visible() -> None:
+    positions = ["GK", "GK", "DEF", "DEF", "DEF", "DEF", "DEF", "MID", "MID", "MID", "MID", "MID", "FWD", "FWD", "FWD"]
+    squad_rows = tuple(
+        _row(100 + index, position, f"Team {index % 7}", 5.0)
+        for index, position in enumerate(positions)
+    )
+    upgrade = _row(2, "FWD", "Set Piece FC", 5.0)
+    service = AdvancedPlannerService(
+        ingestion=None,  # type: ignore[arg-type]
+        decisions=_Decisions((*squad_rows, upgrade)),  # type: ignore[arg-type]
+        fixture_analytics=None,  # type: ignore[arg-type]
+    )
+    imported = ImportedSquad(
+        3, "Manager", "Test XI", 1, None, None, 0.0, 75.0, None,
+        tuple(
+            SquadPick(player, index + 1, 1 if index < 11 else 0, None, False, False)
+            for index, player in enumerate(squad_rows)
+        ),
+    )
+
+    plan = service.suggest_transfers(
+        imported, 5, player_priority_adjustments={upgrade.player_id: 3.0}
+    )
+
+    assert plan.set_piece_signal_active is True
+    assert plan.transfers[0].set_piece_adjustment == 3.0
+    assert "set-piece +3.0" in plan.transfers[0].reason

@@ -27,6 +27,7 @@ from src.ui.components import (
 from src.services.gameweek_wrapped import build_gameweek_wrapped, previous_completed_gameweek
 from src.services.squad_schedule_exposure import calculate_squad_schedule_exposure
 from src.services.schedule_backtesting import current_team_priority_adjustments
+from src.services.set_piece_insights import SetPieceInsightsService
 from src.ui.schedule_risk import (
     build_congestion_leader_rows,
     build_risk_strip_rows,
@@ -67,6 +68,8 @@ ATTRIBUTE_HELP = {
     "schedule_congestion": "Indikator workload 14 hari dari kepadatan jadwal, rest pendek, travel netral, dan tahap kompetisi. Ini bukan prediksi poin, cedera, atau menit bermain.",
     "brier": "Mean squared error untuk probabilitas terhadap hasil 0/1. Nilai 0 sempurna; semakin rendah semakin baik.",
     "calibration_error": "Selisih berbobot antara probabilitas rata-rata dan frekuensi hasil aktual pada reliability buckets. Semakin rendah semakin baik.",
+    "set_piece_signal": "Sinyal kecil untuk peran set piece yang diperkirakan: penalti, direct free kick, serta corner/indirect free kick. Ini bukan jaminan pemain mengambil tendangan berikutnya dan bukan prediksi poin.",
+    "historical_set_piece_goals": "Jumlah gol set piece level tim pada musim historis yang dicantumkan. Angka ini hanya memberi konteks tim dan tidak boleh dianggap sebagai kontribusi langsung pemain taker.",
 }
 
 
@@ -1445,6 +1448,15 @@ def render_advanced_planner(
 
     _render_schedule_risk_section(st.session_state.get("schedule_congestion_service"))
 
+    set_piece_service = st.session_state.get("set_piece_insights_service")
+    if isinstance(set_piece_service, SetPieceInsightsService):
+        try:
+            _render_set_piece_market_section(
+                set_piece_service, service.decisions.player_options(horizon)
+            )
+        except Exception as exc:
+            st.warning(f"Set-piece insights are unavailable: {exc}")
+
     section_heading(
         "Squad import & wildcard planner",
         "2 GK · 5 DEF · 5 MID · 3 FWD · max 3 per club",
@@ -1518,6 +1530,8 @@ def render_advanced_planner(
             horizon,
             st.session_state.get("schedule_congestion_service"),
         )
+        if isinstance(set_piece_service, SetPieceInsightsService):
+            _render_imported_squad_set_piece_insights(set_piece_service, imported)
 
         section_heading(
             "Transfer suggestions",
@@ -1543,6 +1557,7 @@ def render_advanced_planner(
             try:
                 schedule_report = None
                 team_priority_adjustments = {}
+                player_priority_adjustments = {}
                 backtesting_service = st.session_state.get("backtesting_service")
                 schedule_service = st.session_state.get("schedule_congestion_service")
                 if backtesting_service is not None:
@@ -1558,6 +1573,10 @@ def render_advanced_planner(
                         horizon,
                         schedule_report,
                     )
+                if isinstance(set_piece_service, SetPieceInsightsService):
+                    player_priority_adjustments = set_piece_service.priority_adjustments(
+                        service.decisions.player_options(horizon)
+                    )
                 with st.spinner("Finding the best legal upgrades for this squad..."):
                     transfer_plan = service.suggest_transfers(
                         imported,
@@ -1567,6 +1586,7 @@ def render_advanced_planner(
                         schedule_adjustment_validated=bool(
                             schedule_report and schedule_report.production_active
                         ),
+                        player_priority_adjustments=player_priority_adjustments,
                     )
                 st.session_state["advanced_transfer_plan"] = transfer_plan
                 st.session_state["advanced_transfer_plan_context"] = transfer_context
@@ -1616,6 +1636,7 @@ def render_advanced_planner(
                                 "Minutes lift": item.minutes_delta,
                                 "Base priority": item.base_priority,
                                 "Schedule Δ": item.schedule_adjustment,
+                                "Set-piece Δ": item.set_piece_adjustment,
                                 "Why": item.reason,
                             }
                             for item in transfer_plan.transfers
@@ -1644,6 +1665,10 @@ def render_advanced_planner(
                             "Schedule Δ", format="%+.1f",
                             help="Applied only after all Phase F validation and explicit production approval gates pass.",
                         ),
+                        "Set-piece Δ": st.column_config.NumberColumn(
+                            "Set-piece Δ", format="%+.1f",
+                            help=ATTRIBUTE_HELP["set_piece_signal"],
+                        ),
                     },
                 )
                 if transfer_plan.schedule_adjustment_active:
@@ -1651,6 +1676,10 @@ def render_advanced_planner(
                 else:
                     st.caption(
                         "Schedule adjustment is inactive: transfer order still uses the original transparent priority formula."
+                    )
+                if transfer_plan.set_piece_signal_active:
+                    st.caption(
+                        "Set-piece signal is active as a modest, source-dated tie-breaker; it does not change the base Recommendation Engine score."
                     )
 
     default_budget = imported.available_budget if imported is not None else 100.0
@@ -1965,6 +1994,135 @@ def _render_imported_squad_schedule_exposure(
     st.caption(
         "Phase E does not change the transfer suggestions above or below this section. "
         "Schedule-adjusted transfer priorities remain reserved for Phase F backtesting."
+    )
+
+
+def _render_set_piece_market_section(
+    set_piece_service: SetPieceInsightsService,
+    rankings: tuple[object, ...],
+) -> None:
+    """Render a source-dated market view without modifying the base model score."""
+    catalog = set_piece_service.catalog
+    insights = set_piece_service.player_insights(rankings)  # type: ignore[arg-type]
+    section_heading(
+        "Set-piece insights",
+        f"Expected roles · {catalog.season} snapshot · as of {catalog.as_of}",
+        "A transparent tie-breaker for penalties, direct free-kicks, and corners. It stays separate from the base FPL Signal score because the next taker can change with the XI and match context.",
+    )
+    metrics = st.columns(3)
+    with metrics[0]:
+        metric_tile(
+            "Listed current players",
+            str(len(insights)),
+            "Resolved against the current official FPL player cache",
+            ATTRIBUTE_HELP["set_piece_signal"],
+        )
+    with metrics[1]:
+        metric_tile(
+            "Clubs covered",
+            str(len(catalog.teams)),
+            "Expected set-piece role snapshot",
+        )
+    with metrics[2]:
+        metric_tile(
+            "Historical context",
+            catalog.historical_season,
+            catalog.historical_metric_label,
+            ATTRIBUTE_HELP["historical_set_piece_goals"],
+        )
+    if not insights:
+        st.info("No expected set-piece roles could be matched to the current official FPL player cache.")
+        return
+    rows = [
+        {
+            "Player": insight.player_name,
+            "Team": insight.team_name,
+            "Expected duties": insight.role_summary,
+            "Role signal": insight.role_signal,
+            f"{insight.historical_season} SPG": insight.historical_set_piece_goals,
+        }
+        for insight in insights
+    ]
+    st.dataframe(
+        pd.DataFrame(rows),
+        hide_index=True,
+        width="stretch",
+        height=min(520, 115 + 35 * len(rows)),
+        column_config={
+            "Role signal": st.column_config.NumberColumn(
+                "Role signal", format="%.1f", help=ATTRIBUTE_HELP["set_piece_signal"]
+            ),
+            f"{catalog.historical_season} SPG": st.column_config.NumberColumn(
+                f"{catalog.historical_season} SPG",
+                help=ATTRIBUTE_HELP["historical_set_piece_goals"],
+            ),
+        },
+    )
+    st.caption(catalog.limitations)
+    st.markdown(
+        f"Role source: [{catalog.source_label}]({catalog.source_url}) · "
+        f"Historical SPG source: [historical team context]({catalog.historical_source_url})"
+    )
+
+
+def _render_imported_squad_set_piece_insights(
+    set_piece_service: SetPieceInsightsService,
+    imported: ImportedSquad,
+) -> None:
+    """Show only expected set-piece holders from the imported squad."""
+    insights = set_piece_service.player_insights(
+        (pick.player for pick in imported.picks)
+    )
+    section_heading(
+        "Your squad's set-piece exposure",
+        "Imported squad · expected roles only",
+        "Useful for spotting penalties, deliveries, and indirect free-kick involvement in your current team. This view does not guarantee the next taker.",
+    )
+    if not insights:
+        st.info("No imported players are listed in the current set-piece snapshot.")
+        return
+    penalty_holders = sum(
+        any(role.role_type == "penalties" for role in insight.roles)
+        for insight in insights
+    )
+    metrics = st.columns(2)
+    with metrics[0]:
+        metric_tile(
+            "Listed role holders",
+            str(len(insights)),
+            "Imported players with an expected dead-ball duty",
+            ATTRIBUTE_HELP["set_piece_signal"],
+        )
+    with metrics[1]:
+        metric_tile(
+            "Penalty options",
+            str(penalty_holders),
+            "May be first, secondary, or conditional in the snapshot",
+        )
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "Player": insight.player_name,
+                    "Team": insight.team_name,
+                    "Expected duties": insight.role_summary,
+                    "Role signal": insight.role_signal,
+                    f"{insight.historical_season} SPG": insight.historical_set_piece_goals,
+                }
+                for insight in insights
+            ]
+        ),
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "Role signal": st.column_config.NumberColumn(
+                "Role signal", format="%.1f", help=ATTRIBUTE_HELP["set_piece_signal"]
+            ),
+            f"{set_piece_service.catalog.historical_season} SPG": st.column_config.NumberColumn(
+                f"{set_piece_service.catalog.historical_season} SPG",
+                help=ATTRIBUTE_HELP["historical_set_piece_goals"],
+            ),
+        },
     )
 
 

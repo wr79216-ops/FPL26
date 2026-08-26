@@ -96,6 +96,7 @@ class TransferSuggestion:
     reason: str
     base_priority: float = 0.0
     schedule_adjustment: float = 0.0
+    set_piece_adjustment: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -107,6 +108,7 @@ class TransferPlan:
     bank_after: float
     total_score_gain: float
     schedule_adjustment_active: bool = False
+    set_piece_signal_active: bool = False
 
 
 @dataclass(frozen=True)
@@ -306,6 +308,7 @@ class AdvancedPlannerService:
         free_transfers: int = 1,
         team_priority_adjustments: Mapping[str, float] | None = None,
         schedule_adjustment_validated: bool = False,
+        player_priority_adjustments: Mapping[int, float] | None = None,
     ) -> TransferPlan:
         """Recommend legal, no-hit upgrades tailored to an imported squad.
 
@@ -322,6 +325,7 @@ class AdvancedPlannerService:
         schedule_adjustments = (
             dict(team_priority_adjustments or {}) if schedule_adjustment_validated else {}
         )
+        set_piece_adjustments = dict(player_priority_adjustments or {})
         rankings = tuple(self.decisions.player_options(horizon))
         squad = [pick.player for pick in imported.picks]
         squad_ids = {player.player_id for player in squad}
@@ -361,7 +365,14 @@ class AdvancedPlannerService:
                         - schedule_adjustments.get(player_out.team, 0.0),
                         1,
                     )
-                    priority = round(base_priority + schedule_adjustment, 1)
+                    set_piece_adjustment = round(
+                        set_piece_adjustments.get(player_in.player_id, 0.0)
+                        - set_piece_adjustments.get(player_out.player_id, 0.0),
+                        1,
+                    )
+                    priority = round(
+                        base_priority + schedule_adjustment + set_piece_adjustment, 1
+                    )
                     if priority <= 0:
                         continue
                     reason = _transfer_reason(
@@ -373,6 +384,8 @@ class AdvancedPlannerService:
                     )
                     if schedule_adjustment_validated:
                         reason += f" · validated schedule {schedule_adjustment:+.1f}"
+                    if set_piece_adjustments:
+                        reason += f" · set-piece {set_piece_adjustment:+.1f}"
                     suggestion = TransferSuggestion(
                         player_out=player_out,
                         player_in=player_in,
@@ -384,6 +397,7 @@ class AdvancedPlannerService:
                         reason=reason,
                         base_priority=base_priority,
                         schedule_adjustment=schedule_adjustment,
+                        set_piece_adjustment=set_piece_adjustment,
                     )
                     if best is None or _transfer_sort_key(suggestion) > _transfer_sort_key(best):
                         best = suggestion
@@ -405,6 +419,7 @@ class AdvancedPlannerService:
             bank_after=bank,
             total_score_gain=round(sum(item.score_delta for item in suggestions), 1),
             schedule_adjustment_active=schedule_adjustment_validated,
+            set_piece_signal_active=bool(set_piece_adjustments),
         )
 
     @staticmethod

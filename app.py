@@ -18,6 +18,7 @@ from src.services.historical_data import get_historical_data_service
 from src.services.player_analytics import get_player_analytics_service
 from src.services.recommendation_engine import get_recommendation_engine_service
 from src.services.schedule_congestion import get_schedule_congestion_service
+from src.services.set_piece_insights import get_set_piece_insights_service
 from src.ui.components import render_deadline_countdown, render_sidebar
 from src.ui.pages import PAGE_RENDERERS
 from src.ui.theme import apply_theme
@@ -52,6 +53,7 @@ def main() -> None:
     st.session_state["decision_tools_service"] = get_decision_tools_service()
     st.session_state["advanced_planner_service"] = get_advanced_planner_service()
     st.session_state["schedule_congestion_service"] = get_schedule_congestion_service()
+    st.session_state["set_piece_insights_service"] = get_set_piece_insights_service()
 
     players = pd.DataFrame()
     fixtures = pd.DataFrame()

@@ -34,6 +34,7 @@ SCHEDULE_PROBABILITY_INPUTS_CONFIG_PATH = Path(__file__).with_name(
 SCHEDULE_BACKTEST_CONFIG_PATH = Path(__file__).with_name(
     "schedule_backtest.yaml"
 )
+SET_PIECE_CONFIG_PATH = Path(__file__).with_name("set_piece_2026_27.yaml")
 SUPPORTED_POSITIONS = ("GK", "DEF", "MID", "FWD")
 
 

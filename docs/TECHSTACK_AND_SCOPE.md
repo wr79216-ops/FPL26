@@ -69,6 +69,12 @@ Historical stability berasal dari aggregate CSV completed season pada public arc
 
 Data historis ini dipakai sebagai sinyal stabilitas lintas musim, bukan sebagai pengganti data current season resmi FPL. Nama pemain dicocokkan ke player ID current menggunakan exact/fuzzy matching dan override terverifikasi. Row ambigu masuk `REVIEW`/`UNMATCHED` dan tidak memengaruhi model.
 
+### Set-piece roles dan historical team context
+
+Advanced Planner memiliki snapshot peran set-piece 2026/27 untuk penalty, direct free-kick, serta corner/indirect free-kick. Snapshot ini tersimpan di `config/set_piece_2026_27.yaml`, lengkap dengan source URL, tanggal `as_of`, urutan taker, dan penanda conditional (`*`). Data role ini adalah perkiraan yang dapat berubah mengikuti starting XI, cedera, transfer, match state, atau keputusan pelatih.
+
+Endpoint publik FPL tidak menyediakan field standar team-level `set_piece_goals`. Karena itu historical set-piece goals (SPG) dipisahkan sebagai konteks tim dari sumber statistik historis yang terdokumentasi. Nilai SPG tidak diatribusikan seluruhnya kepada taker dan tidak digunakan untuk mengubah base Recommendation Engine score.
+
 ### Data backtesting
 
 Backtesting memakai dataset completed season 2025–26 yang divalidasi untuk player-gameweek, fixtures, dan teams. Feature hanya boleh memakai informasi sampai cutoff GW N; outcome GW N+1 dan seterusnya dipakai sebagai evaluasi.
@@ -123,6 +129,7 @@ Setiap swap harus memenuhi:
 - maksimal tiga pemain dari satu klub;
 - score/model profile pemain masuk lebih baik;
 - fixture dan minutes menjadi faktor tambahan dalam prioritas.
+- expected set-piece duties dapat menjadi tie-breaker kecil yang terlihat terpisah di tabel; peran ini tidak mengubah Recommendation Engine score 0–100.
 
 Saran memakai harga FPL cache saat ini karena public picks endpoint tidak menyediakan historical selling price user. Planner tidak mengeksekusi transfer dan tidak menghitung paid transfer hit.
 
@@ -149,7 +156,7 @@ Hasilnya adalah draft yang konsisten dengan constraint, bukan bukti bahwa draft 
 | Player Detail | Official history on-demand, trend points/minutes/xGI, feature breakdown |
 | Compare | Perbandingan dua pemain pada horizon yang sama |
 | Decision Tools | Transfer finder dan captain shortlist Safe/Balanced/Differential |
-| Advanced Planner | Public squad import, pitch view, transfer suggestions, wildcard draft |
+| Advanced Planner | Public squad import, pitch view, schedule exposure, set-piece insights, transfer suggestions, wildcard draft |
 | Gameweek Wrapped | Recap GW terakhir/current snapshot berbasis event FPL |
 | Backtesting | MAE, Spearman, top-10 hit rate, dan actual points top-10 |
 | Data Status | Refresh, freshness, coverage, last error, history/backtest readiness |
@@ -182,6 +189,8 @@ Hasilnya adalah draft yang konsisten dengan constraint, bukan bukti bahwa draft 
 8. **Proxy team xGC** — Best defence pada Gameweek Wrapped memakai proxy dari data pemain, bukan team-xGC feed khusus.
 9. **Relative score** — Score dapat berubah ketika populasi pemain, refresh data, atau horizon berubah. Score 80 bukan berarti peluang poin 80%.
 10. **Local-first storage** — SQLite cocok untuk penggunaan lokal/single-user. Ia belum dirancang untuk banyak user menulis bersamaan atau deployment horizontal.
+11. **Set-piece duties bukan kepastian** — Daftar taker adalah snapshot expected role. Corner dapat dibagi per sisi, penalty dapat berubah setelah miss/substitusi, dan pemain yang tercantum belum tentu berada di lapangan. Gunakan sebagai tie-breaker, bukan alasan tunggal transfer.
+12. **Historical SPG bukan data FPL native** — Statistik gol set-piece level tim memiliki definisi provider tertentu, dapat memasukkan/mengecualikan penalty atau own goal secara berbeda, dan tidak tersedia untuk semua klub/promosi. Aplikasi menampilkan source dan musim sampel secara eksplisit.
 
 ## Privasi dan keamanan
 
@@ -215,6 +224,9 @@ Gunakan jawaban singkat berikut bila ditanya:
 > **“Mengapa data history pemain belum lengkap?”**
 > History dimuat on-demand dan historical aggregate hanya dipakai jika identitas pemain berhasil dicocokkan dengan aman. Data yang ambigu sengaja dikeluarkan dari model.
 
+> **“Apakah pemain ini pasti mengambil penalti atau corner?”**
+> Tidak. Set-piece insight adalah snapshot expected role dengan urutan taker dan tanggal sumber. Ia dipakai sebagai tie-breaker kecil setelah minutes, fixture, harga, dan model score; cek line-up dan berita resmi sebelum deadline.
+
 ## Referensi teknis dalam repository
 
 - [README.md](../README.md) — setup dan panduan penggunaan.
@@ -223,4 +235,5 @@ Gunakan jawaban singkat berikut bila ditanya:
 - [BACKTESTING.md](BACKTESTING.md) — metodologi evaluasi time-safe dan caveat.
 - [DECISION_TOOLS.md](DECISION_TOOLS.md) — transfer/captain proxy dan batasan.
 - [ADVANCED_PLANNER.md](ADVANCED_PLANNER.md) — squad import, wildcard, provider governance, dan constraints.
+- `config/set_piece_2026_27.yaml` — snapshot taker 2026/27 dan historical SPG team context yang memiliki source/as-of.
 - `config/scoring.yaml` — model version, horizon default, minimum minutes, penalty, dan position weights.
