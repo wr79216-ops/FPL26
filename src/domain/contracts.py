@@ -121,11 +121,14 @@ class CurrentPlayerStatsRecord:
     selected_by_percent: float
     price: float
     snapshot_at: datetime
+    transfers_in_event: int = 0
 
     def __post_init__(self) -> None:
         _require_positive(self.player_id, "player_id")
         if self.gameweek < 0 or self.minutes < 0 or self.starts < 0:
             raise ValueError("gameweek, minutes, and starts cannot be negative")
+        if self.transfers_in_event < 0:
+            raise ValueError("transfers_in_event cannot be negative")
         _require_percentage(self.selected_by_percent, "selected_by_percent")
 
 

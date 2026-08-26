@@ -112,6 +112,9 @@ class CurrentPlayerStatsModel(Base):
     selected_by_percent: Mapped[float] = mapped_column(Float, nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     snapshot_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    transfers_in_event: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
 
 
 class GameweekSnapshotModel(Base):

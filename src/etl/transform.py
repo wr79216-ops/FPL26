@@ -252,6 +252,12 @@ def transform_current_player_stats(
                 price=_number(raw_player.get("now_cost"), "now_cost", context, default=0.0)
                 / 10,
                 snapshot_at=captured_at,
+                transfers_in_event=_integer(
+                    raw_player.get("transfers_in_event"),
+                    "transfers_in_event",
+                    context,
+                    default=0,
+                ),
             )
         )
     return transformed

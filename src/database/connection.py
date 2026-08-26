@@ -30,7 +30,7 @@ from src.domain.contracts import GameweekSnapshotRecord
 from src.utils.season import season_label
 
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 class SchemaVersionError(RuntimeError):
@@ -172,6 +172,21 @@ class Database:
                 BacktestRunModel,
             ):
                 model.__table__.create(bind=session.connection(), checkfirst=True)
+            return
+        if from_version == 6:
+            columns = {
+                column["name"]
+                for column in inspect(session.connection()).get_columns(
+                    CurrentPlayerStatsModel.__tablename__
+                )
+            }
+            if "transfers_in_event" not in columns:
+                session.execute(
+                    text(
+                        "ALTER TABLE player_current_stats "
+                        "ADD COLUMN transfers_in_event INTEGER NOT NULL DEFAULT 0"
+                    )
+                )
             return
         raise SchemaVersionError(
             f"Database schema is v{from_version}; no migration to v{from_version + 1} exists."

@@ -78,7 +78,7 @@ def test_database_initializes_expected_baseline_schema(tmp_path) -> None:
     database = Database(tmp_path / "test.db")
     status = database.initialize()
 
-    assert status.schema_version == 6
+    assert status.schema_version == 7
     assert set(status.tables) == {
         "fixtures",
         "backtest_fixtures",
@@ -170,7 +170,7 @@ def test_v1_database_migrates_and_backfills_current_stats_snapshot(tmp_path) -> 
             )
         )
 
-    assert database.initialize().schema_version == 6
+    assert database.initialize().schema_version == 7
     with database.session() as session:
         snapshots = session.query(GameweekSnapshotModel).all()
         assert len(snapshots) == 1

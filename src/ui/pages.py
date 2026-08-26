@@ -44,6 +44,7 @@ ATTRIBUTE_HELP = {
     "position": "FPL position used for position-relative percentile ranking.",
     "price": "Current official FPL player price in millions.",
     "ownership": "Percentage of FPL managers currently owning the player.",
+    "transfers_in_event": "Jumlah transfer masuk pada gameweek aktif yang dilaporkan FPL. Ini mengukur demand manager, bukan rekomendasi atau prediksi poin.",
     "minutes": "Minutes played in the latest official current-stat snapshot.",
     "form": "Official FPL form signal based on recent points output.",
     "confidence": "How much evidence supports the signal; it reaches 100% at the configured minimum minutes.",
@@ -175,6 +176,7 @@ def render_dashboard(
     if st.button("Explore all recommendations →", type="primary"):
         navigate_to("Recommendations")
 
+    _render_market_pulse(rankings, current_gameweek)
     _render_gameweek_wrapped()
 
     left, right = st.columns([1.2, 1])
@@ -215,6 +217,54 @@ def render_dashboard(
                 f"**{label}** · {candidate.name}  \n"
                 f"{candidate.team} · Score **{candidate.final_score:.0f}** · {candidate.reason}"
             )
+
+
+def _render_market_pulse(rankings: tuple[object, ...], current_gameweek: int) -> None:
+    """Show official FPL transfer demand separately from FPL Signal rankings."""
+    section_heading(
+        "Market pulse",
+        f"Top transfers in GW {current_gameweek} · Official FPL activity",
+        "Transfer demand shows what FPL managers are doing; it is not a recommendation or points prediction.",
+    )
+    market_rows = sorted(
+        (row for row in rankings if row.transfers_in_event > 0),
+        key=lambda row: (row.transfers_in_event, row.final_score),
+        reverse=True,
+    )[:5]
+    if not market_rows:
+        st.info("Transfer activity will appear after the next official FPL data refresh.")
+        return
+
+    market_frame = pd.DataFrame(
+        [
+            {
+                "Player": row.name,
+                "Team": row.team,
+                "Pos": row.position,
+                "Transfers in": row.transfers_in_event,
+                "Model score": row.final_score,
+                "Verdict": row.category,
+            }
+            for row in market_rows
+        ]
+    )
+    st.dataframe(
+        market_frame,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "Transfers in": st.column_config.NumberColumn(
+                "Transfers in", format="%,d", help=ATTRIBUTE_HELP["transfers_in_event"]
+            ),
+            "Model score": st.column_config.ProgressColumn(
+                "Model score", min_value=0, max_value=100, format="%.0f", help=ATTRIBUTE_HELP["score"]
+            ),
+            "Verdict": st.column_config.TextColumn("Verdict"),
+        },
+    )
+    if st.button("Explore transfer activity →", key="dashboard_market_pulse"):
+        st.session_state["player_finder_market_pulse"] = True
+        navigate_to("Players")
 
 
 def _render_gameweek_wrapped() -> None:
@@ -290,6 +340,13 @@ def render_players(
         render_empty_state("Recommendation engine unavailable", "Reopen the app to initialize the recommendation engine.")
         return
 
+    if st.session_state.pop("player_finder_market_pulse", False):
+        st.session_state["player_finder_sort"] = "Transfers in this GW"
+        st.session_state["player_finder_budget"] = 15.0
+        st.session_state["player_finder_ownership"] = 100
+        st.session_state["player_finder_minutes"] = 0
+        st.session_state["player_finder_differentials"] = False
+
     primary_controls = st.columns([1.45, 0.9, 0.85, 1.15])
     with primary_controls[0]:
         search_term = st.text_input(
@@ -314,7 +371,7 @@ def render_players(
     with primary_controls[3]:
         sort_mode = st.selectbox(
             "Sort matching players",
-            ["Recommendation", "Fixture ease", "Value", "Minutes security", "Price (low)", "Ownership (low)"],
+            ["Recommendation", "Transfers in this GW", "Fixture ease", "Value", "Minutes security", "Price (low)", "Ownership (low)"],
             key="player_finder_sort",
             help="Choose the ordering after all finder filters are applied.",
         )
@@ -370,6 +427,7 @@ def render_players(
 
     sort_columns = {
         "Recommendation": ("final_score", False),
+        "Transfers in this GW": ("transfers_in_event", False),
         "Fixture ease": ("fixture_score", False),
         "Value": ("value_score", False),
         "Minutes security": ("minutes_score", False),
@@ -395,6 +453,7 @@ def render_players(
             "position",
             "price",
             "ownership",
+            "transfers_in_event",
             "minutes",
             "form",
             "next_fixture",
@@ -414,6 +473,9 @@ def render_players(
             "position": st.column_config.TextColumn("Pos", width="small", help=ATTRIBUTE_HELP["position"]),
             "price": st.column_config.NumberColumn("Price", format="£%.1fm", help=ATTRIBUTE_HELP["price"]),
             "ownership": st.column_config.NumberColumn("Owned", format="%.1f%%", help=ATTRIBUTE_HELP["ownership"]),
+            "transfers_in_event": st.column_config.NumberColumn(
+                "In this GW", format="%,d", help=ATTRIBUTE_HELP["transfers_in_event"]
+            ),
             "minutes": st.column_config.NumberColumn("Minutes", help=ATTRIBUTE_HELP["minutes"]),
             "form": st.column_config.NumberColumn("Form", format="%.1f", help=ATTRIBUTE_HELP["form"]),
             "next_fixture": st.column_config.TextColumn("Next", help="The team's nearest unstarted official fixture."),

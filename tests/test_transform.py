@@ -78,6 +78,7 @@ ELEMENTS = [
         "total_points": 66,
         "points_per_game": "7.3",
         "form": "8.2",
+        "transfers_in_event": "12345",
     }
 ]
 
@@ -114,6 +115,7 @@ def test_official_shape_transforms_to_contracts() -> None:
     assert players[0].ownership == 8.5
     assert stats[0].expected_goal_involvements == 7.5
     assert stats[0].saves == 4
+    assert stats[0].transfers_in_event == 12345
     assert fixtures[0].kickoff_time == datetime(2026, 8, 24, 12, 30, tzinfo=timezone.utc)
 
 

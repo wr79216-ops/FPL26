@@ -53,6 +53,7 @@ class RecommendationRow:
     final_score: float
     category: str
     reason: str
+    transfers_in_event: int = 0
 
 
 class RecommendationEngineService:
@@ -228,6 +229,7 @@ class RecommendationEngineService:
                         final_score=score.final_score,
                         category=score.category,
                         reason=score.reason,
+                        transfers_in_event=stats.transfers_in_event,
                     )
                 )
         return tuple(sorted(rows, key=lambda row: row.final_score, reverse=True))
