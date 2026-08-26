@@ -18,7 +18,7 @@ The model remains a 0–100 position-relative ranking, not a predicted points to
 | A — Field audit and metric dictionary | Complete (26 Aug 2026) | Active official FPL endpoint audit, schema scope, and source-controlled catalogue are recorded in [`POSITIONAL_RECOMMENDATION_SIGNALS_FIELD_AUDIT.md`](POSITIONAL_RECOMMENDATION_SIGNALS_FIELD_AUDIT.md). |
 | B — Persist verified official statistics | Complete (26 Aug 2026) | Verified current and per-fixture fields are persisted with nullable migration-safe columns; tests cover populated and unavailable values. |
 | C — Build transparent positional features | Complete (26 Aug 2026) | Position-aware raw/normalized signal builder, small-sample confidence adjustment, and edge-case coverage are complete; production ranking remains unchanged. |
-| D — Candidate model and score breakdown UI | Not started | Awaiting Phase C. |
+| D — Candidate model and score breakdown UI | Complete (26 Aug 2026) | Experimental v1.3 positional weights, traceable active-score contributions, and position-specific official-evidence tooltips are available; production remains v1.1. |
 | E — Backtest, calibration, and release gate | Not started | Awaiting candidate model. |
 | F — Documentation and operations | Not started | Awaiting production decision. |
 

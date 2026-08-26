@@ -21,7 +21,7 @@ SMALL_SAMPLE_METRICS = {
 PRE_NORMALIZED_METRICS = {"history"}
 
 METRIC_LABELS = {
-    "attacking_output": "Attacking output",
+    "attacking_output": "xGI / 90",
     "bonus": "Bonus",
     "fixture": "Fixtures",
     "form": "Form",

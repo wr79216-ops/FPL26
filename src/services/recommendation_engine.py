@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Optional
+from typing import Mapping, Optional
 
 from config.settings import (
     DATABASE_PATH,
@@ -17,6 +17,11 @@ from src.database.connection import Database
 from src.database.repository import FPLRepository
 from src.domain.contracts import RecommendationScoreRecord
 from src.features.player import STATUS_TO_AVAILABILITY
+from src.features.positional_signals import (
+    PositionalSignal,
+    build_positional_signal_profile,
+    normalize_positional_signal_profiles,
+)
 from src.features.recommendation import RecommendationCandidate, score_recommendations
 from src.services.application import get_database
 from src.services.fixture_analytics import FixtureAnalyticsService, get_fixture_analytics_service
@@ -54,6 +59,13 @@ class RecommendationRow:
     category: str
     reason: str
     transfers_in_event: int = 0
+    # These fields expose the active v1.1 calculation without changing it.  The
+    # positional signals are official-season context and remain experimental
+    # until a later candidate model passes Phase E validation.
+    metric_scores: Mapping[str, float] = field(default_factory=dict)
+    metric_contributions: Mapping[str, float] = field(default_factory=dict)
+    availability_penalty: float = 1.0
+    positional_signals: tuple[PositionalSignal, ...] = ()
 
 
 class RecommendationEngineService:
@@ -109,6 +121,7 @@ class RecommendationEngineService:
 
         candidates = []
         metadata = {}
+        positional_profiles = []
         possible_minutes = max(1, current_gameweek) * 90
         for player, stats, team in source_rows:
             played_minutes = max(0, stats.minutes)
@@ -160,6 +173,14 @@ class RecommendationEngineService:
                     availability_penalty=availability_penalty,
                 )
             )
+            positional_profiles.append(
+                build_positional_signal_profile(
+                    player_id=player.player_id,
+                    position=player.position,
+                    stats=stats,
+                    minimum_minutes=self.scoring.minimum_minutes,
+                )
+            )
             first_fixture = fixture_summary.fixtures[0] if fixture_summary and fixture_summary.fixtures else None
             metadata[player.player_id] = {
                 "player": player,
@@ -170,10 +191,15 @@ class RecommendationEngineService:
                 "xgi_per_90": xgi_per_90,
                 "confidence": confidence,
                 "next_fixture": first_fixture.fixture if first_fixture else "TBC",
+                "availability_penalty": availability_penalty,
             }
 
         calculated_at = datetime.now(timezone.utc)
         scored = score_recommendations(candidates, self.scoring.position_weights)
+        signals_by_player = {
+            profile.player_id: profile.signals
+            for profile in normalize_positional_signal_profiles(positional_profiles)
+        }
         rows = []
         with self.database.session() as session:
             repository = FPLRepository(session)
@@ -182,6 +208,22 @@ class RecommendationEngineService:
                 player = item["player"]
                 stats = item["stats"]
                 team = item["team"]
+                availability_penalty = float(item["availability_penalty"])
+                weights = self.scoring.position_weights[player.position]
+                metric_scores = {
+                    metric: float(score.metric_scores.get(metric, 50.0))
+                    for metric in weights
+                }
+                # Each contribution has the availability multiplier already
+                # applied, so the displayed contribution sum traces to the
+                # final 0-100 score rather than an intermediate score.
+                metric_contributions = {
+                    metric: round(
+                        metric_score * float(weights[metric]) * availability_penalty,
+                        2,
+                    )
+                    for metric, metric_score in metric_scores.items()
+                }
                 repository.upsert_recommendation(
                     RecommendationScoreRecord(
                         player_id=score.player_id,
@@ -230,6 +272,10 @@ class RecommendationEngineService:
                         category=score.category,
                         reason=score.reason,
                         transfers_in_event=stats.transfers_in_event,
+                        metric_scores=metric_scores,
+                        metric_contributions=metric_contributions,
+                        availability_penalty=availability_penalty,
+                        positional_signals=signals_by_player.get(score.player_id, ()),
                     )
                 )
         return tuple(sorted(rows, key=lambda row: row.final_score, reverse=True))

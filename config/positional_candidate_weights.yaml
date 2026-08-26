@@ -1,0 +1,51 @@
+# Experimental positional weights for the Phase D evidence model.
+#
+# They are deliberately separate from scoring.yaml. The live production model
+# remains v1.1 until Phase E validates this candidate with leakage-safe
+# backtesting and a documented release decision.
+model_version: "candidate-v1.3-positional"
+status: "experimental"
+production_model: "v1.1"
+source: "Official FPL current-season snapshot"
+notes:
+  - "Each position's weights sum to 1.0."
+  - "Missing official fields must receive a documented neutral fallback only during evaluation."
+  - "Do not use this file for live rankings before Phase E approval."
+position_weights:
+  GK:
+    fixture: 0.20
+    minutes_played: 0.15
+    xgc_per_90: 0.20
+    saves_per_90: 0.15
+    clean_sheet_rate: 0.15
+    bonus_points: 0.10
+    discipline_risk_per_90: 0.05
+  DEF:
+    fixture: 0.18
+    minutes_played: 0.14
+    xgc_per_90: 0.18
+    clean_sheet_rate: 0.16
+    xgi_per_90: 0.16
+    defensive_contribution_per_90: 0.08
+    bonus_points: 0.05
+    discipline_risk_per_90: 0.05
+  MID:
+    fixture: 0.17
+    minutes_played: 0.14
+    xgi_per_90: 0.25
+    goals_per_90: 0.08
+    assists_per_90: 0.08
+    clean_sheet_rate: 0.04
+    bonus_points: 0.08
+    discipline_risk_per_90: 0.04
+    ict_per_90: 0.12
+  FWD:
+    fixture: 0.17
+    minutes_played: 0.14
+    xg_per_90: 0.25
+    xgi_per_90: 0.16
+    conversion_rate: 0.08
+    assists_per_90: 0.06
+    bonus_points: 0.08
+    discipline_risk_per_90: 0.03
+    penalties_missed: 0.03

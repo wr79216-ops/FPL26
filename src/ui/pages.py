@@ -28,6 +28,7 @@ from src.services.gameweek_wrapped import build_gameweek_wrapped, previous_compl
 from src.services.squad_schedule_exposure import calculate_squad_schedule_exposure
 from src.services.schedule_backtesting import current_team_priority_adjustments
 from src.services.set_piece_insights import SetPieceInsightsService
+from src.features.recommendation import METRIC_LABELS
 from src.ui.schedule_risk import (
     build_congestion_leader_rows,
     build_risk_strip_rows,
@@ -72,6 +73,80 @@ ATTRIBUTE_HELP = {
     "set_piece_signal": "Sinyal kecil untuk peran set piece yang diperkirakan: penalti, direct free kick, serta corner/indirect free kick. Ini bukan jaminan pemain mengambil tendangan berikutnya dan bukan prediksi poin.",
     "historical_set_piece_goals": "Jumlah gol set piece level tim pada musim historis yang dicantumkan. Angka ini hanya memberi konteks tim dan tidak boleh dianggap sebagai kontribusi langsung pemain taker.",
 }
+
+
+RANKING_METRIC_HELP = {
+    "fixture": "Official upcoming fixtures are converted into a horizon-weighted ease score. Higher is easier and it is used in the active production ranking.",
+    "minutes": "Minutes played so far relative to possible gameweek minutes. Higher means stronger minutes security and it is used in the active production ranking.",
+    "saves": "Official FPL saves total, ranked only against other goalkeepers and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "history": "Validated cross-season stability score. It is already a 0–100 score; 50 is neutral where historical evidence is unavailable. It is used in the active production ranking.",
+    "bonus": "Official FPL bonus points total, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "form": "Official FPL recent form, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "value": "Official points per match divided by current FPL price, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "attacking_output": "Official expected goal involvements divided by minutes × 90, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "xg": "Official expected goals divided by minutes × 90, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "xgi": "Official expected goal involvements divided by minutes × 90, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "ppm": "Official FPL points per match, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "ict": "Official ICT Index divided by minutes × 90, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+}
+
+
+POSITIONAL_SIGNAL_FORMULAS = {
+    "minutes_played": "Official FPL current-season minutes played.",
+    "xgc_per_90": "Official expected goals conceded ÷ minutes × 90.",
+    "saves_per_90": "Official saves ÷ minutes × 90.",
+    "clean_sheet_rate": "Official clean sheets ÷ official starts. It is unavailable when starts are zero.",
+    "goals_conceded_per_90": "Official goals conceded ÷ minutes × 90.",
+    "penalties_saved": "Official FPL penalties saved total.",
+    "penalties_missed": "Official FPL penalties missed total.",
+    "defensive_contribution_per_90": "Official FPL defensive contribution ÷ minutes × 90.",
+    "xg_per_90": "Official expected goals ÷ minutes × 90.",
+    "xa_per_90": "Official expected assists ÷ minutes × 90.",
+    "xgi_per_90": "Official expected goal involvements ÷ minutes × 90.",
+    "goals_per_90": "Official FPL goals ÷ minutes × 90.",
+    "assists_per_90": "Official FPL assists ÷ minutes × 90.",
+    "conversion_rate": "Goals ÷ xG, shrinkage-adjusted toward a neutral position prior to limit small-sample noise.",
+    "yellow_cards": "Official FPL yellow-card total.",
+    "red_cards": "Official FPL red-card total.",
+    "discipline_risk_per_90": "(Yellow cards + 3 × red cards) ÷ minutes × 90.",
+    "bonus_points": "Official FPL bonus-point total.",
+    "bps": "Official FPL Bonus Point System total.",
+    "influence_per_90": "Official FPL influence ÷ minutes × 90.",
+    "creativity_per_90": "Official FPL creativity ÷ minutes × 90.",
+    "threat_per_90": "Official FPL threat ÷ minutes × 90.",
+    "ict_per_90": "Official FPL ICT Index ÷ minutes × 90.",
+}
+
+
+def _signal_value_display(signal: object) -> str:
+    """Format an official positional signal without turning missing data into zero."""
+    raw_value = getattr(signal, "raw_value")
+    if raw_value is None:
+        return "Not supplied"
+    key = getattr(signal, "key")
+    if key in {"clean_sheet_rate", "conversion_rate"}:
+        return f"{float(raw_value) * 100:.1f}%"
+    if key.endswith("_per_90"):
+        return f"{float(raw_value):.2f}"
+    return f"{float(raw_value):.0f}" if float(raw_value).is_integer() else f"{float(raw_value):.2f}"
+
+
+def _signal_help(signal: object, freshness_label: str, freshness_detail: str) -> str:
+    """Tooltip copy for every official-season evidence metric."""
+    key = getattr(signal, "key")
+    direction = getattr(signal, "direction")
+    rank_status = (
+        "Used in the active production ranking."
+        if getattr(signal, "used_in_ranking")
+        else "Official context only; it does not affect the active production ranking."
+    )
+    direction_label = "Higher is better" if direction == "higher_is_better" else "Lower is better"
+    formula = POSITIONAL_SIGNAL_FORMULAS.get(key, "Official FPL current-season statistic.")
+    return (
+        f"Formula: {formula} {direction_label}. {rank_status} "
+        f"Source: official FPL bootstrap-static current-season snapshot. "
+        f"Freshness: {freshness_label}. {freshness_detail}"
+    )
 
 
 def _status_label(status: str) -> str:
@@ -563,6 +638,123 @@ def render_recommendations(
                 _player_card_data(row_by_id[int(player["player_id"])]),
                 label=f"Rank #{rank}",
             )
+
+    freshness, freshness_detail = _freshness_label(
+        service.ingestion.status_store.load().last_successful_at
+    )
+    section_heading(
+        "Used in ranking", f"Active production model · {scoring.model_version}",
+        "Inspect the exact normalized component scores, configured weights, and final-score contribution for one player.",
+    )
+    player_choices = {
+        int(row.player_id): f"{row.name} · {row.team} · {row.position}"
+        for row in rows
+    }
+    selected_player_id = st.selectbox(
+        "Inspect a ranked player",
+        list(player_choices),
+        format_func=lambda player_id: player_choices[player_id],
+        key=f"recommendation_evidence_{position}_{horizon}_{sort_mode}",
+        help="Choose a player to trace the active ranking and inspect position-specific official FPL evidence.",
+    )
+    selected_row = row_by_id[int(selected_player_id)]
+    ranking_rows = [
+        {
+            "Signal": METRIC_LABELS.get(metric, metric.replace("_", " ").title()),
+            "Component score": score,
+            "Weight": scoring.position_weights[position][metric],
+            "Final contribution": selected_row.metric_contributions[metric],
+        }
+        for metric, score in selected_row.metric_scores.items()
+    ]
+    ranking_inputs = pd.DataFrame(ranking_rows)
+    trace_columns = st.columns(3)
+    trace_columns[0].metric("Final score", f"{selected_row.final_score:.1f}/100", help=ATTRIBUTE_HELP["score"])
+    trace_columns[1].metric(
+        "Availability multiplier",
+        f"{selected_row.availability_penalty:.0%}",
+        help="The official FPL availability/status multiplier applied after weighted components. An unavailable player can still show historical evidence, but their final rank is reduced.",
+    )
+    trace_columns[2].metric(
+        "Contribution total",
+        f"{ranking_inputs['Final contribution'].sum():.1f}",
+        help="Sum of displayed weighted contributions after the availability multiplier. It can differ from Final score by 0.01 because each row is rounded for display.",
+    )
+    st.dataframe(
+        ranking_inputs,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "Signal": st.column_config.TextColumn("Used in ranking", help="Active v1.1 input. Hover an item in Official season evidence for its formula, direction, source, and freshness."),
+            "Component score": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.1f", help="Position-relative component score (0–100) after approved small-sample adjustment."),
+            "Weight": st.column_config.NumberColumn("Weight", format="%.0f%%", help="Configured active-production weight for this position. The weights sum to 100%."),
+            "Final contribution": st.column_config.NumberColumn("Contribution", format="%.2f", help="Component score × active weight × official availability multiplier."),
+        },
+    )
+    st.caption(
+        "Candidate v1.3 positional weights are stored separately and are not used here. They remain experimental until Phase E leakage-safe backtesting approves a versioned release."
+    )
+    with st.expander("Ranking input definitions", expanded=False):
+        st.caption("Hover each active input for its formula, direction, source, freshness, and ranking status.")
+        for start in range(0, len(selected_row.metric_scores), 2):
+            definition_columns = st.columns(2)
+            metric_items = list(selected_row.metric_scores.items())[start:start + 2]
+            for column, (metric, metric_score) in zip(definition_columns, metric_items):
+                with column:
+                    st.metric(
+                        METRIC_LABELS.get(metric, metric.replace("_", " ").title()),
+                        f"{metric_score:.1f}/100",
+                        delta=f"Weight {scoring.position_weights[position][metric]:.0%}",
+                        help=(
+                            f"{RANKING_METRIC_HELP.get(metric, 'Active production ranking input.')} "
+                            f"Source: official FPL current-season snapshot unless stated otherwise. "
+                            f"Freshness: {freshness}. {freshness_detail}"
+                        ),
+                    )
+
+    with st.expander("Official season evidence", expanded=False):
+        st.caption(
+            f"{freshness} official FPL snapshot · {freshness_detail} "
+            "These metrics explain the selected player profile. ‘Not supplied’ is not treated as zero."
+        )
+        evidence_rows = []
+        for signal in selected_row.positional_signals:
+            percentile = signal.normalized_score
+            evidence_rows.append(
+                {
+                    "Metric": signal.label,
+                    "Official value": _signal_value_display(signal),
+                    "Position score": round(percentile, 1) if percentile is not None else None,
+                    "Role": "Used in ranking" if signal.used_in_ranking else "Official context",
+                    "Direction": "Higher is better" if signal.direction == "higher_is_better" else "Lower is better",
+                }
+            )
+        st.dataframe(
+            pd.DataFrame(evidence_rows),
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "Metric": st.column_config.TextColumn("Official season evidence", help="The metric cards below have a hover tooltip with the exact formula, direction, source, freshness, and ranking status."),
+                "Official value": st.column_config.TextColumn("Official value", help="Raw official FPL value or derived rate. Missing data remains ‘Not supplied’."),
+                "Position score": st.column_config.ProgressColumn("Position score", min_value=0, max_value=100, format="%.1f", help="Position-relative, confidence-adjusted percentile used for comparison only unless Role says Used in ranking."),
+                "Role": st.column_config.TextColumn("Role", help="Explicitly distinguishes active production inputs from supporting official context."),
+                "Direction": st.column_config.TextColumn("Direction", help="The favourable direction used for the position-relative comparison."),
+            },
+        )
+        st.caption("Hover a metric name below for its exact definition and data status.")
+        for start in range(0, len(selected_row.positional_signals), 2):
+            evidence_columns = st.columns(2)
+            for column, signal in zip(evidence_columns, selected_row.positional_signals[start:start + 2]):
+                delta = "Used in ranking" if signal.used_in_ranking else "Official context"
+                if signal.normalized_score is not None:
+                    delta = f"{delta} · position score {signal.normalized_score:.0f}"
+                with column:
+                    st.metric(
+                        signal.label,
+                        _signal_value_display(signal),
+                        delta=delta,
+                        help=_signal_help(signal, freshness, freshness_detail),
+                    )
 
     section_heading("Score breakdown", "Every component is visible")
     st.caption(
