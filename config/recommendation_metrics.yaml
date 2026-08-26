@@ -1,0 +1,184 @@
+catalog_version: 1
+source:
+  name: Official Fantasy Premier League API
+  current_endpoint: bootstrap-static/
+  history_endpoint: element-summary/{player_id}/
+  audited_at: "2026-08-26"
+  missing_value_policy: >-
+    A missing field is unavailable, not zero. A numeric zero is shown only when
+    supplied by the official FPL payload.
+
+# This is a metric catalogue, not the production weight configuration.
+# `used_in_ranking` describes current v1.1 use only. Candidate metrics remain
+# visible/documented but cannot change a score until a later versioned release.
+metrics:
+  xgc:
+    label: xGC / 90
+    description: Expected goals conceded per 90 minutes; lower is better.
+    source_fields: [expected_goals_conceded, minutes]
+    direction: lower_is_better
+    positions: [GK, DEF]
+    used_in_ranking: false
+    status: candidate
+
+  goals_conceded:
+    label: Goals conceded
+    description: Official goals conceded total; lower is better when used as context.
+    source_fields: [goals_conceded]
+    direction: lower_is_better
+    positions: [GK, DEF]
+    used_in_ranking: false
+    status: context
+
+  clean_sheet_rate:
+    label: Clean-sheet rate
+    description: Clean sheets relative to eligible appearances; the eligibility rule is shown in the UI.
+    source_fields: [clean_sheets, starts, minutes]
+    direction: higher_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: false
+    status: candidate
+
+  saves:
+    label: Saves / 90
+    description: Official saves adjusted for minutes played.
+    source_fields: [saves, minutes]
+    direction: higher_is_better
+    positions: [GK]
+    used_in_ranking: true
+    status: production
+
+  penalties_saved:
+    label: Penalties saved
+    description: Official penalty saves in the current season or fixture.
+    source_fields: [penalties_saved]
+    direction: higher_is_better
+    positions: [GK]
+    used_in_ranking: false
+    status: context
+
+  penalties_missed:
+    label: Penalties missed
+    description: Official missed penalties; context only until separately validated.
+    source_fields: [penalties_missed]
+    direction: lower_is_better
+    positions: [MID, FWD]
+    used_in_ranking: false
+    status: context
+
+  defensive_contribution:
+    label: Defensive contribution / 90
+    description: Official FPL defensive-contribution total adjusted for minutes.
+    source_fields: [defensive_contribution, minutes]
+    direction: higher_is_better
+    positions: [DEF, GK]
+    used_in_ranking: false
+    status: candidate
+
+  xg:
+    label: xG / 90
+    description: Official expected goals adjusted for minutes.
+    source_fields: [expected_goals, minutes]
+    direction: higher_is_better
+    positions: [FWD, MID]
+    used_in_ranking: true
+    status: production
+
+  xa:
+    label: xA / 90
+    description: Official expected assists adjusted for minutes.
+    source_fields: [expected_assists, minutes]
+    direction: higher_is_better
+    positions: [MID, DEF]
+    used_in_ranking: false
+    status: context
+
+  xgi:
+    label: xGI / 90
+    description: Official expected goal involvements adjusted for minutes.
+    source_fields: [expected_goal_involvements, minutes]
+    direction: higher_is_better
+    positions: [DEF, MID, FWD]
+    used_in_ranking: true
+    status: production
+
+  conversion_rate:
+    label: Goal conversion rate
+    description: Goals divided by xG, shrinkage-adjusted when minutes or xG are low.
+    source_fields: [goals_scored, expected_goals, minutes]
+    direction: higher_is_better
+    positions: [MID, FWD]
+    used_in_ranking: false
+    status: candidate
+
+  discipline_risk:
+    label: Discipline risk
+    description: Yellow/red-card risk; lower is better. It never replaces official availability status.
+    source_fields: [yellow_cards, red_cards, minutes]
+    direction: lower_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: false
+    status: candidate
+
+  bonus:
+    label: Bonus points
+    description: Official FPL bonus points. BPS remains separate context to avoid double-counting.
+    source_fields: [bonus]
+    direction: higher_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: true
+    status: production_for_gk_def
+
+  bps:
+    label: Bonus Point System
+    description: Official BPS total; correlated with bonus and shown as context.
+    source_fields: [bps]
+    direction: higher_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: false
+    status: context
+
+  ict:
+    label: ICT index
+    description: Official FPL composite of influence, creativity, and threat.
+    source_fields: [ict_index]
+    direction: higher_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: true
+    status: production_for_mid
+
+  influence:
+    label: Influence
+    description: Official FPL influence statistic; shown separately from the ICT composite.
+    source_fields: [influence]
+    direction: higher_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: false
+    status: context
+
+  creativity:
+    label: Creativity
+    description: Official FPL creativity statistic; shown separately from the ICT composite.
+    source_fields: [creativity]
+    direction: higher_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: false
+    status: context
+
+  threat:
+    label: Threat
+    description: Official FPL threat statistic; shown separately from the ICT composite.
+    source_fields: [threat]
+    direction: higher_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: false
+    status: context
+
+  minutes:
+    label: Minutes played
+    description: Official minutes in the current season or selected fixture history.
+    source_fields: [minutes, starts]
+    direction: higher_is_better
+    positions: [GK, DEF, MID, FWD]
+    used_in_ranking: true
+    status: production

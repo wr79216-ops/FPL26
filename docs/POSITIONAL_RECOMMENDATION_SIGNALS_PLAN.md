@@ -11,6 +11,17 @@ This plan deliberately does **not** treat every visible statistic as a ranking i
 
 The model remains a 0–100 position-relative ranking, not a predicted points total, probability, or guarantee of returns.
 
+## Progress
+
+| Phase | Status | Outcome |
+|---|---|---|
+| A — Field audit and metric dictionary | Complete (26 Aug 2026) | Active official FPL endpoint audit, schema scope, and source-controlled catalogue are recorded in [`POSITIONAL_RECOMMENDATION_SIGNALS_FIELD_AUDIT.md`](POSITIONAL_RECOMMENDATION_SIGNALS_FIELD_AUDIT.md). |
+| B — Persist verified official statistics | Not started | Awaiting implementation approval. |
+| C — Build transparent positional features | Not started | Awaiting Phase B. |
+| D — Candidate model and score breakdown UI | Not started | Awaiting Phase C. |
+| E — Backtest, calibration, and release gate | Not started | Awaiting candidate model. |
+| F — Documentation and operations | Not started | Awaiting production decision. |
+
 ## Current baseline
 
 The production model is `v1.1`. It already uses position-relative fixture, minutes, form, historical stability, value, and selected performance signals:
