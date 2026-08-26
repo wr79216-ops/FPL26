@@ -58,6 +58,19 @@ def test_invalid_bootstrap_response_fails_closed() -> None:
         client.get_bootstrap()
 
 
+def test_bootstrap_player_shape_change_fails_closed() -> None:
+    payload = {
+        "elements": [{"id": 10, "team": 1, "element_type": 3}],
+        "teams": [],
+        "element_types": [],
+        "events": [],
+    }
+    client = FPLClient(session=FakeSession(payload))
+
+    with pytest.raises(FPLResponseValidationError, match="missing required fields"):
+        client.get_bootstrap()
+
+
 def test_player_summary_rejects_invalid_player_id() -> None:
     client = FPLClient(session=FakeSession({}))
 

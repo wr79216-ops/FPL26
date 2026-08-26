@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Type, Union
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -26,6 +26,51 @@ class FPLResponseValidationError(FPLClientError):
 
 class FPLClient:
     """Fetch, validate, cache, and optionally archive official FPL responses."""
+
+    # These fields are the minimum contract required by the transform and the
+    # production ranking.  Keeping the contract here makes an upstream rename
+    # fail closed instead of converting a missing value into a misleading zero.
+    BOOTSTRAP_PLAYER_REQUIRED_FIELDS = frozenset(
+        {
+            "id",
+            "first_name",
+            "second_name",
+            "web_name",
+            "team",
+            "element_type",
+            "now_cost",
+            "status",
+            "selected_by_percent",
+            "minutes",
+            "goals_scored",
+            "assists",
+            "clean_sheets",
+            "saves",
+            "bonus",
+            "bps",
+            "influence",
+            "creativity",
+            "threat",
+            "ict_index",
+            "expected_goals",
+            "expected_assists",
+            "expected_goal_involvements",
+        }
+    )
+    # Positional candidate fields are optional in the official payload.  Their
+    # absence is reported as unavailable by the feature/UI layers, never as 0.
+    BOOTSTRAP_PLAYER_OPTIONAL_FIELDS = frozenset(
+        {
+            "expected_goals_conceded",
+            "goals_conceded",
+            "penalties_saved",
+            "penalties_missed",
+            "yellow_cards",
+            "red_cards",
+            "defensive_contribution",
+            "starts",
+        }
+    )
 
     BOOTSTRAP_PATH = "bootstrap-static/"
     FIXTURES_PATH = "fixtures/"
@@ -82,7 +127,33 @@ class FPLClient:
             expected_type=dict,
             required_keys=("elements", "teams", "element_types", "events"),
         )
+        self.validate_bootstrap_shape(payload)
         return payload  # type: ignore[return-value]
+
+    @classmethod
+    def validate_bootstrap_shape(cls, payload: Mapping[str, Any]) -> None:
+        """Validate the official player contract before it reaches ETL.
+
+        Optional positional fields deliberately do not fail the request: the
+        model can display them as unavailable.  Core ranking fields do fail
+        closed, preventing an endpoint shape change from silently flattening
+        scores through transform defaults.
+        """
+        elements = payload.get("elements")
+        if not isinstance(elements, list):
+            raise FPLResponseValidationError("bootstrap elements must be a list")
+        for index, element in enumerate(elements):
+            if not isinstance(element, dict):
+                raise FPLResponseValidationError(
+                    f"bootstrap element[{index}] must be an object"
+                )
+            missing = sorted(cls.BOOTSTRAP_PLAYER_REQUIRED_FIELDS - element.keys())
+            if missing:
+                player_id = element.get("id", index)
+                raise FPLResponseValidationError(
+                    "bootstrap player "
+                    f"{player_id} missing required fields: {', '.join(missing)}"
+                )
 
     def get_fixtures(self) -> list:
         payload = self._get_json(

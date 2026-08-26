@@ -79,6 +79,28 @@ Endpoint publik FPL tidak menyediakan field standar team-level `set_piece_goals`
 
 Backtesting memakai dataset completed season 2025–26 yang divalidasi untuk player-gameweek, fixtures, dan teams. Feature hanya boleh memakai informasi sampai cutoff GW N; outcome GW N+1 dan seterusnya dipakai sebagai evaluasi.
 
+Field positional current-season diambil dari payload resmi bila tersedia dan disimpan secara
+nullable: xGC, goals conceded, clean sheets, penalties saved/missed, yellow/red cards, dan
+defensive contribution. Field inti yang dibutuhkan ranking divalidasi di gateway sebelum ETL;
+perubahan bentuk payload yang menghapusnya gagal secara aman. Field yang tidak dikirim FPL tetap
+ditandai **Not supplied**, bukan diisi nol. Backtest historis menggunakan CSV completed-season
+Vaastav sebagai sumber evaluasi, sehingga tidak boleh dijelaskan sebagai endpoint FPL live.
+
+### Model positional dan status rilis
+
+`production-v1.1` masih aktif. `candidate-v1.3-positional` hanya eksperimen untuk ranking
+berbasis posisi dan ditampilkan di Backtesting/Data Status; ia belum menggantikan production.
+Candidate harus lulus coverage, regresi per posisi, dan persetujuan aktivasi eksplisit. Riwayat
+perubahan serta prosedur rollback tersedia di [MODEL_CHANGELOG.md](MODEL_CHANGELOG.md).
+
+### Operasional setelah deployment
+
+Startup menjalankan migrasi SQLite forward-only (schema saat ini v10). Setelah deployment yang
+menambahkan field resmi, buka **Data Status** lalu tekan **Refresh official FPL data** agar
+snapshot terbaru mengisi kolom baru. Jalankan import/backtest lagi bila ingin menghitung ulang
+gate candidate positional. Cache/snapshot terakhir yang valid tetap digunakan jika API sedang
+gagal.
+
 ## Model dan arti skor
 
 ### Recommendation score
@@ -191,6 +213,9 @@ Hasilnya adalah draft yang konsisten dengan constraint, bukan bukti bahwa draft 
 10. **Local-first storage** — SQLite cocok untuk penggunaan lokal/single-user. Ia belum dirancang untuk banyak user menulis bersamaan atau deployment horizontal.
 11. **Set-piece duties bukan kepastian** — Daftar taker adalah snapshot expected role. Corner dapat dibagi per sisi, penalty dapat berubah setelah miss/substitusi, dan pemain yang tercantum belum tentu berada di lapangan. Gunakan sebagai tie-breaker, bukan alasan tunggal transfer.
 12. **Historical SPG bukan data FPL native** — Statistik gol set-piece level tim memiliki definisi provider tertentu, dapat memasukkan/mengecualikan penalty atau own goal secara berbeda, dan tidak tersedia untuk semua klub/promosi. Aplikasi menampilkan source dan musim sampel secara eksplisit.
+13. **Candidate belum production** — Sinyal positional v1.3 membantu menjelaskan ranking dan diuji per posisi, tetapi belum diaktifkan sebagai ranking default sampai gate dan persetujuan rilis terpenuhi.
+14. **Schema forward-only** — Migrasi v10 menambahkan field historis positional secara nullable. Downgrade schema tidak didukung; rollback model dilakukan lewat commit/configuration dan backup volume.
+15. **Endpoint contract** — Bootstrap FPL divalidasi untuk field inti. Jika field inti hilang atau bentuk respons berubah, refresh dihentikan agar ranking tidak berubah diam-diam; field positional opsional dapat berstatus Not supplied.
 
 ## Privasi dan keamanan
 
@@ -231,6 +256,7 @@ Gunakan jawaban singkat berikut bila ditanya:
 
 - [README.md](../README.md) — setup dan panduan penggunaan.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — layer, schema, ingestion, feature, dan backtesting flow.
+- [MODEL_CHANGELOG.md](MODEL_CHANGELOG.md) — versi model, gate aktivasi, dan rollback.
 - [HISTORICAL_DATA.md](HISTORICAL_DATA.md) — sumber, identity matching, dan historical stability.
 - [BACKTESTING.md](BACKTESTING.md) — metodologi evaluasi time-safe dan caveat.
 - [DECISION_TOOLS.md](DECISION_TOOLS.md) — transfer/captain proxy dan batasan.

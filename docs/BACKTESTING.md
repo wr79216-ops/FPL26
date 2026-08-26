@@ -60,6 +60,18 @@ Candidate v1.2 improves MAE by 0.576–0.696 points, Spearman by 0.036–0.044, 
 
 Overall data status: **share with caveats**. The stored calculations and keys are internally consistent, but the available evidence is insufficient for production promotion.
 
+## Positional candidate (Phase F)
+
+Runtime backtesting juga mendukung `candidate-v1.3-positional`, dengan feature dan gate yang
+dievaluasi terpisah untuk GK, DEF, MID, dan FWD. Candidate tersebut belum dipromosikan: jalankan
+**Import & rerun 2025-26 backtests** untuk membangun prediction rows terbaru, lalu lihat coverage,
+regresi, dan status approval di Backtesting atau Data Status. Angka tabel di atas tetap merupakan
+hasil historis `candidate-v1.2`; metrik v1.3 tidak dikarang sebelum rerun berhasil.
+
+Jika field historis positional tidak tersedia pada sumber CSV, nilainya tetap `NULL` dan gate
+menolaknya secara eksplisit—bukan dianggap sebagai performa nol. Production tetap
+`production-v1.1` sampai seluruh gate dan persetujuan aktivasi terpenuhi.
+
 ## Limitations and next validation
 
 - Only one season is evaluated; candidate selection and evaluation are not yet separated across independent seasons.

@@ -1,6 +1,6 @@
 # Core Architecture
 
-Phase 11 extends the strict boundaries between current official FPL ingestion, historical enrichment, persisted data, feature calculation, explainable recommendations, time-safe model evaluation, non-binding decision support, and policy-gated external enrichment.
+Phase F extends the strict boundaries between current official FPL ingestion, historical enrichment, persisted data, feature calculation, explainable recommendations, time-safe model evaluation, non-binding decision support, and policy-gated external enrichment.
 
 ```text
 Streamlit UI
@@ -52,7 +52,7 @@ Contains raw persistence and legacy sample fixtures used only by tests. Runtime 
 
 ## Database schema
 
-Schema version `6` contains:
+Schema version `10` contains:
 
 - `schema_metadata`
 - `teams`
@@ -75,7 +75,7 @@ Primary or composite keys reflect the natural identity of each record so repeate
 
 ## Migration strategy
 
-The application records its expected integer schema version in `schema_metadata`. Startup applies only registered forward migrations and rejects databases newer than the application supports. The v1 → v2 migration creates `gameweek_snapshots` and backfills it from existing `player_current_stats`; v2 → v3 adds the durable player-history sync cache; v3 → v4 adds official goalkeeper saves to current stats; v4 → v5 adds historical player-season, identity mapping, and stability-score tables; v5 → v6 adds the four backtest tables; v6 → v7 adds official transfer-in activity; v7 → v8 adds nullable official defensive, penalty, and discipline totals to current and per-fixture history; v8 → v9 adds nullable current-season xGC. During the local MVP, every schema change must include an explicit migration function and version increment. Before multi-user deployment, this mechanism should be replaced with Alembic migrations while preserving the same rule: schema changes are versioned and never applied silently.
+The application records its expected integer schema version in `schema_metadata`. Startup applies only registered forward migrations and rejects databases newer than the application supports. The v1 → v2 migration creates `gameweek_snapshots` and backfills it from existing `player_current_stats`; v2 → v3 adds the durable player-history sync cache; v3 → v4 adds official goalkeeper saves to current stats; v4 → v5 adds historical player-season, identity mapping, and stability-score tables; v5 → v6 adds the four backtest tables; v6 → v7 adds official transfer-in activity; v7 → v8 adds nullable official defensive, penalty, and discipline totals to current and per-fixture history; v8 → v9 adds nullable current-season xGC; v9 → v10 adds nullable positional candidate fields to `backtest_player_gameweeks`. After a migration, Data Status instructs the operator to refresh official FPL data. Downgrade is not supported; rollback uses a model/configuration commit and an explicit backup restore when data recovery is required.
 
 ## Raw data layout
 
@@ -87,6 +87,20 @@ data/raw/
 ```
 
 Every response is timestamped in UTC and stored in a new run directory. Raw data is excluded from Git and exists for debugging, audit, and reproducibility.
+
+## Official endpoint contracts and positional signals
+
+`FPLClient` is the fail-closed boundary for `bootstrap-static`. It validates the required
+top-level collections and the core player fields used by ETL/ranking before caching or archiving
+the response. Contract tests intentionally reject a player payload with a missing core field so
+an upstream rename cannot become a default zero in the score. Positional fields such as xGC,
+penalties, cards, and defensive contribution are optional: when FPL does not supply one, the
+nullable database value and UI label remain **Not supplied**.
+
+Current-season recommendations use official FPL JSON. Backtesting uses validated completed-season
+CSV snapshots and is never mixed into the current-season refresh. `candidate-v1.3-positional` is
+evaluated per position and remains experimental; only `production-v1.1` is the live model until
+the documented coverage/regression gates and activation approval pass.
 
 ## Official refresh flow
 
@@ -188,7 +202,7 @@ Persist backtest_player_gameweeks and backtest_fixtures idempotently
     ↓ for every cutoff GW N and horizon 1 / 3 / 5
 Build form, minutes, expected output, historical, value, and fixture features using data through N only
     ↓
-Freeze production-v1.1 and candidate-v1.2 scores/ranks
+Freeze production-v1.1 and candidate-v1.3-positional scores/ranks
     ↓
 Join actual points from GW N+1 through N+h
     ↓
@@ -198,6 +212,15 @@ Backtesting UI compares versions and exposes one exact cutoff for audit
 ```
 
 Fixture ease in the backtest is reconstructed from opponent league points earned only through each cutoff. It never reads the final-season difficulty snapshot. Historical cross-season stability uses seasons strictly before the backtest season. See `docs/BACKTESTING.md` for metric definitions and known limitations.
+
+## Operations, refresh, and rollback
+
+Data Status exposes schema version, source freshness, endpoint-contract readiness, and the
+positional candidate gate. After a Railway deployment that includes a migration, allow startup
+to finish, then run **Refresh official FPL data**. Run the historical import/backtest again when
+the candidate report needs new coverage. If the official endpoint fails validation, the refresh
+is rejected and the last known-good snapshot remains available. Model rollback and the
+forward-only database policy are recorded in `docs/MODEL_CHANGELOG.md`.
 
 ## Decision-support flow
 

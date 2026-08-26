@@ -2530,6 +2530,16 @@ def render_data_status(
     backtest_status = (
         backtesting_service.get_status() if backtesting_service is not None else None
     )
+    positional_report = None
+    if backtesting_service is not None:
+        try:
+            positional_report = backtesting_service.get_positional_candidate_validation_report(
+                horizon=5
+            )
+        except Exception:
+            # Data Status must remain usable when a historical candidate has not
+            # been imported yet or its report is unavailable.
+            positional_report = None
     action_columns = st.columns(2)
     if fpl_service is not None:
         with action_columns[0]:
@@ -2583,7 +2593,7 @@ def render_data_status(
         )
 
     section_heading(
-        "Data coverage & pipeline readiness", "Phase 11",
+        "Data coverage & pipeline readiness", "Phase F · operational readiness",
         "Coverage makes missing cache rows explicit; player history remains an on-demand cache by design.",
     )
     readiness = pd.DataFrame(
@@ -2612,6 +2622,25 @@ def render_data_status(
                 "Recommendation Engine V1",
                 "Ready" if expected_scores and not missing_scores else "Coverage gap",
                 f"{score_count}/{expected_scores} persisted scores · {missing_scores} missing · {scoring.model_version}",
+            ],
+            [
+                "Official endpoint contract",
+                "Ready",
+                "Core bootstrap fields are validated before ETL; positional fields remain nullable when FPL does not supply them",
+            ],
+            [
+                "Positional candidate gate",
+                (
+                    "Approved"
+                    if positional_report is not None and positional_report.production_active
+                    else "Experimental"
+                ),
+                (
+                    f"{positional_report.candidate_version} · "
+                    f"{sum(item.gate_passed for item in positional_report.evaluations)}/4 positions passed"
+                    if positional_report is not None
+                    else "Run the historical import/backtest to calculate the release gate"
+                ),
             ],
             [
                 "Player gameweek history",
@@ -2681,6 +2710,20 @@ def render_data_status(
         columns=["Component", "Status", "Detail"],
     )
     st.dataframe(readiness, hide_index=True, width="stretch")
+
+    with st.expander("Phase F · sumber, refresh, dan rollback"):
+        st.markdown(
+            "**Sumber resmi.** Ranking current-season menggunakan `bootstrap-static` dan "
+            "fixture resmi FPL. Field inti divalidasi sebelum diproses; field positional "
+            "yang tidak dikirim FPL ditampilkan sebagai *Not supplied*, bukan angka nol.\n\n"
+            "**Setelah deployment.** Startup menjalankan migrasi SQLite forward-only. "
+            "Setelah migrasi schema, tekan **Refresh official FPL data** untuk mengisi field "
+            "resmi terbaru. Untuk candidate positional, jalankan import/backtest agar coverage "
+            "dan gate dapat dihitung ulang.\n\n"
+            "**Model.** `v1.1` tetap production; `candidate-v1.3-positional` bersifat eksperimental "
+            "sampai gate per posisi dan persetujuan aktivasi terpenuhi. Detail perubahan dan "
+            "prosedur rollback ada di `docs/MODEL_CHANGELOG.md`."
+        )
 
     if historical_service is not None and ingestion_status.get("historical_review_in_database", 0):
         with st.expander(

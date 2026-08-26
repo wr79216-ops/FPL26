@@ -20,7 +20,7 @@ The model remains a 0–100 position-relative ranking, not a predicted points to
 | C — Build transparent positional features | Complete (26 Aug 2026) | Position-aware raw/normalized signal builder, small-sample confidence adjustment, and edge-case coverage are complete; production ranking remains unchanged. |
 | D — Candidate model and score breakdown UI | Complete (26 Aug 2026) | Experimental v1.3 positional weights, traceable active-score contributions, and position-specific official-evidence tooltips are available; production remains v1.1. |
 | E — Backtest, calibration, and release gate | Complete (26 Aug 2026) | The historical candidate is evaluated leakage-safely against production by position, with coverage/regression gates and explicit activation approval; production remains v1.1 pending a completed rerun and approval. |
-| F — Documentation and operations | Not started | Awaiting production decision. |
+| F — Documentation and operations | Complete (26 Aug 2026) | Source contracts, migration/refresh guidance, model changelog, rollback path, and fail-closed endpoint validation are documented; production remains v1.1. |
 
 ## Current baseline
 
@@ -180,6 +180,10 @@ New weights live in `config/scoring.yaml`, not in UI code. Each position's weigh
 2. Add a refresh note after deployment whenever a schema migration adds official fields.
 3. Record model-version changelog and rollback path.
 4. Monitor official endpoint shape changes with validation tests so a removed field cannot silently distort rankings.
+
+**Exit criteria:** documentation and Data Status identify current versus historical sources, the
+post-migration refresh step is visible, model activation/rollback is reproducible, and bootstrap
+contract tests fail closed when a required ranking field disappears.
 
 ## Non-goals for the first release
 
