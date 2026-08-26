@@ -21,9 +21,9 @@ NAV_ITEMS = (
     "Fixtures",
     "Player Detail",
     "Compare",
-    "Backtesting",
-    "Decision Tools",
     "Advanced Planner",
+    "Decision Tools",
+    "Backtesting",
     "Data Status",
 )
 
