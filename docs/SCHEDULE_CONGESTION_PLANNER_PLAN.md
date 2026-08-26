@@ -329,6 +329,14 @@ Bobot tidak boleh masuk production model sebelum backtest menunjukkan perbaikan 
 - Bandingkan rekomendasi dengan/ tanpa schedule adjustment.
 - Aktifkan bobot hanya bila tervalidasi.
 
+**Status implementasi:** selesai dengan production gate `fail closed`.
+
+- Outcome BGW/DGW direkonstruksi dari fixture resmi final hanya sebagai label aktual.
+- Forecast historis hanya eligible bila memiliki source, timestamp, expiry, confidence, dan dibuat sebelum target GW dimulai.
+- Brier blank/double, reliability buckets, calibration error, top-10 points lift, dan Spearman lift sudah memiliki evaluasi deterministik.
+- Transfer service menerima schedule adjustment hanya ketika validation gate dan explicit production approval sama-sama lolos.
+- Saat ini adjustment tetap **inactive** karena repository belum memiliki arsip probability snapshot historis yang genuine. Nilai tidak diisi secara retrospektif untuk mengejar hasil backtest.
+
 ## Acceptance criteria
 
 - Confirmed status hanya berasal dari official FPL/PL.
@@ -348,4 +356,3 @@ Bobot tidak boleh masuk production model sebelum backtest menunjukkan perbaikan 
 - Champions League dates: https://www.uefa.com/uefachampionsleague/news/02a6-20d57cfcd03e-407c22a7f465-1000--2026-27-champions-league-teams-dates-draws-format-final/
 - Europa League dates: https://www.uefa.com/uefaeuropaleague/news/02a6-20d57d095740-e1e0b3de85df-1000--2026-27-europa-league-teams-dates-draws-format-final/
 - Conference League dates: https://www.uefa.com/uefaconferenceleague/news/02a6-20d57d15f093-a90cf54c928f-1000--2026-27-conference-league-teams-dates-draws-format-final/
-

@@ -49,6 +49,14 @@ from src.services.historical_data import (
     MIN_SEASON_MINUTES,
     normalize_identity_name,
 )
+from src.services.schedule_backtesting import (
+    ScheduleValidationReport,
+    compare_schedule_adjusted_rankings,
+    eligible_historical_forecasts,
+    load_schedule_backtest_config,
+    reconstruct_historical_schedule_outcomes,
+    validate_schedule_adjustment,
+)
 
 
 BACKTEST_MODELS_PATH = SCORING_CONFIG_PATH.with_name("backtest_models.yaml")
@@ -669,6 +677,40 @@ class BacktestingService:
                 )
                 for row in rows
             ]
+
+    def get_schedule_validation_report(self) -> ScheduleValidationReport:
+        """Evaluate Phase F inputs and fail closed when history is insufficient."""
+        policy, forecasts = load_schedule_backtest_config()
+        with self.database.session() as session:
+            repository = FPLRepository(session)
+            fixtures = repository.list_backtest_fixtures(BACKTEST_SEASON)
+            player_gameweeks = repository.list_backtest_player_gameweeks(BACKTEST_SEASON)
+            runs = repository.list_backtest_runs(BACKTEST_SEASON)
+            production_runs = [
+                run for run in runs if str(run.model_version).startswith("production-")
+            ]
+            predictions = [
+                prediction
+                for run in production_runs
+                for prediction in repository.list_backtest_predictions(
+                    run.season, run.horizon, run.model_version
+                )
+            ]
+        outcomes = reconstruct_historical_schedule_outcomes(fixtures)
+        eligible_pairs = eligible_historical_forecasts(forecasts, fixtures, outcomes)
+        comparison = compare_schedule_adjusted_rankings(
+            predictions,
+            player_gameweeks,
+            (forecast for forecast, _ in eligible_pairs),
+            policy,
+        )
+        return validate_schedule_adjustment(
+            policy,
+            outcomes,
+            forecasts,
+            fixtures,
+            comparison,
+        )
 
 
 def get_backtesting_service(

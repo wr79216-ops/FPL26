@@ -26,6 +26,7 @@ from src.ui.components import (
 )
 from src.services.gameweek_wrapped import build_gameweek_wrapped, previous_completed_gameweek
 from src.services.squad_schedule_exposure import calculate_squad_schedule_exposure
+from src.services.schedule_backtesting import current_team_priority_adjustments
 from src.ui.schedule_risk import (
     build_congestion_leader_rows,
     build_risk_strip_rows,
@@ -64,6 +65,8 @@ ATTRIBUTE_HELP = {
     "schedule_blank": "Eksposur fixture kosong. Confirmed hanya berasal dari alokasi fixture resmi FPL; proyeksi muncul hanya bila input probabilitasnya memiliki source, as-of, expiry, dan confidence.",
     "schedule_double": "Eksposur fixture tambahan. Confirmed berarti FPL memasang minimal dua fixture; proyeksi tetap terpisah dan tidak mengubah status confirmed.",
     "schedule_congestion": "Indikator workload 14 hari dari kepadatan jadwal, rest pendek, travel netral, dan tahap kompetisi. Ini bukan prediksi poin, cedera, atau menit bermain.",
+    "brier": "Mean squared error untuk probabilitas terhadap hasil 0/1. Nilai 0 sempurna; semakin rendah semakin baik.",
+    "calibration_error": "Selisih berbobot antara probabilitas rata-rata dan frekuensi hasil aktual pada reliability buckets. Semakin rendah semakin baik.",
 }
 
 
@@ -950,6 +953,88 @@ def render_backtesting(
         except Exception:
             st.error("Backtest failed. The latest successful run remains available.")
 
+    try:
+        schedule_report = service.get_schedule_validation_report()
+        section_heading(
+            "Schedule-adjustment validation",
+            "Phase F · leakage-safe production gate",
+            "Historical final fixtures are outcomes only. A probability can be evaluated only when its timestamp proves it existed before the target GW began.",
+        )
+        schedule_metrics = st.columns(4)
+        with schedule_metrics[0]:
+            metric_tile(
+                "Eligible forecasts",
+                str(schedule_report.eligible_observations),
+                f"{schedule_report.rejected_observations} rejected · minimum {schedule_report.policy.minimum_observations}",
+                "Timestamped historical probability snapshots that pass the no-leakage cutoff check.",
+            )
+        with schedule_metrics[1]:
+            metric_tile(
+                "Blank Brier",
+                f"{schedule_report.blank_brier:.3f}" if schedule_report.blank_brier is not None else "N/A",
+                f"Gate ≤ {schedule_report.policy.maximum_blank_brier:.2f}",
+                ATTRIBUTE_HELP["brier"],
+            )
+        with schedule_metrics[2]:
+            metric_tile(
+                "Double Brier",
+                f"{schedule_report.double_brier:.3f}" if schedule_report.double_brier is not None else "N/A",
+                f"Gate ≤ {schedule_report.policy.maximum_double_brier:.2f}",
+                ATTRIBUTE_HELP["brier"],
+            )
+        with schedule_metrics[3]:
+            metric_tile(
+                "Transfer integration",
+                "Active" if schedule_report.production_active else "Inactive",
+                "Explicit approval + all quantitative gates",
+                "Schedule weights cannot change transfer ordering until calibration and ranking-comparison gates pass and production approval is explicit.",
+            )
+        if schedule_report.production_active:
+            st.success("All Phase F gates passed; validated schedule weights are active.")
+        else:
+            st.warning(
+                "Schedule weights remain inactive. " + " ".join(schedule_report.reasons)
+            )
+        if schedule_report.reliability_buckets:
+            st.dataframe(
+                pd.DataFrame([asdict(item) for item in schedule_report.reliability_buckets]),
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "mean_probability": st.column_config.NumberColumn("Mean probability", format="%.3f"),
+                    "observed_rate": st.column_config.NumberColumn("Observed rate", format="%.3f"),
+                },
+            )
+            st.caption(
+                "Reliability buckets compare predicted probability with actual frequency. "
+                f"Weighted calibration error: {schedule_report.calibration_error:.3f}."
+            )
+        if schedule_report.comparison is not None:
+            comparison_result = schedule_report.comparison
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "Cutoffs": comparison_result.evaluated_cutoffs,
+                            "Baseline top-10 pts": comparison_result.baseline_top_10_points,
+                            "Adjusted top-10 pts": comparison_result.adjusted_top_10_points,
+                            "Points lift": comparison_result.top_10_points_lift,
+                            "Baseline Spearman": comparison_result.baseline_spearman,
+                            "Adjusted Spearman": comparison_result.adjusted_spearman,
+                            "Spearman lift": comparison_result.spearman_lift,
+                        }
+                    ]
+                ),
+                hide_index=True,
+                width="stretch",
+            )
+        st.caption(
+            "Current repository intentionally contains no retrospectively invented historical probabilities. "
+            "Until genuine timestamped forecast snapshots accumulate, the safe result is an inactive adjustment."
+        )
+    except Exception as exc:
+        st.warning(f"Schedule validation report is unavailable: {exc}")
+
     runs = service.list_runs()
     if not runs:
         render_empty_state(
@@ -1456,11 +1541,32 @@ def render_advanced_planner(
         transfer_context = (imported.manager_id, horizon, free_transfers)
         if suggest_transfers:
             try:
+                schedule_report = None
+                team_priority_adjustments = {}
+                backtesting_service = st.session_state.get("backtesting_service")
+                schedule_service = st.session_state.get("schedule_congestion_service")
+                if backtesting_service is not None:
+                    schedule_report = backtesting_service.get_schedule_validation_report()
+                if (
+                    schedule_report is not None
+                    and schedule_report.production_active
+                    and schedule_service is not None
+                ):
+                    team_priority_adjustments = current_team_priority_adjustments(
+                        schedule_service.get_phase_c_snapshot(),
+                        imported.gameweek,
+                        horizon,
+                        schedule_report,
+                    )
                 with st.spinner("Finding the best legal upgrades for this squad..."):
                     transfer_plan = service.suggest_transfers(
                         imported,
                         horizon,
                         free_transfers=free_transfers,
+                        team_priority_adjustments=team_priority_adjustments,
+                        schedule_adjustment_validated=bool(
+                            schedule_report and schedule_report.production_active
+                        ),
                     )
                 st.session_state["advanced_transfer_plan"] = transfer_plan
                 st.session_state["advanced_transfer_plan_context"] = transfer_context
@@ -1508,6 +1614,8 @@ def render_advanced_planner(
                                 "Model lift": item.score_delta,
                                 "Fixture lift": item.fixture_delta,
                                 "Minutes lift": item.minutes_delta,
+                                "Base priority": item.base_priority,
+                                "Schedule Δ": item.schedule_adjustment,
                                 "Why": item.reason,
                             }
                             for item in transfer_plan.transfers
@@ -1528,8 +1636,22 @@ def render_advanced_planner(
                         "Minutes lift": st.column_config.NumberColumn(
                             "Minutes Δ", format="%+.1f", help=ATTRIBUTE_HELP["minutes_lift"]
                         ),
+                        "Base priority": st.column_config.NumberColumn(
+                            "Base priority", format="%.1f",
+                            help="Transfer priority before any schedule-risk adjustment.",
+                        ),
+                        "Schedule Δ": st.column_config.NumberColumn(
+                            "Schedule Δ", format="%+.1f",
+                            help="Applied only after all Phase F validation and explicit production approval gates pass.",
+                        ),
                     },
                 )
+                if transfer_plan.schedule_adjustment_active:
+                    st.success("Validated Phase F schedule adjustment is active in this transfer plan.")
+                else:
+                    st.caption(
+                        "Schedule adjustment is inactive: transfer order still uses the original transparent priority formula."
+                    )
 
     default_budget = imported.available_budget if imported is not None else 100.0
     planner_controls = st.columns([1, 1.4])

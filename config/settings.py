@@ -31,6 +31,9 @@ EUROPEAN_PARTICIPANTS_CONFIG_PATH = Path(__file__).with_name(
 SCHEDULE_PROBABILITY_INPUTS_CONFIG_PATH = Path(__file__).with_name(
     "schedule_probability_inputs_2026_27.yaml"
 )
+SCHEDULE_BACKTEST_CONFIG_PATH = Path(__file__).with_name(
+    "schedule_backtest.yaml"
+)
 SUPPORTED_POSITIONS = ("GK", "DEF", "MID", "FWD")
 
 

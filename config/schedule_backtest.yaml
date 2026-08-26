@@ -1,0 +1,26 @@
+model_version: "schedule-adjustment-v1"
+
+# These weights are experimental until every validation gate below passes.
+# They are priority-point adjustments, not predicted FPL points.
+weights:
+  double_gain: 8.0
+  blank_risk: 8.0
+  congestion: 3.0
+
+validation_gates:
+  minimum_observations: 100
+  maximum_blank_brier: 0.20
+  maximum_double_brier: 0.20
+  maximum_calibration_error: 0.12
+  minimum_top_10_points_lift: 0.0
+  minimum_spearman_lift: 0.0
+
+# Production activation also requires an explicit human approval after the
+# quantitative gates pass. This prevents newly-added data from silently
+# changing transfer rankings during a Railway redeploy.
+production_activation_approved: false
+
+# Historical forecasts must be snapshots that really existed at their stated
+# cutoff. Final-season fixture assignments or retrospectively invented
+# probabilities are forbidden here because they would leak future knowledge.
+observations: []

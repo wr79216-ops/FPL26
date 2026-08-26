@@ -94,6 +94,8 @@ class TransferSuggestion:
     minutes_delta: float
     priority: float
     reason: str
+    base_priority: float = 0.0
+    schedule_adjustment: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -104,6 +106,7 @@ class TransferPlan:
     free_transfers_used: int
     bank_after: float
     total_score_gain: float
+    schedule_adjustment_active: bool = False
 
 
 @dataclass(frozen=True)
@@ -301,6 +304,8 @@ class AdvancedPlannerService:
         imported: ImportedSquad,
         horizon: int,
         free_transfers: int = 1,
+        team_priority_adjustments: Mapping[str, float] | None = None,
+        schedule_adjustment_validated: bool = False,
     ) -> TransferPlan:
         """Recommend legal, no-hit upgrades tailored to an imported squad.
 
@@ -310,6 +315,13 @@ class AdvancedPlannerService:
         """
         if free_transfers <= 0:
             raise ValueError("free_transfers must be positive")
+        if team_priority_adjustments and not schedule_adjustment_validated:
+            raise ValueError(
+                "schedule adjustments require a passed production validation gate"
+            )
+        schedule_adjustments = (
+            dict(team_priority_adjustments or {}) if schedule_adjustment_validated else {}
+        )
         rankings = tuple(self.decisions.player_options(horizon))
         squad = [pick.player for pick in imported.picks]
         squad_ids = {player.player_id for player in squad}
@@ -340,12 +352,27 @@ class AdvancedPlannerService:
                     fixture_delta = round(player_in.fixture_score - player_out.fixture_score, 1)
                     minutes_delta = round(player_in.minutes_score - player_out.minutes_score, 1)
                     availability_bonus = 8.0 if player_out.status != "a" else 0.0
-                    priority = round(
+                    base_priority = round(
                         score_delta + fixture_delta * 0.12 + minutes_delta * 0.08 + availability_bonus,
                         1,
                     )
+                    schedule_adjustment = round(
+                        schedule_adjustments.get(player_in.team, 0.0)
+                        - schedule_adjustments.get(player_out.team, 0.0),
+                        1,
+                    )
+                    priority = round(base_priority + schedule_adjustment, 1)
                     if priority <= 0:
                         continue
+                    reason = _transfer_reason(
+                        player_out,
+                        player_in,
+                        score_delta,
+                        fixture_delta,
+                        minutes_delta,
+                    )
+                    if schedule_adjustment_validated:
+                        reason += f" · validated schedule {schedule_adjustment:+.1f}"
                     suggestion = TransferSuggestion(
                         player_out=player_out,
                         player_in=player_in,
@@ -354,13 +381,9 @@ class AdvancedPlannerService:
                         fixture_delta=fixture_delta,
                         minutes_delta=minutes_delta,
                         priority=priority,
-                        reason=_transfer_reason(
-                            player_out,
-                            player_in,
-                            score_delta,
-                            fixture_delta,
-                            minutes_delta,
-                        ),
+                        reason=reason,
+                        base_priority=base_priority,
+                        schedule_adjustment=schedule_adjustment,
                     )
                     if best is None or _transfer_sort_key(suggestion) > _transfer_sort_key(best):
                         best = suggestion
@@ -381,6 +404,7 @@ class AdvancedPlannerService:
             free_transfers_used=len(suggestions),
             bank_after=bank,
             total_score_gain=round(sum(item.score_delta for item in suggestions), 1),
+            schedule_adjustment_active=schedule_adjustment_validated,
         )
 
     @staticmethod
