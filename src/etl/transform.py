@@ -46,6 +46,13 @@ def _integer(value: Any, field: str, context: str, default: Optional[int] = None
         raise DataTransformError(f"{context} has invalid integer field: {field}") from exc
 
 
+def _optional_integer(value: Any, field: str, context: str) -> Optional[int]:
+    """Parse an optional official integer while preserving unavailable as None."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    return _integer(value, field, context)
+
+
 def _number(value: Any, field: str, context: str, default: Optional[float] = None) -> float:
     if value is None and default is not None:
         return default
@@ -258,6 +265,26 @@ def transform_current_player_stats(
                     context,
                     default=0,
                 ),
+                goals_conceded=_optional_integer(
+                    raw_player.get("goals_conceded"), "goals_conceded", context
+                ),
+                penalties_saved=_optional_integer(
+                    raw_player.get("penalties_saved"), "penalties_saved", context
+                ),
+                penalties_missed=_optional_integer(
+                    raw_player.get("penalties_missed"), "penalties_missed", context
+                ),
+                yellow_cards=_optional_integer(
+                    raw_player.get("yellow_cards"), "yellow_cards", context
+                ),
+                red_cards=_optional_integer(
+                    raw_player.get("red_cards"), "red_cards", context
+                ),
+                defensive_contribution=_optional_integer(
+                    raw_player.get("defensive_contribution"),
+                    "defensive_contribution",
+                    context,
+                ),
             )
         )
     return transformed
@@ -339,6 +366,26 @@ def transform_gameweek_history(
                     raw_history.get("total_points"), "total_points", context, default=0
                 ),
                 value=_number(raw_history.get("value"), "value", context, 0.0) / 10,
+                goals_conceded=_optional_integer(
+                    raw_history.get("goals_conceded"), "goals_conceded", context
+                ),
+                penalties_saved=_optional_integer(
+                    raw_history.get("penalties_saved"), "penalties_saved", context
+                ),
+                penalties_missed=_optional_integer(
+                    raw_history.get("penalties_missed"), "penalties_missed", context
+                ),
+                yellow_cards=_optional_integer(
+                    raw_history.get("yellow_cards"), "yellow_cards", context
+                ),
+                red_cards=_optional_integer(
+                    raw_history.get("red_cards"), "red_cards", context
+                ),
+                defensive_contribution=_optional_integer(
+                    raw_history.get("defensive_contribution"),
+                    "defensive_contribution",
+                    context,
+                ),
             )
         )
     return transformed

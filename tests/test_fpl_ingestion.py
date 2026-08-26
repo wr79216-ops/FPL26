@@ -2,6 +2,7 @@ import pytest
 
 from src.data.refresh_status import RefreshStatusStore
 from src.database.connection import Database
+from src.database.models import CurrentPlayerStatsModel
 from src.services.fpl_ingestion import FPLIngestionError, FPLIngestionService
 from tests.test_transform import ELEMENTS, ELEMENT_TYPES, FIXTURES, TEAMS
 
@@ -56,6 +57,12 @@ def test_refresh_loads_official_records_and_persists_status(tmp_path) -> None:
     assert status.fixtures_in_database == 1
     assert status.current_stats_in_database == 1
     assert status.gameweek_snapshots_in_database == 1
+    with database.session() as session:
+        stored_stats = session.get(CurrentPlayerStatsModel, (ELEMENTS[0]["id"], 8))
+        assert stored_stats is not None
+        assert stored_stats.goals_conceded == 2
+        assert stored_stats.penalties_saved == 1
+        assert stored_stats.defensive_contribution == 37
     local_live = service.get_local_gameweek_live(8)
     assert local_live["elements"][0]["id"] == ELEMENTS[0]["id"]
     assert local_live["elements"][0]["stats"]["total_points"] == ELEMENTS[0]["total_points"]

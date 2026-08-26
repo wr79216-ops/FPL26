@@ -30,7 +30,7 @@ from src.domain.contracts import GameweekSnapshotRecord
 from src.utils.season import season_label
 
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 class SchemaVersionError(RuntimeError):
@@ -187,6 +187,39 @@ class Database:
                         "ADD COLUMN transfers_in_event INTEGER NOT NULL DEFAULT 0"
                     )
                 )
+            return
+        if from_version == 7:
+            migrations = {
+                CurrentPlayerStatsModel.__tablename__: (
+                    "goals_conceded",
+                    "penalties_saved",
+                    "penalties_missed",
+                    "yellow_cards",
+                    "red_cards",
+                    "defensive_contribution",
+                ),
+                "player_gameweek_history": (
+                    "goals_conceded",
+                    "penalties_saved",
+                    "penalties_missed",
+                    "yellow_cards",
+                    "red_cards",
+                    "defensive_contribution",
+                ),
+            }
+            for table_name, column_names in migrations.items():
+                existing_columns = {
+                    column["name"]
+                    for column in inspect(session.connection()).get_columns(table_name)
+                }
+                for column_name in column_names:
+                    if column_name not in existing_columns:
+                        session.execute(
+                            text(
+                                f"ALTER TABLE {table_name} "
+                                f"ADD COLUMN {column_name} INTEGER NULL"
+                            )
+                        )
             return
         raise SchemaVersionError(
             f"Database schema is v{from_version}; no migration to v{from_version + 1} exists."

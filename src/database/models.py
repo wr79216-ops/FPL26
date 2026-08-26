@@ -115,6 +115,12 @@ class CurrentPlayerStatsModel(Base):
     transfers_in_event: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"
     )
+    goals_conceded: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    penalties_saved: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    penalties_missed: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    yellow_cards: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    red_cards: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    defensive_contribution: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
 
 class GameweekSnapshotModel(Base):
@@ -164,6 +170,12 @@ class GameweekHistoryModel(Base):
     xgc: Mapped[float] = mapped_column(Float, nullable=False)
     total_points: Mapped[int] = mapped_column(Integer, nullable=False)
     value: Mapped[float] = mapped_column(Float, nullable=False)
+    goals_conceded: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    penalties_saved: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    penalties_missed: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    yellow_cards: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    red_cards: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    defensive_contribution: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 

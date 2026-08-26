@@ -122,6 +122,12 @@ class CurrentPlayerStatsRecord:
     price: float
     snapshot_at: datetime
     transfers_in_event: int = 0
+    goals_conceded: Optional[int] = None
+    penalties_saved: Optional[int] = None
+    penalties_missed: Optional[int] = None
+    yellow_cards: Optional[int] = None
+    red_cards: Optional[int] = None
+    defensive_contribution: Optional[int] = None
 
     def __post_init__(self) -> None:
         _require_positive(self.player_id, "player_id")
@@ -129,6 +135,17 @@ class CurrentPlayerStatsRecord:
             raise ValueError("gameweek, minutes, and starts cannot be negative")
         if self.transfers_in_event < 0:
             raise ValueError("transfers_in_event cannot be negative")
+        for field_name in (
+            "goals_conceded",
+            "penalties_saved",
+            "penalties_missed",
+            "yellow_cards",
+            "red_cards",
+            "defensive_contribution",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"{field_name} cannot be negative")
         _require_percentage(self.selected_by_percent, "selected_by_percent")
 
 
@@ -181,6 +198,12 @@ class GameweekHistoryRecord:
     xgc: float
     total_points: int
     value: float
+    goals_conceded: Optional[int] = None
+    penalties_saved: Optional[int] = None
+    penalties_missed: Optional[int] = None
+    yellow_cards: Optional[int] = None
+    red_cards: Optional[int] = None
+    defensive_contribution: Optional[int] = None
 
     def __post_init__(self) -> None:
         for field_value, field_name in (
@@ -191,6 +214,17 @@ class GameweekHistoryRecord:
             _require_positive(field_value, field_name)
         if not self.season.strip():
             raise ValueError("season is required")
+        for field_name in (
+            "goals_conceded",
+            "penalties_saved",
+            "penalties_missed",
+            "yellow_cards",
+            "red_cards",
+            "defensive_contribution",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"{field_name} cannot be negative")
 
 
 @dataclass(frozen=True)
