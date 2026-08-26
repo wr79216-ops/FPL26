@@ -121,6 +121,7 @@ class CurrentPlayerStatsModel(Base):
     yellow_cards: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     red_cards: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     defensive_contribution: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    expected_goals_conceded: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
 
 class GameweekSnapshotModel(Base):

@@ -79,7 +79,7 @@ def test_database_initializes_expected_baseline_schema(tmp_path) -> None:
     database = Database(tmp_path / "test.db")
     status = database.initialize()
 
-    assert status.schema_version == 8
+    assert status.schema_version == 9
     assert set(status.tables) == {
         "fixtures",
         "backtest_fixtures",
@@ -171,7 +171,7 @@ def test_v1_database_migrates_and_backfills_current_stats_snapshot(tmp_path) -> 
             )
         )
 
-    assert database.initialize().schema_version == 8
+    assert database.initialize().schema_version == 9
     with database.session() as session:
         snapshots = session.query(GameweekSnapshotModel).all()
         assert len(snapshots) == 1
@@ -211,7 +211,7 @@ def test_v7_database_migrates_optional_signal_columns(tmp_path) -> None:
             )
         )
 
-    assert database.initialize().schema_version == 8
+    assert database.initialize().schema_version == 9
     current_columns = {
         column["name"]
         for column in inspect(database.engine).get_columns("player_current_stats")
@@ -230,6 +230,38 @@ def test_v7_database_migrates_optional_signal_columns(tmp_path) -> None:
     }
     assert expected <= current_columns
     assert expected <= history_columns
+
+
+def test_v8_database_migrates_current_xgc_column(tmp_path) -> None:
+    database = Database(tmp_path / "v8.db")
+    with database.engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE schema_metadata ("
+                "metadata_id INTEGER PRIMARY KEY, version INTEGER NOT NULL, "
+                "updated_at DATETIME NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE player_current_stats ("
+                "player_id INTEGER NOT NULL, gameweek INTEGER NOT NULL, "
+                "PRIMARY KEY (player_id, gameweek))"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO schema_metadata(metadata_id, version, updated_at) "
+                "VALUES (1, 8, '2026-08-26T00:00:00')"
+            )
+        )
+
+    assert database.initialize().schema_version == 9
+    columns = {
+        column["name"]
+        for column in inspect(database.engine).get_columns("player_current_stats")
+    }
+    assert "expected_goals_conceded" in columns
 
 
 def test_repository_upserts_are_idempotent(tmp_path) -> None:

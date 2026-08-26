@@ -66,7 +66,7 @@ The sampled payload used numeric JSON values for counts and string-encoded decim
 
 ## Schema decision for Phase B
 
-Add only these verified raw totals to both current-stat and per-fixture-history storage:
+Add these verified raw totals to both current-stat and per-fixture-history storage:
 
 ```text
 goals_conceded
@@ -77,7 +77,9 @@ red_cards
 defensive_contribution
 ```
 
-The following are already persisted and require no schema change: minutes, starts, goals, assists, clean sheets, saves, BPS, bonus, influence, creativity, threat, ICT, xG, xA, xGI, and xGC.
+The following are already persisted and require no schema change: minutes, starts, goals, assists, clean sheets, saves, BPS, bonus, influence, creativity, threat, ICT, xG, xA, and xGI. Per-fixture xGC is already stored as `xgc`.
+
+**Phase C prerequisite correction (26 Aug 2026):** the current-season snapshot did not yet persist `expected_goals_conceded`, despite the official field being audited. Schema v9 adds it as a nullable current-stat field. This gives xGC / 90 a current-season source without changing historical `xgc` handling.
 
 No derived rate is stored as a source-of-truth column. Phase C will calculate rates from persisted totals and minutes. This prevents a current-season rate from using a definition different from the player-history rate.
 

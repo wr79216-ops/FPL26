@@ -128,6 +128,7 @@ class CurrentPlayerStatsRecord:
     yellow_cards: Optional[int] = None
     red_cards: Optional[int] = None
     defensive_contribution: Optional[int] = None
+    expected_goals_conceded: Optional[float] = None
 
     def __post_init__(self) -> None:
         _require_positive(self.player_id, "player_id")
@@ -146,6 +147,8 @@ class CurrentPlayerStatsRecord:
             value = getattr(self, field_name)
             if value is not None and value < 0:
                 raise ValueError(f"{field_name} cannot be negative")
+        if self.expected_goals_conceded is not None and self.expected_goals_conceded < 0:
+            raise ValueError("expected_goals_conceded cannot be negative")
         _require_percentage(self.selected_by_percent, "selected_by_percent")
 
 

@@ -62,6 +62,13 @@ def _number(value: Any, field: str, context: str, default: Optional[float] = Non
         raise DataTransformError(f"{context} has invalid numeric field: {field}") from exc
 
 
+def _optional_number(value: Any, field: str, context: str) -> Optional[float]:
+    """Parse an optional official decimal while preserving unavailable as None."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    return _number(value, field, context)
+
+
 def _boolean(value: Any) -> bool:
     return bool(value)
 
@@ -283,6 +290,11 @@ def transform_current_player_stats(
                 defensive_contribution=_optional_integer(
                     raw_player.get("defensive_contribution"),
                     "defensive_contribution",
+                    context,
+                ),
+                expected_goals_conceded=_optional_number(
+                    raw_player.get("expected_goals_conceded"),
+                    "expected_goals_conceded",
                     context,
                 ),
             )

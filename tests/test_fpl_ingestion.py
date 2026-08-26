@@ -63,6 +63,7 @@ def test_refresh_loads_official_records_and_persists_status(tmp_path) -> None:
         assert stored_stats.goals_conceded == 2
         assert stored_stats.penalties_saved == 1
         assert stored_stats.defensive_contribution == 37
+        assert stored_stats.expected_goals_conceded == 5.24
     local_live = service.get_local_gameweek_live(8)
     assert local_live["elements"][0]["id"] == ELEMENTS[0]["id"]
     assert local_live["elements"][0]["stats"]["total_points"] == ELEMENTS[0]["total_points"]

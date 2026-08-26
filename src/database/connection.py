@@ -30,7 +30,7 @@ from src.domain.contracts import GameweekSnapshotRecord
 from src.utils.season import season_label
 
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 class SchemaVersionError(RuntimeError):
@@ -220,6 +220,21 @@ class Database:
                                 f"ADD COLUMN {column_name} INTEGER NULL"
                             )
                         )
+            return
+        if from_version == 8:
+            columns = {
+                column["name"]
+                for column in inspect(session.connection()).get_columns(
+                    CurrentPlayerStatsModel.__tablename__
+                )
+            }
+            if "expected_goals_conceded" not in columns:
+                session.execute(
+                    text(
+                        "ALTER TABLE player_current_stats "
+                        "ADD COLUMN expected_goals_conceded FLOAT NULL"
+                    )
+                )
             return
         raise SchemaVersionError(
             f"Database schema is v{from_version}; no migration to v{from_version + 1} exists."

@@ -85,6 +85,7 @@ ELEMENTS = [
         "yellow_cards": 2,
         "red_cards": 0,
         "defensive_contribution": 37,
+        "expected_goals_conceded": "5.24",
     }
 ]
 
@@ -125,6 +126,7 @@ def test_official_shape_transforms_to_contracts() -> None:
     assert stats[0].goals_conceded == 2
     assert stats[0].penalties_saved == 1
     assert stats[0].defensive_contribution == 37
+    assert stats[0].expected_goals_conceded == 5.24
     assert fixtures[0].kickoff_time == datetime(2026, 8, 24, 12, 30, tzinfo=timezone.utc)
 
 
@@ -190,6 +192,7 @@ def test_optional_signal_fields_preserve_unavailable_as_none() -> None:
         "yellow_cards",
         "red_cards",
         "defensive_contribution",
+        "expected_goals_conceded",
     ):
         missing.pop(field)
 
@@ -197,6 +200,7 @@ def test_optional_signal_fields_preserve_unavailable_as_none() -> None:
     assert stats.goals_conceded is None
     assert stats.penalties_saved is None
     assert stats.defensive_contribution is None
+    assert stats.expected_goals_conceded is None
 
     history = transform_gameweek_history(
         [
