@@ -16,9 +16,27 @@ SMALL_SAMPLE_METRICS = {
     "value",
     "xg",
     "xgi",
+    "xgc_per_90",
+    "saves_per_90",
+    "clean_sheet_rate",
+    "defensive_contribution_per_90",
+    "xg_per_90",
+    "xgi_per_90",
+    "goals_per_90",
+    "assists_per_90",
+    "conversion_rate",
+    "discipline_risk_per_90",
+    "bonus_points",
+    "ict_per_90",
 }
 
 PRE_NORMALIZED_METRICS = {"history"}
+LOWER_IS_BETTER_METRICS = {
+    "ownership",
+    "xgc_per_90",
+    "discipline_risk_per_90",
+    "penalties_missed",
+}
 
 METRIC_LABELS = {
     "attacking_output": "xGI / 90",
@@ -69,12 +87,19 @@ def percentile_ranks(values: Sequence[float], higher_is_better: bool = True) -> 
         return []
     if len(values) == 1:
         return [50.0]
-    ranks = []
-    for value in values:
-        lower = sum(other < value for other in values)
-        equal = sum(other == value for other in values)
-        percentile = (lower + (equal - 1) / 2) / (len(values) - 1) * 100
-        ranks.append(round(percentile if higher_is_better else 100 - percentile, 2))
+    ranks = [0.0] * len(values)
+    ordered = sorted(enumerate(values), key=lambda item: (item[1], item[0]))
+    start = 0
+    while start < len(ordered):
+        end = start + 1
+        value = ordered[start][1]
+        while end < len(ordered) and ordered[end][1] == value:
+            end += 1
+        percentile = (start + (end - start - 1) / 2) / (len(values) - 1) * 100
+        normalized = round(percentile if higher_is_better else 100 - percentile, 2)
+        for index, _ in ordered[start:end]:
+            ranks[index] = normalized
+        start = end
     return ranks
 
 
@@ -125,7 +150,10 @@ def score_recommendations(
             normalized[metric] = (
                 [max(0.0, min(100.0, value)) for value in raw_values]
                 if metric in PRE_NORMALIZED_METRICS
-                else percentile_ranks(raw_values, higher_is_better=metric != "ownership")
+                else percentile_ranks(
+                    raw_values,
+                    higher_is_better=metric not in LOWER_IS_BETTER_METRICS,
+                )
             )
 
         for index, candidate in enumerate(group):

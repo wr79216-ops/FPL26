@@ -60,6 +60,9 @@ from src.services.schedule_backtesting import (
 
 
 BACKTEST_MODELS_PATH = SCORING_CONFIG_PATH.with_name("backtest_models.yaml")
+POSITIONAL_CANDIDATE_CONFIG_PATH = SCORING_CONFIG_PATH.with_name(
+    "positional_candidate_weights.yaml"
+)
 BACKTEST_SEASON = "2025-26"
 BACKTEST_HORIZONS = (1, 3, 5)
 MIN_AS_OF_GAMEWEEK = 3
@@ -116,6 +119,52 @@ class BacktestPredictionView:
     actual_rank: int
 
 
+@dataclass(frozen=True)
+class PositionalValidationPolicy:
+    minimum_cutoffs: int
+    minimum_predictions_per_position: int
+    minimum_feature_coverage: float
+    maximum_mae_increase: float
+    maximum_spearman_decrease: float
+    maximum_top_10_hit_rate_decrease: float
+    maximum_top_10_points_decrease: float
+    require_at_least_one_improvement: bool
+    production_activation_approved: bool
+
+
+@dataclass(frozen=True)
+class PositionalMetricSummary:
+    cutoffs: int
+    predictions: int
+    mae_percentile: float
+    spearman: float
+    top_10_hit_rate: float
+    average_actual_points_top_10: float
+
+
+@dataclass(frozen=True)
+class PositionalCandidateEvaluation:
+    position: str
+    baseline: PositionalMetricSummary | None
+    candidate: PositionalMetricSummary | None
+    feature_coverage: float
+    gate_passed: bool
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PositionalCandidateValidationReport:
+    season: str
+    horizon: int
+    production_version: str
+    candidate_version: str
+    evaluations: tuple[PositionalCandidateEvaluation, ...]
+    policy: PositionalValidationPolicy
+    quantitative_gates_passed: bool
+    production_active: bool
+    reasons: tuple[str, ...]
+
+
 def _integer(value: object, default: int = 0) -> int:
     text = str(value or "").strip()
     return int(float(text)) if text else default
@@ -124,6 +173,16 @@ def _integer(value: object, default: int = 0) -> int:
 def _number(value: object, default: float = 0.0) -> float:
     text = str(value or "").strip()
     return float(text) if text else default
+
+
+def _optional_integer(value: object) -> int | None:
+    text = str(value or "").strip()
+    return int(float(text)) if text else None
+
+
+def _optional_number(value: object) -> float | None:
+    text = str(value or "").strip()
+    return float(text) if text else None
 
 
 def _timestamp(value: object) -> datetime | None:
@@ -175,6 +234,23 @@ def parse_backtest_gameweeks(
                     selected=_integer(row["selected"]),
                     price=_number(row["value"]) / 10,
                     kickoff_time=_timestamp(row["kickoff_time"]),
+                    clean_sheets=_optional_integer(row.get("clean_sheets")),
+                    goals_conceded=_optional_integer(row.get("goals_conceded")),
+                    penalties_saved=_optional_integer(row.get("penalties_saved")),
+                    penalties_missed=_optional_integer(row.get("penalties_missed")),
+                    yellow_cards=_optional_integer(row.get("yellow_cards")),
+                    red_cards=_optional_integer(row.get("red_cards")),
+                    defensive_contribution=_optional_integer(
+                        row.get("defensive_contribution")
+                    ),
+                    expected_goals_conceded=_optional_number(
+                        row.get("expected_goals_conceded")
+                    ),
+                    starts=_optional_integer(row.get("starts")),
+                    bps=_optional_integer(row.get("bps")),
+                    influence=_optional_number(row.get("influence")),
+                    creativity=_optional_number(row.get("creativity")),
+                    threat=_optional_number(row.get("threat")),
                 )
             )
         except (KeyError, TypeError, ValueError) as exc:
@@ -275,6 +351,71 @@ def load_candidate_models(
     return validated
 
 
+def load_positional_candidate_model(
+    path: Path = POSITIONAL_CANDIDATE_CONFIG_PATH,
+) -> tuple[str, str, dict[str, dict[str, float]], PositionalValidationPolicy]:
+    """Load the Phase D candidate separately from the live scoring config.
+
+    Keeping this candidate out of ``scoring.yaml`` makes an accidental
+    production promotion impossible: only backtesting reads these weights.
+    """
+    with path.open("r", encoding="utf-8") as config_file:
+        payload = yaml.safe_load(config_file) or {}
+    version = str(payload.get("model_version", "")).strip()
+    production_version = str(payload.get("production_model", "")).strip()
+    if not version or not production_version:
+        raise ValueError("positional candidate requires model and production versions")
+    if payload.get("status") != "experimental":
+        raise ValueError("positional candidate must remain experimental during validation")
+    raw_weights = payload.get("position_weights")
+    if not isinstance(raw_weights, Mapping):
+        raise ValueError("positional candidate requires position_weights")
+    weights: dict[str, dict[str, float]] = {}
+    for position in ("GK", "DEF", "MID", "FWD"):
+        raw_position_weights = raw_weights.get(position)
+        if not isinstance(raw_position_weights, Mapping) or not raw_position_weights:
+            raise ValueError(f"positional candidate missing {position} weights")
+        normalized = {
+            str(metric): float(weight)
+            for metric, weight in raw_position_weights.items()
+        }
+        if any(weight < 0 for weight in normalized.values()) or abs(
+            sum(normalized.values()) - 1.0
+        ) > 1e-9:
+            raise ValueError(f"positional candidate {position} weights must sum to 1.0")
+        weights[position] = normalized
+
+    gates = payload.get("validation_gates")
+    if not isinstance(gates, Mapping):
+        raise ValueError("positional candidate requires validation_gates")
+    policy = PositionalValidationPolicy(
+        minimum_cutoffs=int(gates["minimum_cutoffs"]),
+        minimum_predictions_per_position=int(gates["minimum_predictions_per_position"]),
+        minimum_feature_coverage=float(gates["minimum_feature_coverage"]),
+        maximum_mae_increase=float(gates["maximum_mae_increase"]),
+        maximum_spearman_decrease=float(gates["maximum_spearman_decrease"]),
+        maximum_top_10_hit_rate_decrease=float(
+            gates["maximum_top_10_hit_rate_decrease"]
+        ),
+        maximum_top_10_points_decrease=float(
+            gates["maximum_top_10_points_decrease"]
+        ),
+        require_at_least_one_improvement=bool(
+            gates["require_at_least_one_improvement"]
+        ),
+        production_activation_approved=bool(
+            gates["production_activation_approved"]
+        ),
+    )
+    if (
+        policy.minimum_cutoffs <= 0
+        or policy.minimum_predictions_per_position <= 0
+        or not 0 <= policy.minimum_feature_coverage <= 1
+    ):
+        raise ValueError("positional candidate validation gates are invalid")
+    return version, production_version, weights, policy
+
+
 class BacktestingService:
     def __init__(
         self,
@@ -311,9 +452,18 @@ class BacktestingService:
             repository.bulk_upsert_backtest_player_gameweeks(gameweeks)
             repository.bulk_upsert_backtest_fixtures(fixtures)
 
+        scoring = load_scoring_config()
+        positional_version, positional_production, positional_weights, _ = (
+            load_positional_candidate_model()
+        )
+        if positional_production != scoring.model_version:
+            raise ValueError(
+                "positional candidate production_model must match scoring.yaml before validation"
+            )
         models: dict[str, Mapping[str, Mapping[str, float]]] = {
-            f"production-{load_scoring_config().model_version}": load_scoring_config().position_weights,
+            f"production-{scoring.model_version}": scoring.position_weights,
             **load_candidate_models(),
+            positional_version: positional_weights,
         }
         for horizon in horizons:
             if horizon not in BACKTEST_HORIZONS:
@@ -592,6 +742,19 @@ class BacktestingService:
             xa = sum(row.expected_assists for row in rows)
             xgi = sum(row.expected_goal_involvements for row in rows)
             ict = sum(row.ict_index for row in rows)
+            starts = sum(int(row.starts or 0) for row in rows)
+            clean_sheets = sum(int(row.clean_sheets or 0) for row in rows)
+            expected_goals_conceded = sum(
+                float(row.expected_goals_conceded or 0.0) for row in rows
+            )
+            defensive_contribution = sum(
+                int(row.defensive_contribution or 0) for row in rows
+            )
+            yellow_cards = sum(int(row.yellow_cards or 0) for row in rows)
+            red_cards = sum(int(row.red_cards or 0) for row in rows)
+            penalties_missed = sum(int(row.penalties_missed or 0) for row in rows)
+            goals = sum(row.goals for row in rows)
+            assists = sum(row.assists for row in rows)
             ppm = total_points / appearances if appearances else 0.0
             history = historical_scores.get(
                 (latest.normalized_name, latest.position), 50.0
@@ -610,6 +773,37 @@ class BacktestingService:
                 "value": ppm / latest.price if latest.price else 0.0,
                 "xg": xg * 90 / minutes if minutes else 0.0,
                 "xgi": xgi * 90 / minutes if minutes else 0.0,
+                # Phase E candidate signals. They are calculated strictly
+                # from rows at or before this cutoff; future outcomes are
+                # joined only after rankings have been frozen.
+                "minutes_played": float(minutes),
+                "xgc_per_90": (
+                    expected_goals_conceded * 90 / minutes if minutes else 0.0
+                ),
+                "saves_per_90": (
+                    sum(row.saves for row in rows) * 90 / minutes if minutes else 0.0
+                ),
+                "clean_sheet_rate": clean_sheets / starts if starts else 0.0,
+                "defensive_contribution_per_90": (
+                    defensive_contribution * 90 / minutes if minutes else 0.0
+                ),
+                "xg_per_90": xg * 90 / minutes if minutes else 0.0,
+                "xgi_per_90": xgi * 90 / minutes if minutes else 0.0,
+                "goals_per_90": goals * 90 / minutes if minutes else 0.0,
+                "assists_per_90": assists * 90 / minutes if minutes else 0.0,
+                "conversion_rate": (
+                    (goals + 0.15 * 3.0) / (xg + 3.0)
+                    if latest.position == "FWD"
+                    else 0.0
+                ),
+                "bonus_points": float(sum(row.bonus for row in rows)),
+                "discipline_risk_per_90": (
+                    (yellow_cards + 3 * red_cards) * 90 / minutes
+                    if minutes
+                    else 0.0
+                ),
+                "ict_per_90": ict * 90 / minutes if minutes else 0.0,
+                "penalties_missed": float(penalties_missed),
             }
             candidates.append(
                 RecommendationCandidate(
@@ -678,6 +872,217 @@ class BacktestingService:
                 for row in rows
             ]
 
+    @staticmethod
+    def _summarize_position_predictions(
+        predictions: Sequence[BacktestPredictionModel],
+    ) -> PositionalMetricSummary | None:
+        """Summarise only like-for-like cutoff rankings for one FPL position."""
+        if not predictions:
+            return None
+        by_cutoff: dict[int, list[BacktestPredictionModel]] = defaultdict(list)
+        for prediction in predictions:
+            by_cutoff[int(prediction.as_of_gameweek)].append(prediction)
+        mae_values: list[float] = []
+        spearman_values: list[float] = []
+        hit_rates: list[float] = []
+        top_points: list[float] = []
+        for group in by_cutoff.values():
+            if len(group) < 2:
+                continue
+            ordered_prediction = sorted(
+                group,
+                key=lambda item: (int(item.predicted_rank), int(item.player_id)),
+            )
+            ordered_actual = sorted(
+                group,
+                key=lambda item: (-int(item.actual_points), int(item.player_id)),
+            )
+            top_count = min(10, len(group))
+            predicted_top = {item.player_id for item in ordered_prediction[:top_count]}
+            actual_top = {item.player_id for item in ordered_actual[:top_count]}
+            mae_values.extend(
+                abs(float(item.recommendation_score) - float(item.actual_percentile))
+                for item in group
+            )
+            spearman_values.append(
+                spearman_rank_correlation(
+                    [float(item.recommendation_score) for item in group],
+                    [float(item.actual_points) for item in group],
+                )
+            )
+            hit_rates.append(len(predicted_top & actual_top) / top_count * 100)
+            top_points.append(
+                mean(float(item.actual_points) for item in ordered_prediction[:top_count])
+            )
+        if not spearman_values:
+            return None
+        return PositionalMetricSummary(
+            cutoffs=len(spearman_values),
+            predictions=len(predictions),
+            mae_percentile=round(mean(mae_values), 4),
+            spearman=round(mean(spearman_values), 4),
+            top_10_hit_rate=round(mean(hit_rates), 2),
+            average_actual_points_top_10=round(mean(top_points), 3),
+        )
+
+    @staticmethod
+    def _candidate_feature_coverage(
+        rows: Sequence[BacktestPlayerGameweekModel],
+    ) -> dict[str, tuple[float, tuple[str, ...]]]:
+        """Return the lowest required official-field coverage per position.
+
+        This is deliberately conservative: a candidate cannot be promoted if a
+        position relies on a mostly absent historical field, even if a neutral
+        fallback would make a numerical backtest run possible.
+        """
+        required_fields = {
+            "GK": (
+                "minutes", "expected_goals_conceded", "saves", "clean_sheets",
+                "starts", "bonus", "yellow_cards", "red_cards",
+            ),
+            "DEF": (
+                "minutes", "expected_goals_conceded", "clean_sheets", "starts",
+                "expected_goal_involvements", "defensive_contribution", "bonus",
+                "yellow_cards", "red_cards",
+            ),
+            "MID": (
+                "minutes", "expected_goal_involvements", "goals", "assists",
+                "clean_sheets", "starts", "bonus", "yellow_cards", "red_cards",
+                "ict_index",
+            ),
+            "FWD": (
+                "minutes", "expected_goals", "expected_goal_involvements", "goals",
+                "assists", "bonus", "yellow_cards", "red_cards", "penalties_missed",
+            ),
+        }
+        by_position: dict[str, list[BacktestPlayerGameweekModel]] = defaultdict(list)
+        for row in rows:
+            by_position[str(row.position)].append(row)
+        coverage: dict[str, tuple[float, tuple[str, ...]]] = {}
+        for position, fields in required_fields.items():
+            position_rows = by_position.get(position, [])
+            if not position_rows:
+                coverage[position] = (0.0, fields)
+                continue
+            missing = tuple(
+                field
+                for field in fields
+                if any(getattr(row, field, None) is None for row in position_rows)
+            )
+            field_rates = [
+                sum(getattr(row, field, None) is not None for row in position_rows)
+                / len(position_rows)
+                for field in fields
+            ]
+            coverage[position] = (min(field_rates), missing)
+        return coverage
+
+    def get_positional_candidate_validation_report(
+        self,
+        season: str = BACKTEST_SEASON,
+        horizon: int = 5,
+    ) -> PositionalCandidateValidationReport:
+        """Compare the experimental positional candidate to production, fail closed."""
+        candidate_version, production_version, _, policy = load_positional_candidate_model()
+        production_model_version = f"production-{production_version}"
+        with self.database.session() as session:
+            repository = FPLRepository(session)
+            base_predictions = repository.list_backtest_predictions(
+                season, horizon, production_model_version
+            )
+            candidate_predictions = repository.list_backtest_predictions(
+                season, horizon, candidate_version
+            )
+            gameweek_rows = repository.list_backtest_player_gameweeks(season)
+
+        base_by_position: dict[str, list[BacktestPredictionModel]] = defaultdict(list)
+        candidate_by_position: dict[str, list[BacktestPredictionModel]] = defaultdict(list)
+        for prediction in base_predictions:
+            base_by_position[str(prediction.position)].append(prediction)
+        for prediction in candidate_predictions:
+            candidate_by_position[str(prediction.position)].append(prediction)
+        coverage = self._candidate_feature_coverage(gameweek_rows)
+
+        evaluations: list[PositionalCandidateEvaluation] = []
+        any_improvement = False
+        for position in ("GK", "DEF", "MID", "FWD"):
+            base = self._summarize_position_predictions(base_by_position[position])
+            candidate = self._summarize_position_predictions(
+                candidate_by_position[position]
+            )
+            coverage_rate, missing_fields = coverage[position]
+            reasons: list[str] = []
+            if base is None or candidate is None:
+                reasons.append("Production or candidate predictions are not available for this position.")
+            else:
+                if min(base.cutoffs, candidate.cutoffs) < policy.minimum_cutoffs:
+                    reasons.append(
+                        f"Only {min(base.cutoffs, candidate.cutoffs)} comparable cutoffs; minimum is {policy.minimum_cutoffs}."
+                    )
+                if min(base.predictions, candidate.predictions) < policy.minimum_predictions_per_position:
+                    reasons.append(
+                        f"Only {min(base.predictions, candidate.predictions)} predictions; minimum is {policy.minimum_predictions_per_position}."
+                    )
+                if candidate.mae_percentile - base.mae_percentile > policy.maximum_mae_increase:
+                    reasons.append("Candidate MAE worsens beyond the permitted tolerance.")
+                if candidate.spearman - base.spearman < -policy.maximum_spearman_decrease:
+                    reasons.append("Candidate Spearman declines beyond the permitted tolerance.")
+                if candidate.top_10_hit_rate - base.top_10_hit_rate < -policy.maximum_top_10_hit_rate_decrease:
+                    reasons.append("Candidate top-10 hit rate declines beyond the permitted tolerance.")
+                if candidate.average_actual_points_top_10 - base.average_actual_points_top_10 < -policy.maximum_top_10_points_decrease:
+                    reasons.append("Candidate top-10 points decline beyond the permitted tolerance.")
+                any_improvement = any_improvement or any(
+                    (
+                        candidate.mae_percentile < base.mae_percentile,
+                        candidate.spearman > base.spearman,
+                        candidate.top_10_hit_rate > base.top_10_hit_rate,
+                        candidate.average_actual_points_top_10 > base.average_actual_points_top_10,
+                    )
+                )
+            if coverage_rate < policy.minimum_feature_coverage:
+                reasons.append(
+                    f"Official historical feature coverage is {coverage_rate:.0%}; minimum is {policy.minimum_feature_coverage:.0%}."
+                )
+            if missing_fields:
+                reasons.append(
+                    "Missing official historical fields: " + ", ".join(missing_fields) + "."
+                )
+            evaluations.append(
+                PositionalCandidateEvaluation(
+                    position=position,
+                    baseline=base,
+                    candidate=candidate,
+                    feature_coverage=round(coverage_rate, 4),
+                    gate_passed=not reasons,
+                    reasons=tuple(reasons),
+                )
+            )
+
+        report_reasons = [
+            f"{item.position}: {reason}"
+            for item in evaluations
+            for reason in item.reasons
+        ]
+        if policy.require_at_least_one_improvement and not any_improvement:
+            report_reasons.append("Candidate does not improve any tracked position-level metric.")
+        quantitative_gates_passed = not report_reasons
+        production_active = quantitative_gates_passed and policy.production_activation_approved
+        if quantitative_gates_passed and not policy.production_activation_approved:
+            report_reasons.append(
+                "Quantitative gates passed, but explicit production approval remains false."
+            )
+        return PositionalCandidateValidationReport(
+            season=season,
+            horizon=horizon,
+            production_version=production_model_version,
+            candidate_version=candidate_version,
+            evaluations=tuple(evaluations),
+            policy=policy,
+            quantitative_gates_passed=quantitative_gates_passed,
+            production_active=production_active,
+            reasons=tuple(report_reasons),
+        )
+
     def get_schedule_validation_report(self) -> ScheduleValidationReport:
         """Evaluate Phase F inputs and fail closed when history is insufficient."""
         policy, forecasts = load_schedule_backtest_config()
@@ -722,6 +1127,7 @@ def get_backtesting_service(
         settings.historical_base_url,
         settings.request_timeout_seconds,
         BACKTEST_MODELS_PATH.stat().st_mtime_ns,
+        POSITIONAL_CANDIDATE_CONFIG_PATH.stat().st_mtime_ns,
     )
 
 
@@ -731,8 +1137,9 @@ def _get_cached_backtesting_service(
     base_url: str,
     timeout_seconds: float,
     model_config_mtime: int,
+    positional_candidate_config_mtime: int,
 ) -> BacktestingService:
-    del model_config_mtime
+    del model_config_mtime, positional_candidate_config_mtime
     return BacktestingService(
         database=get_database(database_path),
         client=HistoricalDataClient(base_url, timeout_seconds),

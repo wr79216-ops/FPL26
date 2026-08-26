@@ -30,7 +30,7 @@ from src.domain.contracts import GameweekSnapshotRecord
 from src.utils.season import season_label
 
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 
 class SchemaVersionError(RuntimeError):
@@ -235,6 +235,37 @@ class Database:
                         "ADD COLUMN expected_goals_conceded FLOAT NULL"
                     )
                 )
+            return
+        if from_version == 9:
+            field_types = {
+                "clean_sheets": "INTEGER",
+                "goals_conceded": "INTEGER",
+                "penalties_saved": "INTEGER",
+                "penalties_missed": "INTEGER",
+                "yellow_cards": "INTEGER",
+                "red_cards": "INTEGER",
+                "defensive_contribution": "INTEGER",
+                "expected_goals_conceded": "FLOAT",
+                "starts": "INTEGER",
+                "bps": "INTEGER",
+                "influence": "FLOAT",
+                "creativity": "FLOAT",
+                "threat": "FLOAT",
+            }
+            existing_columns = {
+                column["name"]
+                for column in inspect(session.connection()).get_columns(
+                    BacktestPlayerGameweekModel.__tablename__
+                )
+            }
+            for column_name, column_type in field_types.items():
+                if column_name not in existing_columns:
+                    session.execute(
+                        text(
+                            "ALTER TABLE backtest_player_gameweeks "
+                            f"ADD COLUMN {column_name} {column_type} NULL"
+                        )
+                    )
             return
         raise SchemaVersionError(
             f"Database schema is v{from_version}; no migration to v{from_version + 1} exists."

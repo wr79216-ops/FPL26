@@ -337,6 +337,19 @@ class BacktestPlayerGameweekRecord:
     selected: int
     price: float
     kickoff_time: Optional[datetime]
+    clean_sheets: Optional[int] = None
+    goals_conceded: Optional[int] = None
+    penalties_saved: Optional[int] = None
+    penalties_missed: Optional[int] = None
+    yellow_cards: Optional[int] = None
+    red_cards: Optional[int] = None
+    defensive_contribution: Optional[int] = None
+    expected_goals_conceded: Optional[float] = None
+    starts: Optional[int] = None
+    bps: Optional[int] = None
+    influence: Optional[float] = None
+    creativity: Optional[float] = None
+    threat: Optional[float] = None
 
     def __post_init__(self) -> None:
         if not self.season.strip() or not self.player_name.strip() or not self.team.strip():
@@ -346,6 +359,25 @@ class BacktestPlayerGameweekRecord:
         _require_positive(self.gameweek, "gameweek")
         if self.minutes < 0 or self.selected < 0 or self.price <= 0:
             raise ValueError("backtest minutes/selected cannot be negative and price must be positive")
+        for field_name in (
+            "clean_sheets",
+            "goals_conceded",
+            "penalties_saved",
+            "penalties_missed",
+            "yellow_cards",
+            "red_cards",
+            "defensive_contribution",
+            "starts",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"backtest {field_name} cannot be negative")
+        for field_name in (
+            "expected_goals_conceded",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"backtest {field_name} cannot be negative")
 
 
 @dataclass(frozen=True)

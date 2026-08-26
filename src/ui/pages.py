@@ -1198,7 +1198,7 @@ def render_backtesting(
     if st.button(
         "Import & rerun 2025–26 backtests",
         type="primary",
-        help="Download validated historical gameweek/fixture files and rerun both models for horizons 1, 3, and 5.",
+        help="Download validated historical gameweek/fixture files and rerun production plus every configured experimental model for horizons 1, 3, and 5.",
     ):
         try:
             with st.spinner("Importing historical outcomes and running all time-safe cutoffs..."):
@@ -1308,6 +1308,104 @@ def render_backtesting(
         format_func=lambda value: f"Next {value} GW",
         help="Future gameweeks included in each stored outcome window.",
     )
+    try:
+        positional_report = service.get_positional_candidate_validation_report(
+            horizon=horizon
+        )
+        section_heading(
+            "Positional candidate release gate",
+            f"{positional_report.candidate_version} vs {positional_report.production_version} · leakage-safe",
+            "Every position must meet data-coverage and no-material-regression gates. This report cannot change live rankings by itself.",
+        )
+        gate_metrics = st.columns(4)
+        with gate_metrics[0]:
+            metric_tile(
+                "Candidate status",
+                "Approved" if positional_report.production_active else "Experimental",
+                "Explicit approval + all gates required",
+                "The production score remains v1.1 until the candidate passes quantitative gates and an explicit production activation decision is recorded in configuration.",
+            )
+        with gate_metrics[1]:
+            metric_tile(
+                "Positions passed",
+                f"{sum(item.gate_passed for item in positional_report.evaluations)}/4",
+                "Coverage and regression checks",
+                "Each FPL position is evaluated independently so an improvement in one group cannot hide a degradation in another.",
+            )
+        with gate_metrics[2]:
+            metric_tile(
+                "Minimum coverage",
+                f"{min(item.feature_coverage for item in positional_report.evaluations):.0%}",
+                f"Gate ≥ {positional_report.policy.minimum_feature_coverage:.0%}",
+                "Lowest required official historical-field coverage among the four positions. Missing data fails closed rather than becoming a favourable zero.",
+            )
+        with gate_metrics[3]:
+            metric_tile(
+                "Quantitative gates",
+                "Passed" if positional_report.quantitative_gates_passed else "Not met",
+                "No material position-level regression",
+                "MAE, Spearman, top-10 hit rate, and top-10 actual points are compared on the same cutoffs and future outcome windows.",
+            )
+        evaluation_rows = []
+        for item in positional_report.evaluations:
+            base = item.baseline
+            candidate_metrics = item.candidate
+            evaluation_rows.append(
+                {
+                    "Position": item.position,
+                    "Coverage": item.feature_coverage,
+                    "Cutoffs": candidate_metrics.cutoffs if candidate_metrics else None,
+                    "Predictions": candidate_metrics.predictions if candidate_metrics else None,
+                    "MAE Δ": (
+                        candidate_metrics.mae_percentile - base.mae_percentile
+                        if base and candidate_metrics
+                        else None
+                    ),
+                    "Spearman Δ": (
+                        candidate_metrics.spearman - base.spearman
+                        if base and candidate_metrics
+                        else None
+                    ),
+                    "Top-10 hit Δ": (
+                        candidate_metrics.top_10_hit_rate - base.top_10_hit_rate
+                        if base and candidate_metrics
+                        else None
+                    ),
+                    "Top-10 pts Δ": (
+                        candidate_metrics.average_actual_points_top_10
+                        - base.average_actual_points_top_10
+                        if base and candidate_metrics
+                        else None
+                    ),
+                    "Gate": "Pass" if item.gate_passed else "Hold",
+                }
+            )
+        st.dataframe(
+            pd.DataFrame(evaluation_rows),
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "Coverage": st.column_config.NumberColumn("Official coverage", format="%.0f%%", help="Lowest availability rate across official historical fields required by the candidate profile."),
+                "Cutoffs": st.column_config.NumberColumn("Cutoffs", help="Comparable as-of gameweek ranking snapshots."),
+                "Predictions": st.column_config.NumberColumn("Predictions", help="Persisted player rankings evaluated for this position."),
+                "MAE Δ": st.column_config.NumberColumn("MAE Δ ↓", format="%+.3f", help="Candidate minus production. Lower is better; a positive value is a deterioration."),
+                "Spearman Δ": st.column_config.NumberColumn("Spearman Δ ↑", format="%+.3f", help="Candidate minus production. Higher is better."),
+                "Top-10 hit Δ": st.column_config.NumberColumn("Top-10 hit Δ ↑", format="%+.1f%%", help="Candidate minus production top-10 overlap with realised top 10."),
+                "Top-10 pts Δ": st.column_config.NumberColumn("Top-10 pts Δ ↑", format="%+.2f", help="Candidate minus production average realised points from its top 10."),
+            },
+        )
+        if positional_report.production_active:
+            st.success("The positional candidate has passed all gates and explicit activation is recorded.")
+        else:
+            st.warning(
+                "Candidate remains inactive. " + " ".join(positional_report.reasons)
+            )
+    except Exception as exc:
+        st.info(
+            "Positional candidate validation is waiting for a completed production and candidate rerun. "
+            f"Detail: {exc}"
+        )
+
     selected_runs = [run for run in runs if run.horizon == horizon]
     comparison = pd.DataFrame([asdict(run) for run in selected_runs])
 
@@ -1380,7 +1478,7 @@ def render_backtesting(
         None,
     )
     candidate = next(
-        (run for run in selected_runs if run.model_version.startswith("candidate-")),
+        (run for run in selected_runs if run.model_version == "candidate-v1.3-positional"),
         None,
     )
     if production and candidate and candidate.mae_percentile < production.mae_percentile and candidate.spearman > production.spearman:

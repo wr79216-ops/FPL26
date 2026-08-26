@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy import inspect, text
 
-from src.database.connection import Database
+from src.database.connection import SCHEMA_VERSION, Database
 from src.database.models import (
+    BacktestPlayerGameweekModel,
     CurrentPlayerStatsModel,
     GameweekSnapshotModel,
     HistoricalIdentityMappingModel,
@@ -79,7 +80,7 @@ def test_database_initializes_expected_baseline_schema(tmp_path) -> None:
     database = Database(tmp_path / "test.db")
     status = database.initialize()
 
-    assert status.schema_version == 9
+    assert status.schema_version == SCHEMA_VERSION
     assert set(status.tables) == {
         "fixtures",
         "backtest_fixtures",
@@ -171,7 +172,7 @@ def test_v1_database_migrates_and_backfills_current_stats_snapshot(tmp_path) -> 
             )
         )
 
-    assert database.initialize().schema_version == 9
+    assert database.initialize().schema_version == SCHEMA_VERSION
     with database.session() as session:
         snapshots = session.query(GameweekSnapshotModel).all()
         assert len(snapshots) == 1
@@ -211,7 +212,7 @@ def test_v7_database_migrates_optional_signal_columns(tmp_path) -> None:
             )
         )
 
-    assert database.initialize().schema_version == 9
+    assert database.initialize().schema_version == SCHEMA_VERSION
     current_columns = {
         column["name"]
         for column in inspect(database.engine).get_columns("player_current_stats")
@@ -256,12 +257,56 @@ def test_v8_database_migrates_current_xgc_column(tmp_path) -> None:
             )
         )
 
-    assert database.initialize().schema_version == 9
+    assert database.initialize().schema_version == SCHEMA_VERSION
     columns = {
         column["name"]
         for column in inspect(database.engine).get_columns("player_current_stats")
     }
     assert "expected_goals_conceded" in columns
+
+
+def test_v9_database_migrates_historical_positional_candidate_columns(tmp_path) -> None:
+    database = Database(tmp_path / "v9.db")
+    with database.engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE schema_metadata ("
+                "metadata_id INTEGER PRIMARY KEY, version INTEGER NOT NULL, "
+                "updated_at DATETIME NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE backtest_player_gameweeks ("
+                "season VARCHAR(9) NOT NULL, player_id INTEGER NOT NULL, "
+                "fixture_id INTEGER NOT NULL, PRIMARY KEY (season, player_id, fixture_id))"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO schema_metadata(metadata_id, version, updated_at) "
+                "VALUES (1, 9, '2026-08-26T00:00:00')"
+            )
+        )
+
+    assert database.initialize().schema_version == SCHEMA_VERSION
+    columns = {
+        column["name"]
+        for column in inspect(database.engine).get_columns(
+            BacktestPlayerGameweekModel.__tablename__
+        )
+    }
+    assert {
+        "clean_sheets",
+        "expected_goals_conceded",
+        "defensive_contribution",
+        "penalties_missed",
+        "starts",
+        "bps",
+        "influence",
+        "creativity",
+        "threat",
+    } <= columns
 
 
 def test_repository_upserts_are_idempotent(tmp_path) -> None:

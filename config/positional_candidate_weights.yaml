@@ -11,6 +11,16 @@ notes:
   - "Each position's weights sum to 1.0."
   - "Missing official fields must receive a documented neutral fallback only during evaluation."
   - "Do not use this file for live rankings before Phase E approval."
+validation_gates:
+  minimum_cutoffs: 20
+  minimum_predictions_per_position: 100
+  minimum_feature_coverage: 0.98
+  maximum_mae_increase: 0.25
+  maximum_spearman_decrease: 0.01
+  maximum_top_10_hit_rate_decrease: 1.0
+  maximum_top_10_points_decrease: 0.10
+  require_at_least_one_improvement: true
+  production_activation_approved: false
 position_weights:
   GK:
     fixture: 0.20

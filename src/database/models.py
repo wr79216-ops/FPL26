@@ -275,6 +275,19 @@ class BacktestPlayerGameweekModel(Base):
     selected: Mapped[int] = mapped_column(Integer, nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     kickoff_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    clean_sheets: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    goals_conceded: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    penalties_saved: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    penalties_missed: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    yellow_cards: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    red_cards: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    defensive_contribution: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    expected_goals_conceded: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    starts: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    bps: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    influence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    creativity: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    threat: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
 
 class BacktestFixtureModel(Base):
