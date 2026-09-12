@@ -300,3 +300,89 @@ def test_compare_teams_detects_shield_and_differentials() -> None:
     assert comp.rival_bank == 0.5
     assert comp.user_chips.total_remaining == 8
     assert comp.rival_chips.total_remaining == 7
+
+
+def test_get_league_rank_history_small_league_calculates_exact_rank() -> None:
+    standings_payload = {
+        "league": {"id": 100, "name": "Mini League", "league_type": "x"},
+        "standings": {
+            "has_next": False,
+            "results": [
+                {"entry": 101, "entry_name": "A", "player_name": "Alice"},
+                {"entry": 102, "entry_name": "B", "player_name": "Bob"},
+            ],
+        },
+    }
+    hist_101 = {
+        "current": [
+            {"event": 1, "total_points": 50},
+            {"event": 2, "total_points": 100},
+        ],
+        "chips": [],
+    }
+    hist_102 = {
+        "current": [
+            {"event": 1, "total_points": 60},
+            {"event": 2, "total_points": 90},
+        ],
+        "chips": [],
+    }
+    responses = {
+        "leagues-classic/100/standings/": standings_payload,
+        "entry/101/history/": hist_101,
+        "entry/102/history/": hist_102,
+    }
+    client = FPLClient(session=MockSession(responses))
+    service = LeagueAnalyticsService(client)
+
+    # Bob (102) was #1 in GW1 (60 vs 50), then #2 in GW2 (90 vs 100)
+    history = service.get_league_rank_history(
+        league_id=100,
+        user_entry_id=102,
+        current_gameweek=2,
+        total_league_teams=2,
+    )
+
+    assert len(history) == 2
+    assert history[0].gameweek == 1
+    assert history[0].league_rank == 1
+    assert history[0].total_points == 60
+    assert history[0].is_overall_rank is False
+
+    assert history[1].gameweek == 2
+    assert history[1].league_rank == 2
+    assert history[1].total_points == 90
+    assert history[1].is_overall_rank is False
+
+
+def test_get_league_rank_history_large_league_uses_overall_rank() -> None:
+    user_hist = {
+        "current": [
+            {"event": 1, "total_points": 50, "overall_rank": 1000000},
+            {"event": 2, "total_points": 110, "overall_rank": 800000},
+        ],
+        "chips": [],
+    }
+    responses = {
+        "entry/102/history/": user_hist,
+    }
+    client = FPLClient(session=MockSession(responses))
+    service = LeagueAnalyticsService(client)
+
+    # For league with 500 teams (> 30), it provides overall rank progression
+    history = service.get_league_rank_history(
+        league_id=200,
+        user_entry_id=102,
+        current_gameweek=2,
+        total_league_teams=500,
+    )
+
+    assert len(history) == 2
+    assert history[0].gameweek == 1
+    assert history[0].league_rank == 1000000
+    assert history[0].is_overall_rank is True
+
+    assert history[1].gameweek == 2
+    assert history[1].league_rank == 800000
+    assert history[1].is_overall_rank is True
+

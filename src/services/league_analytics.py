@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
@@ -128,6 +129,17 @@ class LeagueChipSummary:
 
 
 @dataclass(frozen=True)
+class LeagueRankHistoryEntry:
+    """One GW snapshot of a user's rank."""
+
+    gameweek: int
+    league_rank: int
+    total_points: int
+    total_teams: int
+    is_overall_rank: bool = False
+
+
+@dataclass(frozen=True)
 class LeagueAnalysisReport:
     """Full analysis report for a mini-league."""
 
@@ -144,6 +156,7 @@ class LeagueAnalysisReport:
     run_rate_needed: Optional[float]
     standings: Tuple[RivalTeamRow, ...]
     chip_summary: LeagueChipSummary
+    total_league_teams: int = 0
     captain_distribution: Dict[str, int] = field(default_factory=dict)
 
 
@@ -178,6 +191,7 @@ class LeagueAnalyticsService:
 
     def __init__(self, client: FPLClient) -> None:
         self.client = client
+        self._league_totals_cache: Dict[int, int] = {}
 
     def get_manager_leagues(self, manager_id: int) -> Tuple[ManagerLeague, ...]:
         """Fetch and categorize all leagues for a manager."""
@@ -301,6 +315,62 @@ class LeagueAnalyticsService:
             active_chip=active_chip,
         )
 
+    def _count_total_league_teams(
+        self, league_id: int, first_page_results: list, first_page_has_next: bool
+    ) -> int:
+        """Count total teams in a league using cached exponential + binary search."""
+        if league_id in self._league_totals_cache:
+            return self._league_totals_cache[league_id]
+
+        total = len(first_page_results)
+        if not first_page_has_next:
+            self._league_totals_cache[league_id] = total
+            return total
+
+        # Exponential search to bracket the end page
+        low = 1
+        high = 2
+        max_bracket = 100  # Up to 5,000 teams (covers 99.9% of mini-leagues)
+        last_known_count = total
+
+        while high <= max_bracket:
+            try:
+                next_payload = self.client.get_classic_league_standings(league_id, page=high)
+                st = next_payload.get("standings", {})
+                res = st.get("results", [])
+                if not res:
+                    break
+                last_known_count = (high - 1) * 50 + len(res)
+                if not st.get("has_next", False):
+                    self._league_totals_cache[league_id] = last_known_count
+                    return last_known_count
+                low = high
+                high *= 2
+            except Exception:
+                break
+
+        # Binary search between low and min(high, max_bracket)
+        high = min(high, max_bracket)
+        while low <= high:
+            mid = (low + high) // 2
+            try:
+                next_payload = self.client.get_classic_league_standings(league_id, page=mid)
+                st = next_payload.get("standings", {})
+                res = st.get("results", [])
+                if not res:
+                    high = mid - 1
+                else:
+                    last_known_count = max(last_known_count, (mid - 1) * 50 + len(res))
+                    if not st.get("has_next", False):
+                        self._league_totals_cache[league_id] = last_known_count
+                        return last_known_count
+                    low = mid + 1
+            except Exception:
+                break
+
+        self._league_totals_cache[league_id] = last_known_count
+        return last_known_count
+
     def analyze_classic_league(
         self,
         league_id: int,
@@ -318,6 +388,11 @@ class LeagueAnalyticsService:
         standings_obj = payload.get("standings", {})
         raw_results = standings_obj.get("results", [])
         has_next = bool(standings_obj.get("has_next", False))
+
+        # Calculate actual total teams in the league
+        total_league_teams = self._count_total_league_teams(
+            league_id, raw_results, has_next
+        )
 
         league_name = normalize_display_name(str(league_meta.get("name", f"League {league_id}")))
         league_type = str(league_meta.get("league_type", "x"))
@@ -447,8 +522,124 @@ class LeagueAnalyticsService:
             run_rate_needed=run_rate_needed,
             standings=tuple(rows),
             chip_summary=summary,
+            total_league_teams=total_league_teams,
             captain_distribution=dict(sorted(captain_distribution.items(), key=lambda x: -x[1])),
         )
+
+    def get_league_rank_history(
+        self,
+        league_id: int,
+        user_entry_id: int,
+        current_gameweek: int,
+        total_league_teams: int = 0,
+        max_teams_for_league_recalc: int = 30,
+    ) -> Tuple[LeagueRankHistoryEntry, ...]:
+        """Compute per-GW rank history for the user.
+
+        If total_league_teams <= 30 (small mini-league), fetches total_points per GW
+        for each league member in parallel, re-ranking them to get the exact league rank.
+        If total_league_teams > 30 (large mini-league / broad league), fetches the user's
+        official Overall Rank per GW (is_overall_rank=True) to avoid making hundreds of
+        requests while still giving a complete, informative time-series.
+        """
+        if current_gameweek <= 0:
+            return ()
+
+        # For larger leagues (> 30 teams), provide Overall Rank history per GW instantly
+        if total_league_teams > max_teams_for_league_recalc:
+            try:
+                user_hist = self.client.get_entry_history(user_entry_id)
+                res: List[LeagueRankHistoryEntry] = []
+                for gw_item in user_hist.get("current", []):
+                    gw = int(gw_item.get("event", 0))
+                    if 1 <= gw <= current_gameweek:
+                        ov_rank = int(gw_item.get("overall_rank", 0) or gw_item.get("rank", 0))
+                        pts = int(gw_item.get("total_points", 0))
+                        res.append(
+                            LeagueRankHistoryEntry(
+                                gameweek=gw,
+                                league_rank=ov_rank,
+                                total_points=pts,
+                                total_teams=total_league_teams,
+                                is_overall_rank=True,
+                            )
+                        )
+                return tuple(res)
+            except Exception as exc:
+                logger.warning("Could not fetch user overall history: %s", exc)
+                return ()
+
+        # For small mini-leagues (<= 30 teams), fetch all members on page 1
+        try:
+            payload = self.client.get_classic_league_standings(league_id, page=1)
+            standings_obj = payload.get("standings", {})
+            raw_results = standings_obj.get("results", [])
+            entry_ids = [int(r["entry"]) for r in raw_results if "entry" in r][:max_teams_for_league_recalc]
+            if user_entry_id not in entry_ids:
+                entry_ids.append(user_entry_id)
+        except Exception as exc:
+            logger.warning("Could not fetch standings for rank history: %s", exc)
+            return ()
+
+        # Fetch member histories in parallel
+        member_gw_points: Dict[int, Dict[int, int]] = {}
+
+        def _fetch_member_hist(eid: int) -> Tuple[int, Dict[int, int]]:
+            try:
+                hist = self.client.get_entry_history(eid)
+                gw_pts: Dict[int, int] = {}
+                for gw_data in hist.get("current", []):
+                    gw = int(gw_data.get("event", 0))
+                    total_pts = int(gw_data.get("total_points", 0))
+                    if 1 <= gw <= current_gameweek:
+                        gw_pts[gw] = total_pts
+                return eid, gw_pts
+            except Exception:
+                return eid, {}
+
+        with ThreadPoolExecutor(max_workers=min(8, max(1, len(entry_ids)))) as executor:
+            futures = [executor.submit(_fetch_member_hist, eid) for eid in entry_ids]
+            for f in as_completed(futures):
+                eid, gw_pts = f.result()
+                if gw_pts:
+                    member_gw_points[eid] = gw_pts
+
+        if user_entry_id not in member_gw_points:
+            return ()
+
+        # Compute user's league rank per GW
+        result: List[LeagueRankHistoryEntry] = []
+        for gw in range(1, current_gameweek + 1):
+            gw_scores: List[Tuple[int, int]] = []
+            for eid, gw_map in member_gw_points.items():
+                pts = gw_map.get(gw)
+                if pts is not None:
+                    gw_scores.append((eid, pts))
+
+            if not gw_scores:
+                continue
+
+            gw_scores.sort(key=lambda x: -x[1])
+            user_rank = 0
+            user_pts = 0
+            for rank_idx, (eid, pts) in enumerate(gw_scores, start=1):
+                if eid == user_entry_id:
+                    user_rank = rank_idx
+                    user_pts = pts
+                    break
+
+            if user_rank > 0:
+                result.append(
+                    LeagueRankHistoryEntry(
+                        gameweek=gw,
+                        league_rank=user_rank,
+                        total_points=user_pts,
+                        total_teams=len(gw_scores),
+                        is_overall_rank=False,
+                    )
+                )
+
+        return tuple(result)
 
     def compare_teams(
         self,

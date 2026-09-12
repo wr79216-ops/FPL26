@@ -3236,12 +3236,17 @@ def render_league_rivals(
         else:
             rank_change_txt = "Peringkat tidak berubah"
 
+    total_teams_display = report.total_league_teams or report.chip_summary.total_teams
+
     m1, m2, m3, m4 = st.columns(4)
     with m1:
+        rank_subtitle = rank_change_txt or f"Total {total_teams_display} tim"
+        if user_row:
+            rank_subtitle = f"dari {total_teams_display} tim" + (f" · {rank_change_txt}" if rank_change_txt else "")
         metric_tile(
             "Peringkat Liga",
             user_rank_str,
-            rank_change_txt or f"Total {report.chip_summary.total_teams} tim",
+            rank_subtitle,
             "Posisi resmi kamu di mini-league ini.",
         )
     with m2:
@@ -3278,9 +3283,166 @@ def render_league_rivals(
                 "Selisih simpanan chip kamu dibandingkan rata-rata rival di liga.",
             )
 
+    # ---------- League Rank History Per GW ----------
+    if current_gw > 0:
+        section_heading(
+            "Histori Peringkat Liga Per GW",
+            f"{report.league_name} · Perjalanan peringkat kamu",
+            "Grafik perubahan posisi kamu di klasemen liga dari Gameweek ke Gameweek.",
+        )
+        with st.spinner("Menghitung histori peringkat liga..."):
+            try:
+                rank_history = service.get_league_rank_history(
+                    league_id=selected_league.id,
+                    user_entry_id=int(manager_id),
+                    current_gameweek=current_gw,
+                    max_teams=total_teams_display,
+                )
+            except Exception as exc:
+                rank_history = ()
+                st.warning(f"Gagal menghitung histori peringkat: {exc}")
+
+        if rank_history:
+            import plotly.graph_objects as go
+
+            is_overall = rank_history[0].is_overall_rank if rank_history else False
+            gw_labels = [f"GW{rh.gameweek}" for rh in rank_history]
+            ranks = [rh.league_rank for rh in rank_history]
+            points = [rh.total_points for rh in rank_history]
+
+            if is_overall:
+                last_r = selected_league.entry_last_rank or (user_row.last_rank if user_row else None)
+                curr_r = selected_league.entry_rank or (user_row.rank if user_row else None)
+                last_r_str = f"#{last_r:,}" if last_r else "-"
+                curr_r_str = f"#{curr_r:,} dari {total_teams_display:,} tim" if curr_r else "-"
+
+                rc1, rc2, rc3 = st.columns(3)
+                with rc1:
+                    metric_tile("Posisi Liga Pekan Lalu", last_r_str, "Peringkat resmi pekan kemarin")
+                with rc2:
+                    metric_tile("Posisi Liga Saat Ini", curr_r_str, "Peringkat resmi pekan ini")
+                with rc3:
+                    metric_tile("Pergerakan Liga", rank_change_txt or "Peringkat stabil", "Perubahan posisi dari pekan lalu")
+
+                st.caption(
+                    "💡 *Catatan: Server FPL membatasi perankingan historis mini-league skala besar (> 30 tim) pada posisi pekan lalu vs pekan saat ini. Grafik di bawah menyajikan perkembangan resmi Overall Rank kamu per Gameweek:*"
+                )
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=gw_labels,
+                    y=ranks,
+                    mode="lines+markers+text",
+                    text=[f"#{r:,}" for r in ranks],
+                    textposition="top center",
+                    textfont=dict(size=11, color="#18f59b"),
+                    line=dict(color="#18f59b", width=3, shape="spline"),
+                    marker=dict(size=10, color="#18f59b", line=dict(width=2, color="#0d1117")),
+                    hovertemplate=(
+                        "<b>%{x}</b><br>"
+                        "Overall Rank: #%{y:,}<br>"
+                        "Total Poin: %{customdata}<extra></extra>"
+                    ),
+                    customdata=points,
+                ))
+
+                fig.update_layout(
+                    yaxis=dict(
+                        title="Overall Rank (Global)",
+                        autorange="reversed",
+                        gridcolor="rgba(255,255,255,0.06)",
+                        zeroline=False,
+                        title_font=dict(color="#8b95a5"),
+                        tickfont=dict(color="#8b95a5"),
+                    ),
+                    xaxis=dict(
+                        title="Gameweek",
+                        gridcolor="rgba(255,255,255,0.06)",
+                        title_font=dict(color="#8b95a5"),
+                        tickfont=dict(color="#8b95a5"),
+                    ),
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#e0e6ed"),
+                    margin=dict(l=50, r=30, t=30, b=50),
+                    height=360,
+                    showlegend=False,
+                    hovermode="x unified",
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+            else:
+                max_rank = max(rh.total_teams for rh in rank_history)
+
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=gw_labels,
+                    y=ranks,
+                    mode="lines+markers+text",
+                    text=[f"#{r}" for r in ranks],
+                    textposition="top center",
+                    textfont=dict(size=11, color="#18f59b"),
+                    line=dict(color="#18f59b", width=3, shape="spline"),
+                    marker=dict(size=10, color="#18f59b", line=dict(width=2, color="#0d1117")),
+                    hovertemplate=(
+                        "<b>%{x}</b><br>"
+                        "Peringkat Mini-League: #%{y}<br>"
+                        "Total Poin: %{customdata}<extra></extra>"
+                    ),
+                    customdata=points,
+                ))
+
+                fig.update_layout(
+                    yaxis=dict(
+                        title="Peringkat Mini-League",
+                        autorange="reversed",
+                        range=[0.5, max_rank + 0.5],
+                        dtick=1 if max_rank <= 20 else (5 if max_rank <= 50 else 10),
+                        gridcolor="rgba(255,255,255,0.06)",
+                        zeroline=False,
+                        title_font=dict(color="#8b95a5"),
+                        tickfont=dict(color="#8b95a5"),
+                    ),
+                    xaxis=dict(
+                        title="Gameweek",
+                        gridcolor="rgba(255,255,255,0.06)",
+                        title_font=dict(color="#8b95a5"),
+                        tickfont=dict(color="#8b95a5"),
+                    ),
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#e0e6ed"),
+                    margin=dict(l=50, r=30, t=30, b=50),
+                    height=360,
+                    showlegend=False,
+                    hovermode="x unified",
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Quick rank summary metrics
+                best_rank = min(ranks)
+                worst_rank = max(ranks)
+                current_rank = ranks[-1]
+                best_gw = gw_labels[ranks.index(best_rank)]
+                worst_gw = gw_labels[ranks.index(worst_rank)]
+
+                rc1, rc2, rc3 = st.columns(3)
+                with rc1:
+                    metric_tile("Peringkat Terbaik", f"#{best_rank}", f"Tercapai di {best_gw}")
+                with rc2:
+                    metric_tile("Peringkat Terburuk", f"#{worst_rank}", f"Terjadi di {worst_gw}")
+                with rc3:
+                    trend = current_rank - ranks[0] if len(ranks) > 1 else 0
+                    trend_txt = f"▲ Naik {abs(trend)} posisi" if trend < 0 else (f"▼ Turun {trend} posisi" if trend > 0 else "Stabil")
+                    metric_tile("Tren Keseluruhan", trend_txt, f"GW1 #{ranks[0]} → Sekarang #{current_rank}")
+        else:
+            st.info("Data histori peringkat belum tersedia. Butuh minimal 1 GW yang sudah selesai.")
+
     section_heading(
         "Klasemen & Matriks Chip Rival",
-        f"{report.league_name} · Top {len(report.standings)} tim",
+        f"{report.league_name} · Top {len(report.standings)} dari {total_teams_display} tim",
         "Pantau pemakaian chip tiap rival secara real-time. Label menunjukkan GW saat chip dipakai, ACTIVE jika aktif pekan ini, atau Tersedia.",
     )
 
