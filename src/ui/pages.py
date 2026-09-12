@@ -2787,9 +2787,23 @@ def render_league_rivals(
 
     ingestion = st.session_state.get("fpl_ingestion_service")
     current_gw = 0
-    if ingestion is not None:
-        status = ingestion.get_status()
-        current_gw = status.current_gameweek or 0
+    if ingestion is not None and hasattr(ingestion, "status_store"):
+        try:
+            current_gw = ingestion.status_store.load().current_gameweek or 0
+        except Exception:
+            current_gw = 0
+
+    if current_gw <= 0:
+        try:
+            bootstrap = service.client.get_bootstrap()
+            for ev in bootstrap.get("events", []):
+                if ev.get("is_current"):
+                    current_gw = int(ev["id"])
+                    break
+                if ev.get("is_next") and current_gw <= 0:
+                    current_gw = max(1, int(ev["id"]) - 1)
+        except Exception:
+            pass
 
     page_header(
         "Mini-League & Rival Scout",
