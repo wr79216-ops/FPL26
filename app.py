@@ -73,7 +73,7 @@ def main() -> None:
 
     try:
         renderer = PAGE_RENDERERS[selected_page]
-        with st.spinner("Preparing the interface..."):
+        with st.spinner("Menyiapkan antarmuka aplikasi..."):
             renderer(players, fixtures, scoring)
         logger.info(
             "Frontend page rendered",
@@ -81,13 +81,13 @@ def main() -> None:
         )
     except Exception:
         logger.exception("Frontend page failed", extra={"page": selected_page})
-        st.error("The page could not be displayed. Open Data Status for details.")
-        if st.button("Return to Dashboard", type="primary"):
+        st.error("Halaman tidak dapat ditampilkan. Buka menu Data Status untuk detail kendala.")
+        if st.button("Kembali ke Dashboard", type="primary"):
             st.session_state["pending_navigation"] = "Dashboard"
             st.rerun()
 
     st.markdown(
-        '<div class="app-footer">© 2026 FPL Signal · Local-first decision support · '
+        '<div class="app-footer">© 2026 FPL Signal · Panduan taktis & analisis resmi FPL · '
         '<a href="https://imam-dwi.vercel.app/" target="_blank" '
         'rel="noopener noreferrer">by idwp11</a></div>',
         unsafe_allow_html=True,

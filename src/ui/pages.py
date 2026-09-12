@@ -45,79 +45,79 @@ PageRenderer = Callable[[pd.DataFrame, pd.DataFrame, ScoringConfig], None]
 
 
 ATTRIBUTE_HELP = {
-    "position": "FPL position used for position-relative percentile ranking.",
-    "price": "Current official FPL player price in millions.",
-    "ownership": "Percentage of FPL managers currently owning the player.",
-    "transfers_in_event": "Number of transfers in for the active gameweek as reported by FPL. Measures manager demand, not a point projection.",
-    "minutes": "Minutes played in the latest official current-stat snapshot.",
-    "form": "Official FPL form signal based on recent points output.",
-    "confidence": "How much evidence supports the signal; it reaches 100% at the configured minimum minutes.",
-    "score": "Final Recommendation Engine V1 score from 0 to 100.",
-    "fixture_score": "Horizon-weighted fixture ease score from 0 to 100; higher is easier.",
-    "expected": "Position-specific expected-output component score.",
-    "history": "Cross-season stability score from validated MATCHED history; neutral 50 is used when history is unavailable.",
-    "value": "Value component based on points per match relative to price.",
-    "minutes_score": "Minutes-security component score based on playing time.",
-    "fdr": "Official Fixture Difficulty Rating: 1 is easiest and 5 is hardest.",
-    "custom_fdr": "Internal 1–5 difficulty blending official FDR, relative opponent strength, and venue; it does not replace official FDR.",
-    "mae": "Mean absolute error between recommendation score and actual position-relative points percentile; lower is better.",
-    "spearman": "Average rank correlation between recommendation score and future FPL points; 1 is perfect and higher is better.",
-    "top_10_hit": "Average percentage overlap between the predicted top 10 and actual top 10 players.",
-    "top_10_points": "Average future FPL points scored by the ten highest-ranked players at each cutoff.",
-    "model_lift": "Net increase in FPL Signal recommendation score (0–100) from player Out to player In, combining form, fixtures, value, minutes security, and availability.",
-    "fixture_lift": "Change in fixture ease score for the selected horizon. A positive value indicates a more favourable fixture run for player In.",
-    "minutes_lift": "Change in minutes security score. A positive value indicates player In is more likely to secure regular starts.",
-    "price_change": "Cost difference between player In and player Out. Positive uses bank funds; negative frees up budget.",
-    "schedule_blank": "Blank gameweek exposure. Confirmed status derives strictly from official FPL fixture allocation.",
-    "schedule_double": "Double gameweek exposure. Confirmed means FPL has scheduled at least two fixtures for the team in that gameweek.",
-    "schedule_congestion": "14-day workload indicator derived from fixture density, turnaround days, travel burden, and competition phase.",
-    "brier": "Mean squared error of probability forecasts against binary 0/1 outcomes. 0 is perfect; lower is better.",
-    "calibration_error": "Weighted difference between average forecast probabilities and empirical outcome frequencies across reliability bins. Lower is better.",
-    "set_piece_signal": "Heuristic signal reflecting expected set-piece responsibilities: penalties, direct free kicks, and corners. Not a guarantee or points forecast.",
-    "historical_set_piece_goals": "Team-level set-piece goals scored in the listed historical season. Provides club context rather than individual credit.",
+    "position": "Posisi resmi FPL pemain yang digunakan untuk perankingan persentil berbasis posisi.",
+    "price": "Harga resmi pemain FPL saat ini dalam jutaan poundsterling.",
+    "ownership": "Persentase manajer FPL yang memiliki pemain ini saat ini.",
+    "transfers_in_event": "Jumlah transfer masuk untuk Gameweek berjalan dari data resmi FPL. Mengukur tren manajer, bukan proyeksi poin mutlak.",
+    "minutes": "Jumlah menit bermain pada snapshot statistik resmi FPL terkini.",
+    "form": "Sinyal form resmi FPL berdasarkan rata-rata poin di beberapa laga terakhir.",
+    "confidence": "Tingkat reliabilitas data; mencapai 100% jika pemain telah memenuhi batas minimal menit bermain.",
+    "score": "Skor akhir rekomendasi dari 0 hingga 100.",
+    "fixture_score": "Skor kemudahan fixture berbobot horizon (0-100); semakin tinggi semakin bersahabat jadwalnya.",
+    "expected": "Skor komponen expected output (xGI/xG/xA) relatif terhadap posisi.",
+    "history": "Skor stabilitas lintas musim dari data histori resmi; bernilai netral 50 jika histori belum tersedia.",
+    "value": "Komponen nilai ekonomis berdasarkan poin per match (PPM) dibandingkan dengan harga pemain.",
+    "minutes_score": "Skor jaminan menit bermain berdasarkan konsistensi waktu tampil di lapangan.",
+    "fdr": "Fixture Difficulty Rating resmi FPL: 1 paling mudah, 5 paling berat.",
+    "custom_fdr": "Indeks kesulitan 1–5 internal yang menggabungkan FDR resmi, kekuatan relatif lawan, dan laga kandang/tandang.",
+    "mae": "Mean Absolute Error antara skor rekomendasi dan persentil poin aktual masa depan; semakin rendah semakin baik.",
+    "spearman": "Korelasi peringkat rata-rata antara skor rekomendasi dan perolehan poin FPL berikutnya; semakin tinggi semakin akurat.",
+    "top_10_hit": "Persentase kesesuaian antara prediksi 10 pemain teratas dan daftar 10 pemain terbaik aktual.",
+    "top_10_points": "Rata-rata poin FPL aktual yang diraih oleh 10 pemain peringkat teratas di setiap cutoff.",
+    "model_lift": "Peningkatan skor rekomendasi (0–100) dari pemain yang dilepas ke pemain yang direkrut.",
+    "fixture_lift": "Perubahan skor kemudahan fixture untuk horizon terpilih. Nilai positif berarti jadwal pemain masuk lebih menguntungkan.",
+    "minutes_lift": "Perubahan skor jaminan menit bermain. Nilai positif berarti pemain masuk lebih terjamin bermain reguler.",
+    "price_change": "Selisih harga pemain masuk dibanding pemain keluar. Positif memakan dana bank; negatif menambah tabungan.",
+    "schedule_blank": "Paparan Gameweek kosong (blank). Status terkonfirmasi strictly mengikuti alokasi jadwal resmi FPL.",
+    "schedule_double": "Paparan Double Gameweek. Terkonfirmasi berarti FPL menjadwalkan minimal 2 laga untuk tim tersebut di GW terkait.",
+    "schedule_congestion": "Indikator beban kerja 14 hari ke depan dari kepadatan jadwal, waktu istirahat, perjalanan, dan fase kompetisi.",
+    "brier": "Mean squared error prakiraan probabilitas terhadap hasil biner 0/1. 0 sempurna; semakin rendah semakin bagus.",
+    "calibration_error": "Selisih berbobot antara rata-rata probabilitas prediksi dan frekuensi kejadian riil. Semakin rendah semakin baik.",
+    "set_piece_signal": "Sinyal peran eksekutor bola mati: penalti, tendangan bebas langsung, dan sepak pojok. Bersifat indikasi peran, bukan jaminan poin.",
+    "historical_set_piece_goals": "Total gol set-piece tim di musim historis yang dicatat. Memberikan konteks klub daripada poin individu.",
 }
 
 
 RANKING_METRIC_HELP = {
-    "fixture": "Official upcoming fixtures are converted into a horizon-weighted ease score. Higher is easier and it is used in the active production ranking.",
-    "minutes": "Minutes played so far relative to possible gameweek minutes. Higher means stronger minutes security and it is used in the active production ranking.",
-    "saves": "Official FPL saves total, ranked only against other goalkeepers and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
-    "history": "Validated cross-season stability score. It is already a 0–100 score; 50 is neutral where historical evidence is unavailable. It is used in the active production ranking.",
-    "bonus": "Official FPL bonus points total, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
-    "form": "Official FPL recent form, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
-    "value": "Official points per match divided by current FPL price, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
-    "attacking_output": "Official expected goal involvements divided by minutes × 90, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
-    "xg": "Official expected goals divided by minutes × 90, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
-    "xgi": "Official expected goal involvements divided by minutes × 90, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
-    "ppm": "Official FPL points per match, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
-    "ict": "Official ICT Index divided by minutes × 90, normalized within position and confidence-adjusted for low minutes. Higher is better and it is used in the active production ranking.",
+    "fixture": "Jadwal resmi mendatang dikonversi menjadi skor kemudahan berbobot horizon. Semakin tinggi semakin mudah dan digunakan dalam peringkat aktif.",
+    "minutes": "Menit bermain yang sudah dijalani relatif terhadap total menit Gameweek. Nilai lebih tinggi berarti menit bermain lebih aman.",
+    "saves": "Total save resmi FPL, diperingkatkan antar kiper dan disesuaikan dengan volume menit bermain. Semakin tinggi semakin baik.",
+    "history": "Skor stabilitas performa lintas musim (0–100). Nilai 50 adalah netral jika histori belum tersedia.",
+    "bonus": "Total poin bonus resmi FPL, dinormalisasi per posisi dan disesuaikan dengan volume menit bermain.",
+    "form": "Form terkini resmi FPL, dinormalisasi per posisi dan disesuaikan dengan volume menit bermain.",
+    "value": "Poin per laga resmi dibagi harga FPL saat ini, dinormalisasi per posisi dan disesuaikan dengan volume menit bermain.",
+    "attacking_output": "Ekspektasi keterlibatan gol (xGI) resmi dibagi menit × 90, dinormalisasi per posisi dan disesuaikan keandalan menit.",
+    "xg": "Expected goals (xG) resmi dibagi menit × 90, dinormalisasi per posisi dan disesuaikan keandalan menit.",
+    "xgi": "Expected goal involvements (xGI) resmi dibagi menit × 90, dinormalisasi per posisi dan disesuaikan keandalan menit.",
+    "ppm": "Poin per match (PPM) resmi FPL, dinormalisasi per posisi dan disesuaikan keandalan menit.",
+    "ict": "ICT Index resmi dibagi menit × 90, dinormalisasi per posisi dan disesuaikan keandalan menit.",
 }
 
 
 POSITIONAL_SIGNAL_FORMULAS = {
-    "minutes_played": "Official FPL current-season minutes played.",
-    "xgc_per_90": "Official expected goals conceded ÷ minutes × 90.",
-    "saves_per_90": "Official saves ÷ minutes × 90.",
-    "clean_sheet_rate": "Official clean sheets ÷ official starts. It is unavailable when starts are zero.",
-    "goals_conceded_per_90": "Official goals conceded ÷ minutes × 90.",
-    "penalties_saved": "Official FPL penalties saved total.",
-    "penalties_missed": "Official FPL penalties missed total.",
-    "defensive_contribution_per_90": "Official FPL defensive contribution ÷ minutes × 90.",
-    "xg_per_90": "Official expected goals ÷ minutes × 90.",
-    "xa_per_90": "Official expected assists ÷ minutes × 90.",
-    "xgi_per_90": "Official expected goal involvements ÷ minutes × 90.",
-    "goals_per_90": "Official FPL goals ÷ minutes × 90.",
-    "assists_per_90": "Official FPL assists ÷ minutes × 90.",
-    "conversion_rate": "Goals ÷ xG, shrinkage-adjusted toward a neutral position prior to limit small-sample noise.",
-    "yellow_cards": "Official FPL yellow-card total.",
-    "red_cards": "Official FPL red-card total.",
-    "discipline_risk_per_90": "(Yellow cards + 3 × red cards) ÷ minutes × 90.",
-    "bonus_points": "Official FPL bonus-point total.",
-    "bps": "Official FPL Bonus Point System total.",
-    "influence_per_90": "Official FPL influence ÷ minutes × 90.",
-    "creativity_per_90": "Official FPL creativity ÷ minutes × 90.",
-    "threat_per_90": "Official FPL threat ÷ minutes × 90.",
-    "ict_per_90": "Official FPL ICT Index ÷ minutes × 90.",
+    "minutes_played": "Total menit bermain resmi FPL musim ini.",
+    "xgc_per_90": "Expected goals conceded resmi ÷ menit × 90.",
+    "saves_per_90": "Total save resmi ÷ menit × 90.",
+    "clean_sheet_rate": "Clean sheet resmi ÷ jumlah starter resmi. Tidak tersedia bila belum pernah starter.",
+    "goals_conceded_per_90": "Kebobolan resmi ÷ menit × 90.",
+    "penalties_saved": "Total penalti yang berhasil diselamatkan kiper.",
+    "penalties_missed": "Total penalti yang gagal dieksekusi.",
+    "defensive_contribution_per_90": "Kontribusi bertahan resmi FPL ÷ menit × 90.",
+    "xg_per_90": "Expected goals (xG) resmi ÷ menit × 90.",
+    "xa_per_90": "Expected assists (xA) resmi ÷ menit × 90.",
+    "xgi_per_90": "Expected goal involvements (xGI) resmi ÷ menit × 90.",
+    "goals_per_90": "Gol resmi FPL ÷ menit × 90.",
+    "assists_per_90": "Assist resmi FPL ÷ menit × 90.",
+    "conversion_rate": "Gol ÷ xG, disesuaikan dengan prior posisi untuk meredam anomali sampel kecil.",
+    "yellow_cards": "Total kartu kuning resmi FPL.",
+    "red_cards": "Total kartu merah resmi FPL.",
+    "discipline_risk_per_90": "(Kartu kuning + 3 × kartu merah) ÷ menit × 90.",
+    "bonus_points": "Total poin bonus resmi FPL.",
+    "bps": "Total Bonus Point System (BPS) resmi FPL.",
+    "influence_per_90": "Influence resmi FPL ÷ menit × 90.",
+    "creativity_per_90": "Creativity resmi FPL ÷ menit × 90.",
+    "threat_per_90": "Threat resmi FPL ÷ menit × 90.",
+    "ict_per_90": "ICT Index resmi FPL ÷ menit × 90.",
 }
 
 
@@ -125,7 +125,7 @@ def _signal_value_display(signal: object) -> str:
     """Format an official positional signal without turning missing data into zero."""
     raw_value = getattr(signal, "raw_value")
     if raw_value is None:
-        return "Not supplied"
+        return "Belum tersedia"
     key = getattr(signal, "key")
     if key in {"clean_sheet_rate", "conversion_rate"}:
         return f"{float(raw_value) * 100:.1f}%"
@@ -139,47 +139,47 @@ def _signal_help(signal: object, freshness_label: str, freshness_detail: str) ->
     key = getattr(signal, "key")
     direction = getattr(signal, "direction")
     rank_status = (
-        "Used in the active production ranking."
+        "Digunakan dalam perhitungan peringkat aktif."
         if getattr(signal, "used_in_ranking")
-        else "Official context only; it does not affect the active production ranking."
+        else "Hanya konteks data resmi; tidak mempengaruhi kalkulasi peringkat aktif."
     )
-    direction_label = "Higher is better" if direction == "higher_is_better" else "Lower is better"
-    formula = POSITIONAL_SIGNAL_FORMULAS.get(key, "Official FPL current-season statistic.")
+    direction_label = "Semakin tinggi semakin bagus" if direction == "higher_is_better" else "Semakin rendah semakin bagus"
+    formula = POSITIONAL_SIGNAL_FORMULAS.get(key, "Statistik resmi FPL musim berjalan.")
     return (
-        f"Formula: {formula} {direction_label}. {rank_status} "
-        f"Source: official FPL bootstrap-static current-season snapshot. "
-        f"Freshness: {freshness_label}. {freshness_detail}"
+        f"Rumus: {formula} ({direction_label}). {rank_status} "
+        f"Sumber: snapshot bootstrap-static resmi FPL musim ini. "
+        f"Status: {freshness_label}. {freshness_detail}"
     )
 
 
 def _status_label(status: str) -> str:
     return {
-        "a": "Available",
-        "d": "Doubtful",
-        "i": "Injured",
-        "s": "Suspended",
-        "u": "Unavailable",
-        "n": "Unavailable",
-    }.get(status, "Unknown")
+        "a": "Tersedia",
+        "d": "Meragukan",
+        "i": "Cedera",
+        "s": "Hukuman Kartu",
+        "u": "Tidak Tersedia",
+        "n": "Tidak Tersedia",
+    }.get(status, "Tidak Diketahui")
 
 
 def _freshness_label(timestamp: str | None) -> tuple[str, str]:
     """Return a short, human-friendly freshness state for an ISO timestamp."""
     if not timestamp:
-        return "Unknown", "No successful official refresh has been recorded."
+        return "Tidak Diketahui", "Belum ada riwayat pembaruan resmi yang tercatat."
     try:
         refreshed_at = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
     except ValueError:
-        return "Unknown", "The last refresh timestamp could not be read."
+        return "Tidak Diketahui", "Format waktu pembaruan terakhir tidak valid."
 
     age_minutes = max(0, int((datetime.now(timezone.utc) - refreshed_at).total_seconds() // 60))
     if age_minutes < 2:
-        return "Fresh", "Updated less than 2 minutes ago."
+        return "Terbaru", "Diperbarui kurang dari 2 menit lalu."
     if age_minutes < 60:
-        return "Fresh", f"Updated {age_minutes} minutes ago."
+        return "Terbaru", f"Diperbarui {age_minutes} menit lalu."
     if age_minutes < 24 * 60:
-        return "Aging", f"Updated {age_minutes // 60} hours ago."
-    return "Stale", f"Updated {age_minutes // (24 * 60)} days ago. Refresh before using time-sensitive insight."
+        return "Cukup Baru", f"Diperbarui {age_minutes // 60} jam lalu."
+    return "Kedaluwarsa", f"Diperbarui {age_minutes // (24 * 60)} hari lalu. Segarkan data untuk analisis terkini."
 
 
 def _player_card_data(row: object) -> dict[str, object]:
@@ -200,18 +200,18 @@ def render_dashboard(
 ) -> None:
     del players, fixtures
     page_header(
-        "Gameweek workspace",
-        "Good decisions start with context.",
-        "Official rankings, fixture swing, differentials, and minutes security in one summary.",
+        "Workspace Gameweek",
+        "Keputusan tepat dimulai dari konteks.",
+        "Peringkat resmi, pergeseran fixture, differential, dan jaminan menit bermain dalam satu ringkasan.",
     )
     service = st.session_state.get("recommendation_engine_service")
     fixture_service = st.session_state.get("fixture_analytics_service")
     if service is None or fixture_service is None:
-        render_empty_state("Analytics unavailable", "Reopen the app to initialize the required services.")
+        render_empty_state("Analisis belum tersedia", "Buka ulang aplikasi untuk menginisialisasi layanan.")
         return
     rankings = service.get_rankings(horizon=scoring.default_horizon)
     if not rankings:
-        render_empty_state("No rankings available", "Refresh official FPL data from Data Status.")
+        render_empty_state("Data peringkat belum tersedia", "Silakan refresh data resmi FPL dari menu Data Status.")
         return
 
     top = rankings[0]
@@ -221,29 +221,29 @@ def render_dashboard(
     cols = st.columns(4)
     with cols[0]:
         metric_tile(
-            "Current gameweek", f"GW {current_gameweek}", "Official FPL context",
-            "The current or next gameweek identified from the official FPL events feed.",
+            "Gameweek Saat Ini", f"GW {current_gameweek}", "Konteks resmi FPL",
+            "Gameweek berjalan atau pekan terdekat yang dibaca langsung dari server resmi FPL.",
         )
     with cols[1]:
         metric_tile(
-            "Top target", top.name, f"Score {top.final_score:.0f}",
+            "Target Utama", top.name, f"Skor {top.final_score:.0f}",
             ATTRIBUTE_HELP["score"],
         )
     with cols[2]:
         metric_tile(
-            "Differentials", str(differential_count), "Owned <10% · Watchlist+",
-            "Players owned by fewer than 10% of managers with at least a Watchlist score.",
+            "Differential", str(differential_count), "Ownership <10% · Pantauan+",
+            "Pemain dengan kepemilikan di bawah 10% yang memiliki skor rekomendasi menjanjikan.",
         )
     with cols[3]:
         metric_tile(
-            "Minutes-safe", str(safe_minutes), "Score at least 85",
-            "Players whose minutes-security component reaches 85 or higher.",
+            "Jaminan Menit Bermain", str(safe_minutes), "Skor menit minimal 85",
+            "Pemain reguler yang memiliki kepastian starter dan menit bermain konsisten.",
         )
 
     section_heading(
-        "Top recommendations",
-        f"Across all positions · Next {scoring.default_horizon} GW · {scoring.model_version}",
-        "The highest final scores after position-relative normalization, confidence adjustment, and availability penalty.",
+        "Rekomendasi Teratas",
+        f"Semua posisi · {scoring.default_horizon} GW ke depan · Model {scoring.model_version}",
+        "Skor akhir tertinggi setelah normalisasi posisi, penyesuaian reliabilitas data, dan status ketersediaan pemain.",
     )
     top_three = rankings[:3]
     card_columns = st.columns(3)
@@ -251,7 +251,7 @@ def render_dashboard(
         with column:
             player_card(_player_card_data(player))
 
-    if st.button("Explore all recommendations →", type="primary"):
+    if st.button("Jelajahi seluruh rekomendasi →", type="primary"):
         navigate_to("Recommendations")
 
     _render_market_pulse(rankings, current_gameweek)
@@ -260,7 +260,7 @@ def render_dashboard(
     left, right = st.columns([1.2, 1])
     with left:
         section_heading(
-            "Fixture radar", "Official horizon-weighted fixture score",
+            "Radar Fixture", "Tingkat kemudahan jadwal berbobot horizon",
             ATTRIBUTE_HELP["fixture_score"],
         )
         fixture_summary = fixture_service.get_matrix(scoring.default_horizon).to_dataframe()
@@ -271,38 +271,38 @@ def render_dashboard(
             hide_index=True,
             width="stretch",
             column_config={
-                "team": st.column_config.TextColumn("Team"),
+                "team": st.column_config.TextColumn("Klub"),
                 "fixture_score": st.column_config.ProgressColumn(
-                    "Fixture score", min_value=0, max_value=100, format="%.0f",
+                    "Skor Fixture", min_value=0, max_value=100, format="%.0f",
                     help=ATTRIBUTE_HELP["fixture_score"],
                 ),
             },
         )
     with right:
         section_heading(
-            "Signal leaders", "Overall · Value · Differential",
-            "Quick leaders by final score, value component, and low ownership.",
+            "Pemimpin Sinyal", "Overall · Nilai Ekonomis · Differential",
+            "Pilihan terbaik berdasarkan skor akhir, value for money, dan kepemilikan rendah.",
         )
         value_leader = max(rankings, key=lambda row: row.value_score)
         differential_pool = [row for row in rankings if row.ownership < 10]
         differential = differential_pool[0] if differential_pool else rankings[0]
         for label, candidate in (
             ("Overall", top),
-            ("Value", value_leader),
+            ("Nilai Ekonomis", value_leader),
             ("Differential", differential),
         ):
             st.markdown(
                 f"**{label}** · {candidate.name}  \n"
-                f"{candidate.team} · Score **{candidate.final_score:.0f}** · {candidate.reason}"
+                f"{candidate.team} · Skor **{candidate.final_score:.0f}** · {candidate.reason}"
             )
 
 
 def _render_market_pulse(rankings: tuple[object, ...], current_gameweek: int) -> None:
     """Show official FPL transfer demand separately from FPL Signal rankings."""
     section_heading(
-        "Market pulse",
-        f"Top transfers in GW {current_gameweek} · Official FPL activity",
-        "Transfer demand shows what FPL managers are doing; it is not a recommendation or points prediction.",
+        "Pergerakan Pasar",
+        f"Transfer masuk terbanyak di GW {current_gameweek} · Tren resmi FPL",
+        "Aktivitas transfer menunjukkan pergerakan manajer FPL secara umum, bukan prediksi poin mutlak.",
     )
     market_rows = sorted(
         (row for row in rankings if row.transfers_in_event > 0),
@@ -310,18 +310,27 @@ def _render_market_pulse(rankings: tuple[object, ...], current_gameweek: int) ->
         reverse=True,
     )[:5]
     if not market_rows:
-        st.info("Transfer activity will appear after the next official FPL data refresh.")
+        st.info("Aktivitas transfer akan muncul setelah sinkronisasi data resmi FPL berikutnya.")
         return
+
+    _CAT_MAP = {
+        "Elite Target": "Target Unggulan",
+        "Strong Buy": "Prioritas Beli",
+        "Good Option": "Pilihan Bagus",
+        "Watchlist": "Masuk Pantauan",
+        "Neutral": "Netral",
+        "Avoid": "Hindari",
+    }
 
     market_frame = pd.DataFrame(
         [
             {
-                "Player": row.name,
-                "Team": row.team,
+                "Pemain": row.name,
+                "Klub": row.team,
                 "Pos": row.position,
-                "Transfers in": row.transfers_in_event,
-                "Model score": row.final_score,
-                "Verdict": row.category,
+                "Transfer Masuk": row.transfers_in_event,
+                "Skor Model": row.final_score,
+                "Kategori": _CAT_MAP.get(str(row.category), str(row.category)),
             }
             for row in market_rows
         ]
@@ -331,16 +340,16 @@ def _render_market_pulse(rankings: tuple[object, ...], current_gameweek: int) ->
         hide_index=True,
         width="stretch",
         column_config={
-            "Transfers in": st.column_config.NumberColumn(
-                "Transfers in", format="%,d", help=ATTRIBUTE_HELP["transfers_in_event"]
+            "Transfer Masuk": st.column_config.NumberColumn(
+                "Transfer Masuk", format="%,d", help=ATTRIBUTE_HELP["transfers_in_event"]
             ),
-            "Model score": st.column_config.ProgressColumn(
-                "Model score", min_value=0, max_value=100, format="%.0f", help=ATTRIBUTE_HELP["score"]
+            "Skor Model": st.column_config.ProgressColumn(
+                "Skor Model", min_value=0, max_value=100, format="%.0f", help=ATTRIBUTE_HELP["score"]
             ),
-            "Verdict": st.column_config.TextColumn("Verdict"),
+            "Kategori": st.column_config.TextColumn("Kategori"),
         },
     )
-    if st.button("Explore transfer activity →", key="dashboard_market_pulse"):
+    if st.button("Lihat aktivitas transfer lengkap →", key="dashboard_market_pulse"):
         st.session_state["player_finder_market_pulse"] = True
         navigate_to("Players")
 
@@ -375,18 +384,16 @@ def _render_gameweek_wrapped() -> None:
             live,
         )
     except Exception:
-        # The recommendation dashboard remains useful when a historical FPL
-        # endpoint is temporarily unavailable; the recap will return on retry.
         return
     if recap is None:
         return
 
-    average = f" · Average score {recap.average_score}" if recap.average_score is not None else ""
-    source_label = "Official FPL results" if event.get("finished") or event.get("is_previous") else "Official FPL snapshot"
+    average = f" · Rata-rata skor {recap.average_score}" if recap.average_score is not None else ""
+    source_label = "Hasil resmi FPL" if event.get("finished") or event.get("is_previous") else "Snapshot resmi FPL"
     section_heading(
-        "Gameweek wrapped",
+        "Rangkuman Gameweek Lalu",
         f"GW {recap.gameweek} · {source_label}{average}",
-        "A recap of the last completed gameweek. Player and event metrics are sourced from the official FPL API.",
+        "Kilasan performa pekan sebelumnya bersumber dari data resmi FPL API.",
     )
     for start in range(0, len(recap.metrics), 3):
         columns = st.columns(3)
@@ -395,8 +402,8 @@ def _render_gameweek_wrapped() -> None:
                 wrapped_metric_card(metric.label, metric.value, metric.detail, metric.tone)
     if recap.chips:
         section_heading(
-            "Chips active", "Global use in the completed gameweek",
-            "The number of FPL managers who activated each chip, as reported in the official event payload.",
+            "Chip Aktif", "Penggunaan global di GW yang baru selesai",
+            "Jumlah manajer FPL di seluruh dunia yang mengaktifkan masing-masing chip pekan lalu.",
         )
         columns = st.columns(min(3, len(recap.chips)))
         for column, chip in zip(columns, recap.chips):
@@ -409,13 +416,13 @@ def render_players(
 ) -> None:
     del players, fixtures
     page_header(
-        "Player finder",
-        "Find the profile that fits your plan.",
-        "Filter the official roster by position, budget, ownership, and playing minutes.",
+        "Pencarian Pemain",
+        "Temukan profil pemain yang pas buat strategi tim kamu.",
+        "Saring data resmi pemain FPL berdasarkan posisi, harga, persentase kepemilikan, dan menit bermain.",
     )
     service = st.session_state.get("recommendation_engine_service")
     if service is None:
-        render_empty_state("Recommendation engine unavailable", "Reopen the app to initialize the recommendation engine.")
+        render_empty_state("Layanan rekomendasi tidak tersedia", "Buka kembali aplikasi untuk menginisialisasi sistem rekomendasi.")
         return
 
     if st.session_state.pop("player_finder_market_pulse", False):
@@ -425,66 +432,79 @@ def render_players(
         st.session_state["player_finder_minutes"] = 0
         st.session_state["player_finder_differentials"] = False
 
+    pos_labels = {"ALL": "Semua Posisi", "GK": "GK", "DEF": "DEF", "MID": "MID", "FWD": "FWD"}
+    sort_labels = {
+        "Recommendation": "Skor Rekomendasi",
+        "Transfers in this GW": "Transfer Masuk GW Ini",
+        "Fixture ease": "Kemudahan Fixture",
+        "Value": "Nilai Ekonomis (Value)",
+        "Minutes security": "Jaminan Menit Bermain",
+        "Price (low)": "Harga Termurah",
+        "Ownership (low)": "Ownership Terendah",
+    }
+
     primary_controls = st.columns([1.45, 0.9, 0.85, 1.15])
     with primary_controls[0]:
         search_term = st.text_input(
-            "Search player or team",
-            placeholder="e.g. Odegaard or Arsenal",
+            "Cari pemain atau klub",
+            placeholder="Contoh: Palmer atau Arsenal",
             key="player_finder_search",
-            help="Search uses the display-friendly player and team names shown in the official cache.",
+            help="Pencarian mencocokkan nama pemain dan klub dari data resmi FPL.",
         )
     with primary_controls[1]:
         position = st.selectbox(
-            "Position", ["ALL", "GK", "DEF", "MID", "FWD"],
+            "Posisi", ["ALL", "GK", "DEF", "MID", "FWD"],
+            format_func=lambda p: pos_labels.get(p, p),
             key="player_finder_position",
             help=ATTRIBUTE_HELP["position"],
         )
     with primary_controls[2]:
         horizon = st.selectbox(
-            "Fixture horizon", [1, 3, 5, 8], index=2,
-            format_func=lambda value: f"Next {value} GW",
+            "Horizon fixture", [1, 3, 5, 8], index=2,
+            format_func=lambda value: f"{value} GW ke depan",
             key="player_finder_horizon",
-            help="How many upcoming gameweeks are included in the fixture component and final ranking.",
+            help="Jumlah pekan laga mendatang yang dihitung dalam penilaian fixture dan peringkat akhir.",
         )
     with primary_controls[3]:
         sort_mode = st.selectbox(
-            "Sort matching players",
+            "Urutkan pemain",
             ["Recommendation", "Transfers in this GW", "Fixture ease", "Value", "Minutes security", "Price (low)", "Ownership (low)"],
+            format_func=lambda s: sort_labels.get(s, s),
             key="player_finder_sort",
-            help="Choose the ordering after all finder filters are applied.",
+            help="Pilih urutan daftar setelah semua filter pencarian diterapkan.",
         )
 
     rankings = service.get_rankings(horizon=horizon)
     if not rankings:
-        render_empty_state("No official players", "Refresh official FPL data from Data Status.")
+        render_empty_state("Belum ada data pemain resmi", "Perbarui data resmi FPL melalui menu Data Status.")
         return
     frame = pd.DataFrame([asdict(row) for row in rankings])
 
     filter_columns = st.columns([1.35, 1, 1, 1])
     with filter_columns[0]:
         budget = st.slider(
-            "Maximum price", 4.0, 15.0, 10.0, 0.1, format="£%.1fm",
+            "Harga maksimal", 4.0, 15.0, 10.0, 0.1, format="£%.1fm",
             key="player_finder_budget",
-            help="Exclude players priced above this official FPL value.",
+            help="Saring pemain dengan harga resmi FPL maksimal sesuai nilai ini.",
         )
     with filter_columns[1]:
         max_ownership = st.slider(
-            "Max ownership", 1, 100, 50, 1, format="%d%%",
+            "Ownership maksimal", 1, 100, 50, 1, format="%d%%",
             key="player_finder_ownership",
             help=ATTRIBUTE_HELP["ownership"],
         )
     with filter_columns[2]:
         maximum_minutes = max(90, int(frame["minutes"].max()))
         minimum_minutes = st.slider(
-            "Minimum minutes", 0, maximum_minutes, 0, 30,
+            "Minimal menit bermain", 0, maximum_minutes, 0, 30,
             key="player_finder_minutes",
-            help="Keep players with at least this many minutes in the latest current-stat snapshot.",
+            help="Pertahankan pemain dengan minimal menit bermain ini pada data resmi musim ini.",
         )
     with filter_columns[3]:
         differential_only = st.checkbox(
-            "Differentials only",
+            "Hanya pemain differential (<10%)",
             key="player_finder_differentials",
-            help="Only show players with official FPL ownership below 10%.",
+            help="Hanya tampilkan pemain dengan tingkat kepemilikan resmi FPL di bawah 10%.",
         )
 
     filtered = frame.loc[
@@ -516,13 +536,23 @@ def render_players(
     filtered = filtered.sort_values(sort_column, ascending=ascending)
 
     section_heading(
-        "Matching players", f"{len(filtered)} profiles · Next {horizon} GW",
-        "The live official roster after the active filters and selected ranking horizon are applied.",
+        "Daftar Pemain", f"{len(filtered)} profil ditemukan · {horizon} GW ke depan",
+        "Data pemain resmi FPL terkini setelah filter aktif dan horizon kalkulasi diterapkan.",
     )
     if filtered.empty:
-        render_empty_state("No players match", "Relax one or more filters.")
+        render_empty_state("Tidak ada pemain yang cocok", "Coba longgarkan satu atau beberapa kriteria filter pencarian.")
         return
     filtered["confidence_percent"] = filtered["confidence"] * 100
+    filtered["category_display"] = filtered["category"].map(
+        lambda c: {
+            "Elite Target": "Target Unggulan",
+            "Strong Buy": "Prioritas Beli",
+            "Good Option": "Pilihan Bagus",
+            "Watchlist": "Masuk Pantauan",
+            "Neutral": "Netral",
+            "Avoid": "Sebaiknya Hindari",
+        }.get(str(c), str(c))
+    )
 
     display = filtered[
         [
@@ -537,7 +567,7 @@ def render_players(
             "next_fixture",
             "confidence_percent",
             "final_score",
-            "category",
+            "category_display",
             "reason",
         ]
     ]
@@ -546,36 +576,36 @@ def render_players(
         hide_index=True,
         width="stretch",
         column_config={
-            "name": st.column_config.TextColumn("Player", help="Official FPL player display name."),
-            "team": st.column_config.TextColumn("Team", help="The player's official FPL club."),
+            "name": st.column_config.TextColumn("Pemain", help="Nama resmi pemain FPL."),
+            "team": st.column_config.TextColumn("Klub", help="Klub resmi FPL."),
             "position": st.column_config.TextColumn("Pos", width="small", help=ATTRIBUTE_HELP["position"]),
-            "price": st.column_config.NumberColumn("Price", format="£%.1fm", help=ATTRIBUTE_HELP["price"]),
-            "ownership": st.column_config.NumberColumn("Owned", format="%.1f%%", help=ATTRIBUTE_HELP["ownership"]),
+            "price": st.column_config.NumberColumn("Harga", format="£%.1fm", help=ATTRIBUTE_HELP["price"]),
+            "ownership": st.column_config.NumberColumn("Ownership", format="%.1f%%", help=ATTRIBUTE_HELP["ownership"]),
             "transfers_in_event": st.column_config.NumberColumn(
-                "In this GW", format="%,d", help=ATTRIBUTE_HELP["transfers_in_event"]
+                "Transfer GW Ini", format="%,d", help=ATTRIBUTE_HELP["transfers_in_event"]
             ),
-            "minutes": st.column_config.NumberColumn("Minutes", help=ATTRIBUTE_HELP["minutes"]),
+            "minutes": st.column_config.NumberColumn("Menit", help=ATTRIBUTE_HELP["minutes"]),
             "form": st.column_config.NumberColumn("Form", format="%.1f", help=ATTRIBUTE_HELP["form"]),
-            "next_fixture": st.column_config.TextColumn("Next", help="The team's nearest unstarted official fixture."),
+            "next_fixture": st.column_config.TextColumn("Laga Berikutnya", help="Fixture terdekat yang belum dimulai."),
             "confidence_percent": st.column_config.ProgressColumn(
-                "Confidence", min_value=0, max_value=100, format="%.0f%%", help=ATTRIBUTE_HELP["confidence"]
+                "Kepercayaan Sinyal", min_value=0, max_value=100, format="%.0f%%", help=ATTRIBUTE_HELP["confidence"]
             ),
             "final_score": st.column_config.ProgressColumn(
-                "Score", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["score"]
+                "Skor", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["score"]
             ),
-            "category": st.column_config.TextColumn("Verdict", help="Human-readable category derived from the final score."),
-            "reason": st.column_config.TextColumn("Top reasons", help="The two weighted components contributing most to this player's score."),
+            "category_display": st.column_config.TextColumn("Kategori", help="Kategori rekomendasi berdasarkan skor akhir."),
+            "reason": st.column_config.TextColumn("Faktor Penentu", help="Dua komponen skor terbesar yang mendorong peringkat pemain."),
         },
     )
 
     player_choices = dict(zip(filtered["player_id"], filtered["name"] + " · " + filtered["team"]))
     selected = st.selectbox(
-        "Open a player profile",
+        "Buka profil pemain",
         list(player_choices),
         format_func=lambda player_id: player_choices[player_id],
-        help="Choose a player to inspect official history and feature details.",
+        help="Pilih pemain untuk melihat histori laga dan analisis metrik resminya.",
     )
-    if st.button("View player detail", type="primary"):
+    if st.button("Lihat Detail Pemain", type="primary"):
         st.session_state["official_player_id"] = selected
         navigate_to("Player Detail")
 
@@ -849,27 +879,36 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
 def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
     service = st.session_state.get("recommendation_engine_service")
     if service is None:
-        render_empty_state("Recommendation engine unavailable", "Reopen the app to initialize the recommendation engine.")
+        render_empty_state("Layanan rekomendasi tidak tersedia", "Buka kembali aplikasi untuk menginisialisasi sistem rekomendasi.")
         return
+
+    rec_sort_labels = {
+        "Recommendation": "Skor Rekomendasi",
+        "Value": "Nilai Ekonomis (Value)",
+        "Fixture": "Kemudahan Fixture",
+        "Minutes security": "Jaminan Menit Bermain",
+    }
 
     controls = st.columns([1, 1, 1.4])
     with controls[0]:
         position = st.radio(
-            "Position", ["GK", "DEF", "MID", "FWD"], index=2, horizontal=True,
+            "Posisi", ["GK", "DEF", "MID", "FWD"], index=2, horizontal=True,
             help=ATTRIBUTE_HELP["position"],
         )
     with controls[1]:
         horizon = st.selectbox(
-            "Fixture horizon",
+            "Horizon fixture",
             [1, 3, 5, 8],
             index=2,
-            format_func=lambda value: f"Next {value} GW",
-            help="How many upcoming gameweeks are included in the fixture component.",
+            format_func=lambda value: f"{value} GW ke depan",
+            help="Jumlah pekan laga mendatang yang dihitung dalam penilaian komponen fixture.",
         )
     with controls[2]:
         sort_mode = st.selectbox(
-            "Rank by", ["Recommendation", "Value", "Fixture", "Minutes security"],
-            help="Sort the visible position ranking by one scoring component.",
+            "Urutkan berdasarkan",
+            ["Recommendation", "Value", "Fixture", "Minutes security"],
+            format_func=lambda s: rec_sort_labels.get(s, s),
+            help="Urutkan daftar pemain pada posisi ini berdasarkan salah satu komponen skor.",
         )
 
     position = position or "MID"
@@ -881,14 +920,14 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
     }
     rows = service.get_rankings(position=position, horizon=horizon, limit=20)
     if not rows:
-        render_empty_state("No recommendation available", "Try another position or horizon.")
+        render_empty_state("Rekomendasi tidak tersedia", "Coba pilih posisi atau horizon yang lain.")
         return
     ranked = pd.DataFrame([asdict(row) for row in rows]).sort_values(
         sort_columns[sort_mode], ascending=False
     )
     section_heading(
-        f"Top 20 {position}", f"Next {horizon} GW · Model {scoring.model_version}",
-        "Top 20 players in this position after the configured recommendation model is applied.",
+        f"20 Pemain {position} Teratas", f"{horizon} GW ke depan · Model {scoring.model_version}",
+        f"Daftar 20 pemain terbaik di posisi {position} berdasarkan kalkulasi model rekomendasi aktif.",
     )
 
     cards = st.columns(min(3, len(ranked)))
@@ -897,26 +936,26 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
         with column:
             player_card(
                 _player_card_data(row_by_id[int(player["player_id"])]),
-                label=f"Rank #{rank}",
+                label=f"Peringkat #{rank}",
             )
 
     freshness, freshness_detail = _freshness_label(
         service.ingestion.status_store.load().last_successful_at
     )
     section_heading(
-        "Used in ranking", f"Active production model · {scoring.model_version}",
-        "Inspect the exact normalized component scores, configured weights, and final-score contribution for one player.",
+        "Komponen Penentu Skor", f"Model aktif · Versi {scoring.model_version}",
+        "Bedah skor normalisasi tiap komponen, bobot yang dipakai, dan kontribusi akhir untuk pemain terpilih.",
     )
     player_choices = {
         int(row.player_id): f"{row.name} · {row.team} · {row.position}"
         for row in rows
     }
     selected_player_id = st.selectbox(
-        "Inspect a ranked player",
+        "Pilih pemain untuk dianalisis",
         list(player_choices),
         format_func=lambda player_id: player_choices[player_id],
         key=f"recommendation_evidence_{position}_{horizon}_{sort_mode}",
-        help="Choose a player to trace the active ranking and inspect position-specific official FPL evidence.",
+        help="Pilih pemain untuk melihat bukti statistik resmi FPL dan rincian skornya.",
     )
     selected_row = row_by_id[int(selected_player_id)]
     ranking_rows = [
@@ -930,33 +969,33 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
     ]
     ranking_inputs = pd.DataFrame(ranking_rows)
     trace_columns = st.columns(3)
-    trace_columns[0].metric("Final score", f"{selected_row.final_score:.1f}/100", help=ATTRIBUTE_HELP["score"])
+    trace_columns[0].metric("Skor Akhir", f"{selected_row.final_score:.1f}/100", help=ATTRIBUTE_HELP["score"])
     trace_columns[1].metric(
-        "Availability multiplier",
+        "Faktor Ketersediaan",
         f"{selected_row.availability_penalty:.0%}",
-        help="The official FPL availability/status multiplier applied after weighted components. An unavailable player can still show historical evidence, but their final rank is reduced.",
+        help="Pengali status ketersediaan resmi FPL yang diterapkan setelah penjumlahan komponen bobot.",
     )
     trace_columns[2].metric(
-        "Contribution total",
+        "Total Kontribusi",
         f"{ranking_inputs['Final contribution'].sum():.1f}",
-        help="Sum of displayed weighted contributions after the availability multiplier. It can differ from Final score by 0.01 because each row is rounded for display.",
+        help="Total penjumlahan kontribusi terbobot setelah faktor ketersediaan.",
     )
     st.dataframe(
         ranking_inputs,
         hide_index=True,
         width="stretch",
         column_config={
-            "Signal": st.column_config.TextColumn("Used in ranking", help="Active v1.1 input. Hover an item in Official season evidence for its formula, direction, source, and freshness."),
-            "Component score": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.1f", help="Position-relative component score (0–100) after approved small-sample adjustment."),
-            "Weight": st.column_config.NumberColumn("Weight", format="%.0f%%", help="Configured active-production weight for this position. The weights sum to 100%."),
-            "Final contribution": st.column_config.NumberColumn("Contribution", format="%.2f", help="Component score × active weight × official availability multiplier."),
+            "Signal": st.column_config.TextColumn("Komponen Sinyal", help="Komponen input aktif model rekomendasi."),
+            "Component score": st.column_config.ProgressColumn("Skor Komponen", min_value=0, max_value=100, format="%.1f", help="Skor persentil relatif terhadap posisi (0–100)."),
+            "Weight": st.column_config.NumberColumn("Bobot", format="%.0f%%", help="Bobot resmi untuk posisi ini (total 100%)."),
+            "Final contribution": st.column_config.NumberColumn("Kontribusi Akhir", format="%.2f", help="Skor komponen × bobot × faktor ketersediaan."),
         },
     )
     st.caption(
-        "Candidate v1.3 positional weights are stored separately and are not used here. They remain experimental until Phase E leakage-safe backtesting approves a versioned release."
+        "Bobot posisi kandidat v1.3 disimpan terpisah dan tidak digunakan di sini. Statusnya tetap eksperimental sampai validasi Fase E selesai."
     )
-    with st.expander("Ranking input definitions", expanded=False):
-        st.caption("Hover each active input for its formula, direction, source, freshness, and ranking status.")
+    with st.expander("Definisi Komponen Penentu Skor", expanded=False):
+        st.caption("Arahkan kursor ke tiap komponen untuk melihat rumus, arah metrik, sumber data, dan status pembaruan.")
         for start in range(0, len(selected_row.metric_scores), 2):
             definition_columns = st.columns(2)
             metric_items = list(selected_row.metric_scores.items())[start:start + 2]
@@ -965,18 +1004,18 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
                     st.metric(
                         METRIC_LABELS.get(metric, metric.replace("_", " ").title()),
                         f"{metric_score:.1f}/100",
-                        delta=f"Weight {scoring.position_weights[position][metric]:.0%}",
+                        delta=f"Bobot {scoring.position_weights[position][metric]:.0%}",
                         help=(
-                            f"{RANKING_METRIC_HELP.get(metric, 'Active production ranking input.')} "
-                            f"Source: official FPL current-season snapshot unless stated otherwise. "
-                            f"Freshness: {freshness}. {freshness_detail}"
+                            f"{RANKING_METRIC_HELP.get(metric, 'Komponen input peringkat aktif.')} "
+                            f"Sumber: snapshot bootstrap-static resmi FPL musim ini. "
+                            f"Status: {freshness}. {freshness_detail}"
                         ),
                     )
 
-    with st.expander("Official season evidence", expanded=False):
+    with st.expander("Bukti Statistik Musim Ini", expanded=False):
         st.caption(
-            f"{freshness} official FPL snapshot · {freshness_detail} "
-            "These metrics explain the selected player profile. ‘Not supplied’ is not treated as zero."
+            f"Snapshot data resmi FPL {freshness} · {freshness_detail} "
+            "Metrik-metrik ini menjelaskan profil pemain yang dipilih. 'Belum tersedia' bukan berarti nol."
         )
         evidence_rows = []
         for signal in selected_row.positional_signals:
@@ -986,8 +1025,8 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
                     "Metric": signal.label,
                     "Official value": _signal_value_display(signal),
                     "Position score": round(percentile, 1) if percentile is not None else None,
-                    "Role": "Used in ranking" if signal.used_in_ranking else "Official context",
-                    "Direction": "Higher is better" if signal.direction == "higher_is_better" else "Lower is better",
+                    "Role": "Digunakan dalam skor" if signal.used_in_ranking else "Konteks resmi",
+                    "Direction": "Semakin tinggi semakin bagus" if signal.direction == "higher_is_better" else "Semakin rendah semakin bagus",
                 }
             )
         st.dataframe(
@@ -995,20 +1034,20 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
             hide_index=True,
             width="stretch",
             column_config={
-                "Metric": st.column_config.TextColumn("Official season evidence", help="The metric cards below have a hover tooltip with the exact formula, direction, source, freshness, and ranking status."),
-                "Official value": st.column_config.TextColumn("Official value", help="Raw official FPL value or derived rate. Missing data remains ‘Not supplied’."),
-                "Position score": st.column_config.ProgressColumn("Position score", min_value=0, max_value=100, format="%.1f", help="Position-relative, confidence-adjusted percentile used for comparison only unless Role says Used in ranking."),
-                "Role": st.column_config.TextColumn("Role", help="Explicitly distinguishes active production inputs from supporting official context."),
-                "Direction": st.column_config.TextColumn("Direction", help="The favourable direction used for the position-relative comparison."),
+                "Metric": st.column_config.TextColumn("Bukti Statistik Resmi", help="Arahkan kursor ke kartu metrik di bawah untuk formula dan detailnya."),
+                "Official value": st.column_config.TextColumn("Nilai Resmi", help="Nilai resmi FPL atau rasio turunan per 90 menit."),
+                "Position score": st.column_config.ProgressColumn("Skor Posisi", min_value=0, max_value=100, format="%.1f", help="Persentil relatif terhadap posisi setelah penyesuaian reliabilitas data."),
+                "Role": st.column_config.TextColumn("Peran", help="Menunjukkan apakah metrik menjadi input skor utama atau konteks pendukung."),
+                "Direction": st.column_config.TextColumn("Arah Metrik", help="Arah acuan yang menguntungkan dalam perbandingan posisi."),
             },
         )
-        st.caption("Hover a metric name below for its exact definition and data status.")
+        st.caption("Arahkan kursor ke nama metrik di bawah untuk definisi pasti dan status datanya.")
         for start in range(0, len(selected_row.positional_signals), 2):
             evidence_columns = st.columns(2)
             for column, signal in zip(evidence_columns, selected_row.positional_signals[start:start + 2]):
-                delta = "Used in ranking" if signal.used_in_ranking else "Official context"
+                delta = "Digunakan dalam skor" if signal.used_in_ranking else "Konteks resmi"
                 if signal.normalized_score is not None:
-                    delta = f"{delta} · position score {signal.normalized_score:.0f}"
+                    delta = f"{delta} · skor posisi {signal.normalized_score:.0f}"
                 with column:
                     st.metric(
                         signal.label,
@@ -1017,10 +1056,20 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
                         help=_signal_help(signal, freshness, freshness_detail),
                     )
 
-    section_heading("Score breakdown", "Every component is visible")
+    section_heading("Rincian Lengkap Skor", "Transparansi penuh tanpa perhitungan tersembunyi")
     st.caption(
-        "Final score combines position-relative fixture, expected output, minutes, history, and value signals; "
-        "the visible reason names the strongest contributors. Full model weights are available in Data Status."
+        "Skor akhir menggabungkan sinyal fixture, performa yang diharapkan (expected), menit bermain, histori, dan nilai ekonomis. "
+        "Faktor utama menampilkan dua pendorong nilai terbesar. Bobot lengkap model dapat dilihat di menu Data Status."
+    )
+    ranked["category_display"] = ranked["category"].map(
+        lambda c: {
+            "Elite Target": "Target Unggulan",
+            "Strong Buy": "Prioritas Beli",
+            "Good Option": "Pilihan Bagus",
+            "Watchlist": "Masuk Pantauan",
+            "Neutral": "Netral",
+            "Avoid": "Sebaiknya Hindari",
+        }.get(str(c), str(c))
     )
     table = ranked[
         [
@@ -1035,7 +1084,7 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
             "history_score",
             "value_score",
             "final_score",
-            "category",
+            "category_display",
             "reason",
         ]
     ]
@@ -1044,10 +1093,10 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
         hide_index=True,
         width="stretch",
         column_config={
-            "name": st.column_config.TextColumn("Player", help="Official FPL player display name."),
-            "team": st.column_config.TextColumn("Team", help="The player's official FPL club."),
-            "price": st.column_config.NumberColumn("Price", format="£%.1fm", help=ATTRIBUTE_HELP["price"]),
-            "ownership": st.column_config.NumberColumn("Owned", format="%.1f%%", help=ATTRIBUTE_HELP["ownership"]),
+            "name": st.column_config.TextColumn("Pemain", help="Nama resmi pemain FPL."),
+            "team": st.column_config.TextColumn("Klub", help="Klub resmi pemain di FPL."),
+            "price": st.column_config.NumberColumn("Harga", format="£%.1fm", help=ATTRIBUTE_HELP["price"]),
+            "ownership": st.column_config.NumberColumn("Ownership", format="%.1f%%", help=ATTRIBUTE_HELP["ownership"]),
             "form": st.column_config.NumberColumn("Form", format="%.1f", help=ATTRIBUTE_HELP["form"]),
             "fixture_score": st.column_config.ProgressColumn(
                 "Fixture", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["fixture_score"]
@@ -1056,19 +1105,19 @@ def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
                 "Expected", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["expected"]
             ),
             "minutes_score": st.column_config.ProgressColumn(
-                "Minutes", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["minutes_score"]
+                "Menit", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["minutes_score"]
             ),
             "value_score": st.column_config.ProgressColumn(
                 "Value", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["value"]
             ),
             "history_score": st.column_config.ProgressColumn(
-                "History", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["history"]
+                "Histori", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["history"]
             ),
             "final_score": st.column_config.ProgressColumn(
-                "Final", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["score"]
+                "Skor Akhir", min_value=0, max_value=100, format="%d", help=ATTRIBUTE_HELP["score"]
             ),
-            "category": st.column_config.TextColumn("Verdict", help="Human-readable category derived from the final score."),
-            "reason": st.column_config.TextColumn("Top reasons", help="The two weighted components contributing most to this player's score."),
+            "category_display": st.column_config.TextColumn("Kategori", help="Kategori rekomendasi turunan dari skor akhir."),
+            "reason": st.column_config.TextColumn("Faktor Utama", help="Dua komponen berbobot yang paling banyak menyumbang skor pemain ini."),
         },
     )
 
@@ -1100,44 +1149,44 @@ def render_fixtures(
 ) -> None:
     del players, fixtures, scoring
     page_header(
-        "Fixture planner",
-        "See the run, not just the next match.",
-        "Official FPL fixtures are stored in SQLite and scored for 1, 3, 5, or 8-gameweek horizons.",
+        "Perencana Fixture",
+        "Pantau rangkaian jadwal, bukan cuma satu laga ke depan.",
+        "Jadwal resmi FPL tersimpan di database lokal dan dianalisis untuk horizon 1, 3, 5, atau 8 Gameweek.",
     )
     service = st.session_state.get("fixture_analytics_service")
     if service is None:
-        render_empty_state("Fixture service unavailable", "Reopen the app to initialize the SQLite service.")
+        render_empty_state("Layanan fixture tidak tersedia", "Buka kembali aplikasi untuk menginisialisasi layanan database lokal.")
         return
 
     horizon = st.select_slider(
-        "Horizon", [1, 3, 5, 8], value=5, format_func=lambda value: f"Next {value} GW",
-        help="Number of upcoming gameweeks included in the fixture matrix and score.",
+        "Horizon", [1, 3, 5, 8], value=5, format_func=lambda value: f"{value} GW ke depan",
+        help="Jumlah Gameweek mendatang yang dimasukkan dalam matriks fixture dan kalkulasi skor.",
     )
     matrix = service.get_matrix(horizon)
     if not matrix.teams or not any(summary.fixtures for summary in matrix.teams):
-        render_empty_state("No upcoming official fixtures", "Refresh FPL data from the Data Status page.")
+        render_empty_state("Tidak ada fixture resmi mendatang", "Segarkan data FPL melalui menu Data Status.")
         return
 
     teams = [summary.team_name for summary in matrix.teams]
     default_index = teams.index("Arsenal") if "Arsenal" in teams else 0
     selected_team = st.selectbox(
-        "Team", teams, index=default_index,
-        help="Select an official FPL club to inspect its upcoming fixtures.",
+        "Pilih klub", teams, index=default_index,
+        help="Pilih klub resmi FPL untuk melihat jadwal laga mendatang.",
     )
     selected = matrix.team(selected_team)
     if selected is None:
-        render_empty_state("Team unavailable", "Choose another team.")
+        render_empty_state("Klub tidak tersedia", "Pilih klub lainnya.")
         return
 
     average_fdr = sum(item.fdr for item in selected.fixtures) / len(selected.fixtures)
     summary_columns = st.columns(3)
-    summary_columns[0].metric("Fixture score", f"{selected.fixture_score or 0:.0f}/100", "Higher is easier")
-    summary_columns[1].metric("Average FDR", f"{average_fdr:.1f}", "1 easiest · 5 hardest")
-    summary_columns[2].metric("Players tracked", str(selected.players_tracked), "Official FPL roster")
+    summary_columns[0].metric("Skor Fixture", f"{selected.fixture_score or 0:.0f}/100", "Lebih tinggi lebih mudah")
+    summary_columns[1].metric("Rata-rata FDR", f"{average_fdr:.1f}", "1 paling mudah · 5 paling sulit")
+    summary_columns[2].metric("Pemain Terdaftar", str(selected.players_tracked), "Data skuad resmi FPL")
 
     section_heading(
-        selected_team, f"Next {horizon} fixtures · Official FPL",
-        "Fixture-by-fixture opponent and official FDR for the selected club.",
+        selected_team, f"{horizon} fixture ke depan · Jadwal Resmi FPL",
+        "Lawan tanding per laga dan FDR resmi untuk klub terpilih.",
     )
     fixture_strip(
         [
@@ -1147,8 +1196,8 @@ def render_fixtures(
     )
 
     section_heading(
-        "Fixture matrix", "Official FDR · fixture score weighted toward nearer matches",
-        "Lower FDR is easier; the fixture score weights nearer fixtures more heavily.",
+        "Matriks Fixture", "FDR resmi · skor berbobot mengutamakan laga terdekat",
+        "FDR lebih rendah lebih mudah; laga terdekat memiliki bobot pengaruh lebih besar.",
     )
     dataframe = matrix.to_dataframe()
     ordered_columns = ["team", "fixture_score", "players_tracked"] + [
@@ -1160,13 +1209,13 @@ def render_fixtures(
         hide_index=True,
         width="stretch",
         column_config={
-            "team": st.column_config.TextColumn("Team", pinned=True, help="Official FPL club name."),
+            "team": st.column_config.TextColumn("Klub", pinned=True, help="Nama resmi klub di FPL."),
             "fixture_score": st.column_config.ProgressColumn(
-                "Fixture score", min_value=0, max_value=100, format="%.0f",
+                "Skor Fixture", min_value=0, max_value=100, format="%.0f",
                 help=ATTRIBUTE_HELP["fixture_score"],
             ),
             "players_tracked": st.column_config.NumberColumn(
-                "Players", help="Number of official players currently assigned to this club."
+                "Jumlah Pemain", help="Jumlah pemain resmi yang terdaftar di klub ini."
             ),
         },
     )
@@ -1178,93 +1227,93 @@ def render_player_detail(
     del players, fixtures, scoring
     service = st.session_state.get("player_analytics_service")
     if service is None:
-        render_empty_state("Player service unavailable", "Reopen the app to initialize the SQLite service.")
+        render_empty_state("Layanan pemain tidak tersedia", "Buka kembali aplikasi untuk menginisialisasi layanan database lokal.")
         return
     options = service.list_player_options()
     if not options:
-        render_empty_state("No official players", "Refresh official FPL data from Data Status.")
+        render_empty_state("Belum ada data pemain resmi", "Perbarui data resmi FPL melalui menu Data Status.")
         return
 
     labels = {option.player_id: option.label for option in options}
     player_ids = list(labels)
     selected_player_id = st.selectbox(
-        "Official FPL player",
+        "Pilih pemain FPL",
         player_ids,
         format_func=lambda player_id: labels[player_id],
         key="official_player_id",
-        help="Select a player whose official element-summary history you want to inspect.",
+        help="Pilih pemain yang ingin kamu lihat riwayat laga dan detail statistiknya.",
     )
 
-    if st.button("Load official gameweek history", type="primary"):
+    if st.button("Muat Riwayat Gameweek Resmi", type="primary"):
         try:
-            with st.spinner("Fetching element-summary and saving history..."):
+            with st.spinner("Mengambil data riwayat laga resmi dari FPL..."):
                 result = service.sync_history(selected_player_id)
             if result.from_cache:
-                st.info(f"The gameweek cache is still valid: {result.row_count} history rows; no new API request was needed.")
+                st.info(f"Cache riwayat Gameweek masih valid: {result.row_count} baris data; tidak perlu request ulang ke API FPL.")
             else:
-                st.success(f"History saved: {result.row_count} rows from official FPL.")
+                st.success(f"Riwayat tersimpan: {result.row_count} baris data resmi FPL berhasil disinkronkan.")
         except Exception:
-            st.error("History could not be loaded. Existing local data remains safe.")
+            st.error("Riwayat belum berhasil dimuat. Data lokal yang ada tetap aman.")
 
     detail = service.get_detail(selected_player_id)
     features = detail.features
     status_labels = {
-        "a": "Available",
-        "d": "Doubtful",
-        "i": "Injured",
-        "s": "Suspended",
-        "u": "Unavailable",
-        "n": "Unavailable",
+        "a": "Tersedia",
+        "d": "Meragukan",
+        "i": "Cedera",
+        "s": "Hukuman Kartu",
+        "u": "Tidak Tersedia",
+        "n": "Tidak Tersedia",
     }
     page_header(
-        f"{detail.team} · {detail.position} · Official FPL",
+        f"{detail.team} · {detail.position} · Data Resmi FPL",
         detail.name,
-        "Current totals, cached gameweek history, and confidence-adjusted features with visible periods.",
+        "Statistik total musim ini, riwayat per Gameweek, dan indikator sinyal dengan penyesuaian sampel bermain.",
     )
     if detail.news:
         st.warning(detail.news)
 
     headline = st.columns(5)
     with headline[0]:
-        metric_tile("Price", f"£{detail.price:.1f}m", f"Owned {detail.ownership:.1f}%", ATTRIBUTE_HELP["price"])
+        metric_tile("Harga", f"£{detail.price:.1f}m", f"Ownership {detail.ownership:.1f}%", ATTRIBUTE_HELP["price"])
     with headline[1]:
         metric_tile(
-            "Total points", str(detail.total_points), f"PPM {detail.points_per_game:.1f}",
-            "Official FPL total points in the latest current-stat snapshot.",
+            "Total Poin", str(detail.total_points), f"PPM {detail.points_per_game:.1f}",
+            "Total poin resmi FPL pada snapshot statistik terkini.",
         )
     with headline[2]:
         metric_tile(
-            "Rolling form", f"{features.form_5:.2f}", "Last 5 cached GW",
-            "Average total points across the player's latest five cached gameweeks.",
+            "Form Berjalan", f"{features.form_5:.2f}", "5 GW terakhir",
+            "Rata-rata total poin pemain di lima Gameweek terakhir dalam database.",
         )
     with headline[3]:
         metric_tile(
-            "xGI / 90", f"{features.xgi_per_90:.2f}", f"xG {features.xg_per_90:.2f} · xA {features.xa_per_90:.2f}",
-            "Expected goal involvements projected to 90 minutes from cached history.",
+            "xGI / 90 Menit", f"{features.xgi_per_90:.2f}", f"xG {features.xg_per_90:.2f} · xA {features.xa_per_90:.2f}",
+            "Proyeksi keterlibatan gol per 90 menit dari riwayat laga tersimpan.",
         )
     with headline[4]:
         metric_tile(
-            "Minutes security", f"{features.minutes_security:.0f}/100", status_labels.get(detail.status, "Unknown"),
-            "Recent playing-time reliability adjusted by the official availability status.",
+            "Jaminan Menit", f"{features.minutes_security:.0f}/100", status_labels.get(detail.status, "Tidak Diketahui"),
+            "Keandalan menit bermain terbaru setelah disesuaikan status ketersediaan pemain.",
         )
 
     period = (
         f"GW {features.period_start_gameweek}–{features.period_end_gameweek}"
         if features.period_start_gameweek is not None
-        else "No gameweek history cached"
+        else "Belum ada riwayat Gameweek tersimpan"
     )
     confidence_percent = features.confidence * 100
     if not features.enough_minutes:
         st.info(
-            f"Small sample: {features.sample_minutes} of {service.scoring.minimum_minutes} minimum minutes. "
-            f"Confidence adjustment currently {confidence_percent:.0f}%."
+            f"Sampel menit bermain sedikit: baru {features.sample_minutes} dari minimal {service.scoring.minimum_minutes} menit. "
+            f"Penyesuaian keandalan saat ini {confidence_percent:.0f}%."
         )
 
     chart_column, feature_column = st.columns([1.3, 1])
     with chart_column:
         section_heading(
-            "Gameweek trends", f"{period} · element-summary cache",
-            "Official points, minutes, and xGI by gameweek; values are aggregated for double gameweeks.",
+            "Tren Gameweek", f"{period} · Cache Resmi FPL",
+            "Poin, menit bermain, dan xGI resmi per Gameweek (dijumlahkan otomatis jika ada Double Gameweek).",
         )
         if detail.history:
             history_frame = pd.DataFrame(
@@ -1280,48 +1329,48 @@ def render_player_detail(
             ).groupby("Gameweek", as_index=False)[["Points", "Minutes", "xGI"]].sum().set_index("Gameweek")
             trend_columns = st.columns(3)
             for column, metric, color, description in (
-                (trend_columns[0], "Points", "#18f59b", "Official FPL points"),
-                (trend_columns[1], "Minutes", "#7bbcf0", "Minutes played"),
-                (trend_columns[2], "xGI", "#b28df2", "Expected goal involvements"),
+                (trend_columns[0], "Points", "#18f59b", "Poin resmi FPL"),
+                (trend_columns[1], "Minutes", "#7bbcf0", "Menit bermain"),
+                (trend_columns[2], "xGI", "#b28df2", "Ekspektasi keterlibatan gol (xGI)"),
             ):
                 with column:
                     st.caption(description)
                     st.line_chart(history_frame[[metric]], color=color, height=190)
         else:
             render_action_state(
-                "History not available",
-                "Click Load official gameweek history. Early-season players may return 0 rows.",
+                "Riwayat belum tersedia",
+                "Klik tombol 'Muat Riwayat Gameweek Resmi' di atas untuk mengunduh data laga pemain ini.",
             )
     with feature_column:
         section_heading(
-            "Feature confidence", f"{features.sample_minutes} minutes · {confidence_percent:.0f}% confidence",
-            "Raw signals are shown beside confidence-adjusted values to make small samples visible.",
+            "Keandalan Komponen Statistik", f"{features.sample_minutes} menit · {confidence_percent:.0f}% keandalan",
+            "Statistik mentah ditampilkan bersanding dengan nilai yang telah disesuaikan dengan volume menit bermain.",
         )
         st.dataframe(
             pd.DataFrame(
                 [
-                    ["Form", features.form_5, features.confidence_adjusted_form, "Last 5 GW"],
+                    ["Form", features.form_5, features.confidence_adjusted_form, "5 GW terakhir"],
                     ["xGI / 90", features.xgi_per_90, features.confidence_adjusted_xgi_per_90, period],
-                    ["Value", features.value, features.confidence_adjusted_value, "PPM / price"],
-                    ["Minutes", features.minutes_security, features.minutes_security, f"Last {service.scoring.minutes_security_window} fixtures"],
+                    ["Value", features.value, features.confidence_adjusted_value, "PPM / harga"],
+                    ["Menit Bermain", features.minutes_security, features.minutes_security, f"{service.scoring.minutes_security_window} fixture terakhir"],
                 ],
-                columns=["Feature", "Raw", "Adjusted", "Period / definition"],
+                columns=["Komponen", "Nilai Mentah", "Setelah Disesuaikan", "Periode / Definisi"],
             ),
             hide_index=True,
             width="stretch",
             column_config={
-                "Raw": st.column_config.NumberColumn(
-                    format="%.2f", help="Unadjusted feature calculated from the selected history period."
+                "Nilai Mentah": st.column_config.NumberColumn(
+                    format="%.2f", help="Statistik belum disesuaikan dari periode histori terpilih."
                 ),
-                "Adjusted": st.column_config.NumberColumn(
-                    format="%.2f", help="Feature after minimum-minutes confidence and availability adjustment."
+                "Setelah Disesuaikan": st.column_config.NumberColumn(
+                    format="%.2f", help="Nilai setelah penyesuaian batas minimal menit dan ketersediaan."
                 ),
             },
         )
 
     section_heading(
-        "Official match history", f"{len(detail.history)} persisted rows · idempotent cache",
-        "Validated element-summary rows saved locally so repeated page loads do not repeat API requests.",
+        "Riwayat Laga Resmi", f"{len(detail.history)} laga tersimpan · Cache lokal cepat",
+        "Data resmi per pertandingan yang tersimpan di SQLite sehingga halaman terbuka instan tanpa membebani API FPL.",
     )
     if detail.history:
         st.dataframe(
@@ -1329,16 +1378,16 @@ def render_player_detail(
             hide_index=True,
             width="stretch",
             column_config={
-                "gameweek": st.column_config.NumberColumn("GW", help="Official FPL gameweek number."),
-                "opponent": st.column_config.TextColumn("Opponent", help="Opponent club in this fixture."),
-                "venue": st.column_config.TextColumn("Venue", help="Whether the player was home or away."),
-                "minutes": st.column_config.NumberColumn("Min", help="Minutes played in this fixture."),
-                "points": st.column_config.NumberColumn("Pts", help="Official FPL points scored in this fixture."),
-                "xg": st.column_config.NumberColumn("xG", format="%.2f", help="Expected goals in this fixture."),
-                "xa": st.column_config.NumberColumn("xA", format="%.2f", help="Expected assists in this fixture."),
-                "xgi": st.column_config.NumberColumn("xGI", format="%.2f", help="Expected goal involvements in this fixture."),
-                "bonus": st.column_config.NumberColumn("Bonus", help="Official FPL bonus points in this fixture."),
-                "price": st.column_config.NumberColumn("Price", format="£%.1fm", help="Player value recorded for this fixture."),
+                "gameweek": st.column_config.NumberColumn("GW", help="Nomor Gameweek resmi."),
+                "opponent": st.column_config.TextColumn("Lawan", help="Klub lawan pada pertandingan ini."),
+                "venue": st.column_config.TextColumn("Kandang/Tandang", help="Status laga kandang (H) atau tandang (A)."),
+                "minutes": st.column_config.NumberColumn("Menit", help="Menit bermain pada laga ini."),
+                "points": st.column_config.NumberColumn("Poin", help="Poin resmi FPL yang diraih pada laga ini."),
+                "xg": st.column_config.NumberColumn("xG", format="%.2f", help="Expected goals pada laga ini."),
+                "xa": st.column_config.NumberColumn("xA", format="%.2f", help="Expected assists pada laga ini."),
+                "xgi": st.column_config.NumberColumn("xGI", format="%.2f", help="Expected goal involvements pada laga ini."),
+                "bonus": st.column_config.NumberColumn("Bonus", help="Poin bonus resmi FPL pada laga ini."),
+                "price": st.column_config.NumberColumn("Harga", format="£%.1fm", help="Harga pemain saat laga berlangsung."),
             },
         )
 
@@ -1346,7 +1395,7 @@ def render_player_detail(
     if fixture_service is not None:
         team_summary = fixture_service.get_matrix(5).team(detail.team)
         if team_summary is not None and team_summary.fixtures:
-            section_heading("Next fixtures", "Five-gameweek official FPL outlook")
+            section_heading("Fixture Berikutnya", "Prospek 5 Gameweek ke depan dari jadwal resmi FPL")
             fixture_strip(
                 [
                     {"gameweek": f"GW {item.gameweek or 'TBC'}", "fixture": item.fixture, "fdr": item.fdr}
@@ -1360,22 +1409,22 @@ def render_compare(
 ) -> None:
     del players, fixtures
     page_header(
-        "Head-to-head",
-        "Compare the trade-off, not just the total.",
-        "Choose two official players to compare fixture, output, minutes, and value trade-offs.",
+        "Head-to-Head",
+        "Bandingkan trade-off dua pemain secara objektif.",
+        "Pilih dua pemain resmi FPL untuk membandingkan fixture, performa, menit bermain, dan nilainya.",
     )
     service = st.session_state.get("recommendation_engine_service")
     if service is None:
-        render_empty_state("Recommendation engine unavailable", "Reopen the app to initialize the recommendation engine.")
+        render_empty_state("Layanan rekomendasi tidak tersedia", "Buka kembali aplikasi untuk menginisialisasi sistem rekomendasi.")
         return
     horizon = st.select_slider(
-        "Comparison horizon", [1, 3, 5, 8], value=scoring.default_horizon,
-        format_func=lambda value: f"Next {value} GW",
-        help="Use the same fixture horizon for both players before judging the trade-off.",
+        "Horizon komparasi", [1, 3, 5, 8], value=scoring.default_horizon,
+        format_func=lambda value: f"{value} GW ke depan",
+        help="Gunakan horizon fixture yang sama untuk kedua pemain sebelum menilai trade-off.",
     )
     rows = service.get_rankings(horizon=horizon)
     if len(rows) < 2:
-        render_empty_state("Not enough players", "Refresh official FPL data.")
+        render_empty_state("Jumlah pemain kurang", "Perbarui data resmi FPL.")
         return
     labels = {row.player_id: f"{row.name} · {row.team} · {row.position}" for row in rows}
     row_by_id = {row.player_id: row for row in rows}
@@ -1383,18 +1432,18 @@ def render_compare(
     selectors = st.columns(2)
     with selectors[0]:
         player_a_id = st.selectbox(
-            "Player A", player_ids, index=0, format_func=lambda player_id: labels[player_id],
-            help="First official player in the comparison.",
+            "Pemain A", player_ids, index=0, format_func=lambda player_id: labels[player_id],
+            help="Pemain resmi FPL pertama dalam perbandingan.",
         )
     with selectors[1]:
         player_b_id = st.selectbox(
-            "Player B", player_ids, index=1, format_func=lambda player_id: labels[player_id],
-            help="Second official player in the comparison.",
+            "Pemain B", player_ids, index=1, format_func=lambda player_id: labels[player_id],
+            help="Pemain resmi FPL kedua dalam perbandingan.",
         )
 
     if player_a_id == player_b_id:
         render_empty_state(
-            "Choose two different players", "The comparison requires two different player profiles."
+            "Pilih dua pemain yang berbeda", "Komparasi membutuhkan dua profil pemain yang berbeda."
         )
         return
 
@@ -1402,13 +1451,13 @@ def render_compare(
     player_b = row_by_id[player_b_id]
     cards = st.columns(2)
     with cards[0]:
-        player_card(_player_card_data(player_a), "Player A")
+        player_card(_player_card_data(player_a), "Pemain A")
     with cards[1]:
-        player_card(_player_card_data(player_b), "Player B")
+        player_card(_player_card_data(player_b), "Pemain B")
 
     section_heading(
-        "Signal comparison", "Higher bars indicate stronger signals",
-        "The same persisted component scores used by Recommendations, shown side by side.",
+        "Perbandingan Sinyal", "Semakin panjang barnya, semakin kuat sinyalnya",
+        "Komponen skor tersimpan yang sama dengan halaman Rekomendasi, disandingkan berdampingan.",
     )
     comparison = pd.DataFrame(
         {
@@ -1429,15 +1478,15 @@ def render_compare(
                 player_b.history_score,
             ],
         },
-        index=["Recommendation", "Fixture", "Expected", "Minutes", "Value", "History"],
+        index=["Skor Rekomendasi", "Fixture", "Expected", "Menit", "Value", "Histori"],
     )
     st.bar_chart(comparison, horizontal=True, height=320)
 
     winner = player_a if player_a.final_score >= player_b.final_score else player_b
     value_winner = player_a if player_a.value_score >= player_b.value_score else player_b
     st.success(
-        f"Overall signal: {winner.name} leads. Value signal: {value_winner.name} leads. "
-        f"Model {scoring.model_version} · Next {horizon} GW."
+        f"Sinyal Keseluruhan: **{winner.name}** lebih unggul. Sinyal Value: **{value_winner.name}** lebih unggul. "
+        f"Model {scoring.model_version} · {horizon} GW ke depan."
     )
 
 
@@ -1446,94 +1495,94 @@ def render_backtesting(
 ) -> None:
     del players, fixtures
     page_header(
-        "Model validation",
-        "Test the ranking before trusting the calibration.",
-        "GW N predictions use data through GW N only; outcomes come from GW N+1 through the selected horizon.",
+        "Validasi Model",
+        "Uji performa peringkat sebelum mempercayai kalibrasi model.",
+        "Prediksi GW N hanya menggunakan data hingga GW N; hasil aktual diukur dari GW N+1 hingga batas horizon terpilih.",
     )
     service = st.session_state.get("backtesting_service")
     if service is None:
-        render_empty_state("Backtesting unavailable", "Reopen the app to initialize the backtesting service.")
+        render_empty_state("Layanan backtest tidak tersedia", "Buka kembali aplikasi untuk menginisialisasi layanan backtesting.")
         return
 
     status = service.get_status()
     status_columns = st.columns(4)
     with status_columns[0]:
         metric_tile(
-            "Historical GW rows", f"{status.gameweek_rows:,}", "Validated player-fixture outcomes",
-            "Historical player rows at player-fixture grain used to separate features from future outcomes.",
+            "Baris Histori GW", f"{status.gameweek_rows:,}", "Hasil tervalidasi per pemain-laga",
+            "Data historis per pemain-laga untuk memisahkan input sinyal dari hasil masa depan.",
         )
     with status_columns[1]:
         metric_tile(
-            "Prediction rows", f"{status.prediction_rows:,}", "Persisted and auditable",
-            "Saved player rankings with cutoff, horizon, model version, and actual future outcome.",
+            "Baris Prediksi", f"{status.prediction_rows:,}", "Tersimpan & bisa diaudit",
+            "Peringkat pemain tersimpan lengkap dengan cutoff, horizon, versi model, dan hasil aktual.",
         )
     with status_columns[2]:
         metric_tile(
-            "Evaluation runs", str(status.runs), "Baseline and candidate",
-            "One aggregate evaluation per season, horizon, and model version.",
+            "Sesi Evaluasi", str(status.runs), "Baseline & kandidat",
+            "Satu evaluasi agregat per musim, horizon, dan versi model.",
         )
     with status_columns[3]:
         metric_tile(
-            "Production model", scoring.model_version, "Candidate remains experimental",
-            "Production weights are unchanged until evidence covers more seasons and limitations.",
+            "Model Produksi", scoring.model_version, "Kandidat masih eksperimental",
+            "Bobot produksi belum diubah sebelum teruji di berbagai musim dan batasan.",
         )
 
     if st.button(
-        "Import & rerun 2025–26 backtests",
+        "Impor & Jalankan Ulang Backtest 2025–26",
         type="primary",
-        help="Download validated historical gameweek/fixture files and rerun production plus every configured experimental model for horizons 1, 3, and 5.",
+        help="Unduh file hasil laga/Gameweek historis yang telah tervalidasi dan jalankan ulang model produksi serta kandidat eksperimental untuk horizon 1, 3, dan 5 GW.",
     ):
         try:
-            with st.spinner("Importing historical outcomes and running all time-safe cutoffs..."):
+            with st.spinner("Mengimpor hasil historis dan menjalankan seluruh cutoff bebas-kebocoran data..."):
                 result = service.import_and_run()
             st.success(
-                f"Backtest complete: {result.runs} runs, {result.prediction_rows:,} predictions, "
-                f"{result.gameweek_rows:,} historical rows."
+                f"Backtest selesai: {result.runs} sesi evaluasi, {result.prediction_rows:,} baris prediksi, "
+                f"{result.gameweek_rows:,} baris data histori."
             )
         except Exception:
-            st.error("Backtest failed. The latest successful run remains available.")
+            st.error("Backtest gagal dijalankan. Hasil evaluasi sukses terakhir tetap tersedia.")
 
     try:
         schedule_report = service.get_schedule_validation_report()
         section_heading(
-            "Schedule-adjustment validation",
-            "Phase F · leakage-safe production gate",
-            "Historical final fixtures are outcomes only. A probability can be evaluated only when its timestamp proves it existed before the target GW began.",
+            "Validasi Penyesuaian Jadwal",
+            "Fase F · gate produksi anti-kebocoran data",
+            "Jadwal akhir historis hanya berupa hasil. Probabilitas cuma valid diuji jika timestamp membuktikan data itu ada sebelum target GW dimulai.",
         )
         schedule_metrics = st.columns(4)
         with schedule_metrics[0]:
             metric_tile(
-                "Eligible forecasts",
+                "Prakiraan Layak",
                 str(schedule_report.eligible_observations),
-                f"{schedule_report.rejected_observations} rejected · minimum {schedule_report.policy.minimum_observations}",
-                "Timestamped historical probability snapshots that pass the no-leakage cutoff check.",
+                f"{schedule_report.rejected_observations} ditolak · minimal {schedule_report.policy.minimum_observations}",
+                "Snapshot probabilitas historis bertimestamp yang lolos uji cutoff tanpa kebocoran data.",
             )
         with schedule_metrics[1]:
             metric_tile(
                 "Blank Brier",
                 f"{schedule_report.blank_brier:.3f}" if schedule_report.blank_brier is not None else "N/A",
-                f"Gate ≤ {schedule_report.policy.maximum_blank_brier:.2f}",
+                f"Ambang ≤ {schedule_report.policy.maximum_blank_brier:.2f}",
                 ATTRIBUTE_HELP["brier"],
             )
         with schedule_metrics[2]:
             metric_tile(
                 "Double Brier",
                 f"{schedule_report.double_brier:.3f}" if schedule_report.double_brier is not None else "N/A",
-                f"Gate ≤ {schedule_report.policy.maximum_double_brier:.2f}",
+                f"Ambang ≤ {schedule_report.policy.maximum_double_brier:.2f}",
                 ATTRIBUTE_HELP["brier"],
             )
         with schedule_metrics[3]:
             metric_tile(
-                "Transfer integration",
-                "Active" if schedule_report.production_active else "Inactive",
-                "Explicit approval + all quantitative gates",
-                "Schedule weights cannot change transfer ordering until calibration and ranking-comparison gates pass and production approval is explicit.",
+                "Integrasi Transfer",
+                "Aktif" if schedule_report.production_active else "Tidak Aktif",
+                "Persetujuan eksplisit + seluruh gate kuantitatif lolos",
+                "Bobot jadwal belum boleh mengubah urutan transfer sebelum lulus kalibrasi dan disetujui secara eksplisit.",
             )
         if schedule_report.production_active:
-            st.success("All Phase F gates passed; validated schedule weights are active.")
+            st.success("Semua gate Fase F terpenuhi; bobot penyesuaian jadwal tervalidasi aktif.")
         else:
             st.warning(
-                "Schedule weights remain inactive. " + " ".join(schedule_report.reasons)
+                "Bobot jadwal tetap tidak aktif. " + " ".join(schedule_report.reasons)
             )
         if schedule_report.reliability_buckets:
             st.dataframe(
@@ -1541,13 +1590,13 @@ def render_backtesting(
                 hide_index=True,
                 width="stretch",
                 column_config={
-                    "mean_probability": st.column_config.NumberColumn("Mean probability", format="%.3f"),
-                    "observed_rate": st.column_config.NumberColumn("Observed rate", format="%.3f"),
+                    "mean_probability": st.column_config.NumberColumn("Rata-rata Probabilitas", format="%.3f"),
+                    "observed_rate": st.column_config.NumberColumn("Tingkat Kejadian Riil", format="%.3f"),
                 },
             )
             st.caption(
-                "Reliability buckets compare predicted probability with actual frequency. "
-                f"Weighted calibration error: {schedule_report.calibration_error:.3f}."
+                "Kelompok reliabilitas membandingkan probabilitas prediksi dengan frekuensi riil. "
+                f"Galat kalibrasi terbobot: {schedule_report.calibration_error:.3f}."
             )
         if schedule_report.comparison is not None:
             comparison_result = schedule_report.comparison
@@ -1555,13 +1604,13 @@ def render_backtesting(
                 pd.DataFrame(
                     [
                         {
-                            "Cutoffs": comparison_result.evaluated_cutoffs,
-                            "Baseline top-10 pts": comparison_result.baseline_top_10_points,
-                            "Adjusted top-10 pts": comparison_result.adjusted_top_10_points,
-                            "Points lift": comparison_result.top_10_points_lift,
+                            "Cutoff": comparison_result.evaluated_cutoffs,
+                            "Baseline Top-10 Pts": comparison_result.baseline_top_10_points,
+                            "Adjusted Top-10 Pts": comparison_result.adjusted_top_10_points,
+                            "Poin Lift": comparison_result.top_10_points_lift,
                             "Baseline Spearman": comparison_result.baseline_spearman,
                             "Adjusted Spearman": comparison_result.adjusted_spearman,
-                            "Spearman lift": comparison_result.spearman_lift,
+                            "Spearman Lift": comparison_result.spearman_lift,
                         }
                     ]
                 ),
@@ -1569,65 +1618,65 @@ def render_backtesting(
                 width="stretch",
             )
         st.caption(
-            "Current repository intentionally contains no retrospectively invented historical probabilities. "
-            "Until genuine timestamped forecast snapshots accumulate, the safe result is an inactive adjustment."
+            "Repositori sengaja tidak memalsukan probabilitas historis retrospektif. "
+            "Sebelum snapshot data prakiraan bertimestamp riil terkumpul, opsi paling aman adalah membiarkan penyesuaian tidak aktif."
         )
     except Exception as exc:
-        st.warning(f"Schedule validation report is unavailable: {exc}")
+        st.warning(f"Laporan validasi jadwal tidak tersedia: {exc}")
 
     runs = service.list_runs()
     if not runs:
         render_empty_state(
-            "No backtest results",
-            "Click Import & rerun to create the baseline and candidate evaluations.",
+            "Belum ada hasil backtest",
+            "Klik tombol 'Impor & Jalankan Ulang Backtest 2025–26' untuk membuat evaluasi baseline dan kandidat.",
         )
         return
 
     available_horizons = sorted({run.horizon for run in runs})
     horizon = st.select_slider(
-        "Evaluation horizon",
+        "Horizon evaluasi",
         available_horizons,
         value=5 if 5 in available_horizons else available_horizons[-1],
-        format_func=lambda value: f"Next {value} GW",
-        help="Future gameweeks included in each stored outcome window.",
+        format_func=lambda value: f"{value} GW ke depan",
+        help="Jumlah Gameweek masa depan yang dihitung pada setiap jendela evaluasi tersimpan.",
     )
     try:
         positional_report = service.get_positional_candidate_validation_report(
             horizon=horizon
         )
         section_heading(
-            "Positional candidate release gate",
-            f"{positional_report.candidate_version} vs {positional_report.production_version} · leakage-safe",
-            "Every position must meet data-coverage and no-material-regression gates. This report cannot change live rankings by itself.",
+            "Gate Rilis Kandidat Posisi",
+            f"{positional_report.candidate_version} vs {positional_report.production_version} · bebas kebocoran data",
+            "Setiap posisi harus memenuhi cakupan data dan tanpa regresi material. Laporan ini tidak mengubah peringkat aktif secara sepihak.",
         )
         gate_metrics = st.columns(4)
         with gate_metrics[0]:
             metric_tile(
-                "Candidate status",
-                "Approved" if positional_report.production_active else "Experimental",
-                "Explicit approval + all gates required",
-                "The production score remains v1.1 until the candidate passes quantitative gates and an explicit production activation decision is recorded in configuration.",
+                "Status Kandidat",
+                "Disetujui" if positional_report.production_active else "Eksperimental",
+                "Persetujuan eksplisit + semua gate lolos",
+                "Skor produksi tetap v1.1 sampai kandidat lolos gate kuantitatif dan keputusan aktivasi dicatat resmi.",
             )
         with gate_metrics[1]:
             metric_tile(
-                "Positions passed",
+                "Posisi Lolos",
                 f"{sum(item.gate_passed for item in positional_report.evaluations)}/4",
-                "Coverage and regression checks",
-                "Each FPL position is evaluated independently so an improvement in one group cannot hide a degradation in another.",
+                "Pemeriksaan cakupan & regresi",
+                "Setiap posisi FPL dinilai independen agar peningkatan pada satu grup tidak menutupi penurunan di grup lain.",
             )
         with gate_metrics[2]:
             metric_tile(
-                "Minimum coverage",
+                "Cakupan Minimal",
                 f"{min(item.feature_coverage for item in positional_report.evaluations):.0%}",
-                f"Gate ≥ {positional_report.policy.minimum_feature_coverage:.0%}",
-                "Lowest required official historical-field coverage among the four positions. Missing data fails closed rather than becoming a favourable zero.",
+                f"Ambang ≥ {positional_report.policy.minimum_feature_coverage:.0%}",
+                "Tingkat ketersediaan data historis resmi terendah di antara 4 posisi.",
             )
         with gate_metrics[3]:
             metric_tile(
-                "Quantitative gates",
-                "Passed" if positional_report.quantitative_gates_passed else "Not met",
-                "No material position-level regression",
-                "MAE, Spearman, top-10 hit rate, and top-10 actual points are compared on the same cutoffs and future outcome windows.",
+                "Gate Kuantitatif",
+                "Lolos" if positional_report.quantitative_gates_passed else "Belum Memenuhi",
+                "Tanpa regresi material per posisi",
+                "MAE, Spearman, hit rate top-10, dan poin riil top-10 dibandingkan pada cutoff yang sama.",
             )
         evaluation_rows = []
         for item in positional_report.evaluations:
@@ -1668,24 +1717,24 @@ def render_backtesting(
             hide_index=True,
             width="stretch",
             column_config={
-                "Coverage": st.column_config.NumberColumn("Official coverage", format="%.0f%%", help="Lowest availability rate across official historical fields required by the candidate profile."),
-                "Cutoffs": st.column_config.NumberColumn("Cutoffs", help="Comparable as-of gameweek ranking snapshots."),
-                "Predictions": st.column_config.NumberColumn("Predictions", help="Persisted player rankings evaluated for this position."),
-                "MAE Δ": st.column_config.NumberColumn("MAE Δ ↓", format="%+.3f", help="Candidate minus production. Lower is better; a positive value is a deterioration."),
-                "Spearman Δ": st.column_config.NumberColumn("Spearman Δ ↑", format="%+.3f", help="Candidate minus production. Higher is better."),
-                "Top-10 hit Δ": st.column_config.NumberColumn("Top-10 hit Δ ↑", format="%+.1f%%", help="Candidate minus production top-10 overlap with realised top 10."),
-                "Top-10 pts Δ": st.column_config.NumberColumn("Top-10 pts Δ ↑", format="%+.2f", help="Candidate minus production average realised points from its top 10."),
+                "Coverage": st.column_config.NumberColumn("Cakupan Data", format="%.0f%%", help="Tingkat ketersediaan data historis resmi terendah."),
+                "Cutoffs": st.column_config.NumberColumn("Cutoff", help="Jumlah snapshot Gameweek yang dievaluasi."),
+                "Predictions": st.column_config.NumberColumn("Prediksi", help="Total baris peringkat pemain yang dievaluasi."),
+                "MAE Δ": st.column_config.NumberColumn("MAE Δ ↓", format="%+.3f", help="Kandidat dikurangi produksi. Semakin rendah semakin bagus; nilai positif berarti performa memburuk."),
+                "Spearman Δ": st.column_config.NumberColumn("Spearman Δ ↑", format="%+.3f", help="Kandidat dikurangi produksi. Semakin tinggi semakin bagus."),
+                "Top-10 hit Δ": st.column_config.NumberColumn("Top-10 Hit Δ ↑", format="%+.1f%%", help="Peningkatan persentase kesesuaian top 10 kandidat vs aktual."),
+                "Top-10 pts Δ": st.column_config.NumberColumn("Top-10 Poin Δ ↑", format="%+.2f", help="Selisih rata-rata perolehan poin aktual dari top 10 kandidat."),
             },
         )
         if positional_report.production_active:
-            st.success("The positional candidate has passed all gates and explicit activation is recorded.")
+            st.success("Kandidat model posisi telah memenuhi seluruh gate dan aktivasi resmi telah dicatat.")
         else:
             st.warning(
-                "Candidate remains inactive. " + " ".join(positional_report.reasons)
+                "Kandidat model tetap tidak aktif. " + " ".join(positional_report.reasons)
             )
     except Exception as exc:
         st.info(
-            "Positional candidate validation is waiting for a completed production and candidate rerun. "
+            "Validasi kandidat model posisi sedang menunggu hasil proses komparasi selesai. "
             f"Detail: {exc}"
         )
 
@@ -1699,29 +1748,29 @@ def render_backtesting(
     metric_columns = st.columns(4)
     with metric_columns[0]:
         metric_tile(
-            "Lowest MAE", f"{best_mae.mae_percentile:.2f}", best_mae.model_version,
+            "MAE Terendah", f"{best_mae.mae_percentile:.2f}", best_mae.model_version,
             ATTRIBUTE_HELP["mae"],
         )
     with metric_columns[1]:
         metric_tile(
-            "Best Spearman", f"{best_spearman.spearman:.3f}", best_spearman.model_version,
+            "Spearman Terbaik", f"{best_spearman.spearman:.3f}", best_spearman.model_version,
             ATTRIBUTE_HELP["spearman"],
         )
     with metric_columns[2]:
         metric_tile(
-            "Top-10 hit", f"{best_hit.top_10_hit_rate:.1f}%", best_hit.model_version,
+            "Akurasi Top-10", f"{best_hit.top_10_hit_rate:.1f}%", best_hit.model_version,
             ATTRIBUTE_HELP["top_10_hit"],
         )
     with metric_columns[3]:
         metric_tile(
-            "Top-10 actual pts", f"{best_points.average_actual_points_top_10:.2f}", best_points.model_version,
+            "Poin Aktual Top-10", f"{best_points.average_actual_points_top_10:.2f}", best_points.model_version,
             ATTRIBUTE_HELP["top_10_points"],
         )
 
     section_heading(
-        "Model comparison",
-        f"2025–26 · GW {selected_runs[0].first_gameweek}–{selected_runs[0].last_gameweek} cutoffs",
-        "All metrics use the same eligible players, cutoff gameweeks, and future outcome windows.",
+        "Perbandingan Model",
+        f"Musim 2025–26 · Cutoff GW {selected_runs[0].first_gameweek}–{selected_runs[0].last_gameweek}",
+        "Semua metrik dievaluasi menggunakan daftar pemain, cutoff Gameweek, dan jendela hasil masa depan yang persis sama.",
     )
     st.dataframe(
         comparison[
@@ -1739,8 +1788,8 @@ def render_backtesting(
         width="stretch",
         column_config={
             "model_version": st.column_config.TextColumn("Model"),
-            "gameweeks": st.column_config.NumberColumn("Cutoffs"),
-            "predictions": st.column_config.NumberColumn("Predictions"),
+            "gameweeks": st.column_config.NumberColumn("Cutoff"),
+            "predictions": st.column_config.NumberColumn("Prediksi"),
             "mae_percentile": st.column_config.NumberColumn(
                 "MAE ↓", format="%.3f", help=ATTRIBUTE_HELP["mae"]
             ),
@@ -1748,10 +1797,10 @@ def render_backtesting(
                 "Spearman ↑", format="%.3f", help=ATTRIBUTE_HELP["spearman"]
             ),
             "top_10_hit_rate": st.column_config.NumberColumn(
-                "Top-10 hit ↑", format="%.1f%%", help=ATTRIBUTE_HELP["top_10_hit"]
+                "Akurasi Top-10 ↑", format="%.1f%%", help=ATTRIBUTE_HELP["top_10_hit"]
             ),
             "average_actual_points_top_10": st.column_config.NumberColumn(
-                "Avg top-10 pts ↑", format="%.2f", help=ATTRIBUTE_HELP["top_10_points"]
+                "Rata-rata Poin Top-10 ↑", format="%.2f", help=ATTRIBUTE_HELP["top_10_points"]
             ),
         },
     )
@@ -1766,30 +1815,30 @@ def render_backtesting(
     )
     if production and candidate and candidate.mae_percentile < production.mae_percentile and candidate.spearman > production.spearman:
         st.info(
-            f"Calibration decision: {candidate.model_version} improves MAE and Spearman for Next {horizon} GW, "
-            "but remains experimental. Keep production v1.1 until another season and availability data validate the gain."
+            f"Keputusan kalibrasi: {candidate.model_version} meningkatkan MAE dan Spearman untuk {horizon} GW ke depan, "
+            "namun statusnya tetap eksperimental. Pertahankan model produksi v1.1 sampai musim lain dan data ketersediaan memvalidasi peningkatan ini."
         )
 
     model_version = st.selectbox(
-        "Inspect model predictions",
+        "Pilih versi model",
         [run.model_version for run in selected_runs],
-        help="Choose one persisted model version before inspecting an individual cutoff.",
+        help="Pilih salah satu versi model tersimpan sebelum mengaudit cutoff tertentu.",
     )
     selected_run = next(run for run in selected_runs if run.model_version == model_version)
     as_of_gameweek = st.slider(
-        "As-of gameweek",
+        "Cutoff Gameweek",
         selected_run.first_gameweek,
         selected_run.last_gameweek,
         selected_run.last_gameweek,
-        help="Only data at or before this gameweek was available to the prediction.",
+        help="Hanya data pada atau sebelum Gameweek ini yang boleh digunakan dalam prediksi.",
     )
     predictions = service.list_predictions(
         selected_run.season, horizon, model_version, as_of_gameweek
     )
     section_heading(
-        "Prediction audit",
-        f"As of GW {as_of_gameweek} → actual GW {as_of_gameweek + 1}–{as_of_gameweek + horizon}",
-        "Stored predicted ranks and future outcomes at one exact cutoff.",
+        "Audit Prediksi",
+        f"Per GW {as_of_gameweek} → hasil aktual GW {as_of_gameweek + 1}–{as_of_gameweek + horizon}",
+        "Daftar peringkat prediksi dan hasil aktual masa depan pada satu cutoff tertentu.",
     )
     st.dataframe(
         pd.DataFrame([asdict(row) for row in predictions[:20]]),
@@ -1797,24 +1846,24 @@ def render_backtesting(
         width="stretch",
         column_config={
             "as_of_gameweek": None,
-            "player": st.column_config.TextColumn("Player"),
+            "player": st.column_config.TextColumn("Pemain"),
             "position": st.column_config.TextColumn("Pos", width="small"),
             "recommendation_score": st.column_config.ProgressColumn(
-                "Predicted score", min_value=0, max_value=100, format="%.1f"
+                "Skor Prediksi", min_value=0, max_value=100, format="%.1f"
             ),
-            "predicted_rank": st.column_config.NumberColumn("Pred rank"),
-            "actual_points": st.column_config.NumberColumn("Actual points"),
+            "predicted_rank": st.column_config.NumberColumn("Peringkat Prediksi"),
+            "actual_points": st.column_config.NumberColumn("Poin Aktual"),
             "actual_percentile": st.column_config.ProgressColumn(
-                "Actual percentile", min_value=0, max_value=100, format="%.1f"
+                "Persentil Aktual", min_value=0, max_value=100, format="%.1f"
             ),
-            "actual_rank": st.column_config.NumberColumn("Actual rank"),
+            "actual_rank": st.column_config.NumberColumn("Peringkat Aktual"),
         },
     )
-    with st.expander("Methodology and required caveats"):
+    with st.expander("Metodologi dan Batasan Model"):
         st.write(selected_run.limitations)
         st.caption(
-            "MAE compares score with position-relative future-points percentile. Spearman and top-10 metrics "
-            "evaluate ordering and shortlist usefulness; they do not claim causal player performance prediction."
+            "MAE membandingkan skor dengan persentil poin aktual relatif posisi di masa depan. Metrik Spearman dan top-10 "
+            "mengevaluasi akurasi urutan pemain; keduanya bukan klaim prediksi poin kausal mutlak."
         )
 
 
@@ -1824,41 +1873,41 @@ def render_decision_tools(
     """Render practical Phase 10 transfer and captain decision support."""
     del players, fixtures
     page_header(
-        "Decision support",
-        "Turn signals into a considered next move.",
-        "Compare same-position transfers and captain profiles using official FPL data, visible trade-offs, and non-binding confidence.",
+        "Alat Bantu Keputusan",
+        "Ubah sinyal data jadi langkah transfer berikutnya.",
+        "Bandingkan opsi transfer seposisi dan profil kapten menggunakan data resmi FPL, pertimbangan trade-off yang jelas, dan indikator keyakinan objektif.",
     )
     service = st.session_state.get("decision_tools_service")
     if service is None:
         render_empty_state(
-            "Decision tools unavailable",
-            "Reopen the app to initialize the decision-support service.",
+            "Layanan keputusan tidak tersedia",
+            "Buka kembali aplikasi untuk menginisialisasi layanan pendukung keputusan.",
         )
         return
 
     horizon = st.select_slider(
-        "Decision horizon",
+        "Horizon keputusan",
         [1, 3, 5, 8],
         value=scoring.default_horizon,
-        format_func=lambda value: f"Next {value} GW",
-        help="The future gameweeks used for transfer and captain comparisons.",
+        format_func=lambda value: f"{value} GW ke depan",
+        help="Gameweek masa depan yang digunakan untuk perbandingan transfer dan opsi kapten.",
     )
     rankings = service.player_options(horizon)
     if not rankings:
         render_empty_state(
-            "No decision data available",
-            "Refresh official FPL data from Data Status before using decision tools.",
+            "Data keputusan belum tersedia",
+            "Perbarui data resmi FPL dari menu Data Status sebelum menggunakan fitur ini.",
         )
         return
 
     st.caption(
-        "These are decision aids, not automatic transfers or captain instructions. Confirm squad rules, injury news, and deadlines before acting."
+        "Ini adalah alat bantu analisis keputusan, bukan instruksi transfer otomatis atau penentu kapten mutlak. Pastikan aturan skuad, kabar cedera terbaru, dan batas waktu deadline sebelum mengeksekusi transfer."
     )
 
     section_heading(
-        "Transfer finder",
-        f"Same position · Next {horizon} GW",
-        "Replacements must be affordable with the selected bank and have a higher recommendation score than the outgoing player.",
+        "Pencari Opsi Transfer",
+        f"Posisi sama · {horizon} GW ke depan",
+        "Pemain pengganti harus terjangkau dengan sisa dana bank dan punya skor rekomendasi lebih tinggi dari pemain yang dilepas.",
     )
     transfer_controls = st.columns([1.8, 0.8])
     player_by_id = {row.player_id: row for row in rankings}
@@ -1866,24 +1915,24 @@ def render_decision_tools(
     default_out = min(rankings, key=lambda row: row.final_score).player_id
     with transfer_controls[0]:
         player_out_id = st.selectbox(
-            "Player to transfer out",
+            "Pemain yang ingin dilepas",
             option_ids,
             index=option_ids.index(default_out),
             format_func=lambda player_id: (
                 f"{player_by_id[player_id].name} · {player_by_id[player_id].team} · "
                 f"{player_by_id[player_id].position} · £{player_by_id[player_id].price:.1f}m"
             ),
-            help="Choose an official player from the cached FPL roster. The tool only searches same-position replacements.",
+            help="Pilih pemain resmi dari daftar FPL. Fitur ini mencari pengganti di posisi yang sama.",
         )
     with transfer_controls[1]:
         extra_budget = st.number_input(
-            "Budget in bank (£m)",
+            "Sisa dana di bank (£m)",
             min_value=0.0,
             max_value=15.0,
             value=0.0,
             step=0.1,
             format="%.1f",
-            help="Additional budget available after selling the selected player.",
+            help="Anggaran tambahan yang tersedia selain hasil penjualan pemain terpilih.",
         )
 
     outgoing = player_by_id[player_out_id]
@@ -1894,18 +1943,18 @@ def render_decision_tools(
         best = transfers[0]
         transfer_metrics = st.columns(4)
         with transfer_metrics[0]:
-            metric_tile("Best replacement", best.replacement.name, best.replacement.category, ATTRIBUTE_HELP["score"])
+            metric_tile("Pengganti Terbaik", best.replacement.name, best.replacement.category, ATTRIBUTE_HELP["score"])
         with transfer_metrics[1]:
-            metric_tile("Price cap", f"£{best.price_cap:.1f}m", f"Out £{outgoing.price:.1f}m + bank", ATTRIBUTE_HELP["price"])
+            metric_tile("Batas Harga Maksimal", f"£{best.price_cap:.1f}m", f"Jual £{outgoing.price:.1f}m + bank", ATTRIBUTE_HELP["price"])
         with transfer_metrics[2]:
             metric_tile(
-                "Projected gain", f"+{best.projected_gain:.2f} pts", f"Next {horizon} GW proxy",
-                "Difference between the two signal-adjusted points proxies; it is not a guaranteed FPL-points forecast.",
+                "Proyeksi Peningkatan", f"+{best.projected_gain:.2f} pts", f"Proksi {horizon} GW ke depan",
+                "Selisih antara dua proksi poin yang disesuaikan sinyal; bukan jaminan perolehan poin mutlak.",
             )
         with transfer_metrics[3]:
             metric_tile(
-                "Decision confidence", f"{best.confidence:.0f}/100", "Signals and availability",
-                "A transparent blend of recommendation score, minutes security, fixture ease, and available status; it is not a probability.",
+                "Keyakinan Keputusan", f"{best.confidence:.0f}/100", "Sinyal & ketersediaan",
+                "Kombinasi transparan dari skor rekomendasi, jaminan menit, jadwal fixture, dan status pemain; bukan probabilitas.",
             )
 
         transfer_table = pd.DataFrame(
@@ -1929,48 +1978,52 @@ def render_decision_tools(
             hide_index=True,
             width="stretch",
             column_config={
-                "Price": st.column_config.NumberColumn("Price", format="£%.1fm", help=ATTRIBUTE_HELP["price"]),
-                "Score": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.0f", help=ATTRIBUTE_HELP["score"]),
-                "Projected points": st.column_config.NumberColumn("Projected pts", format="%.2f", help="Signal-adjusted points proxy for the selected horizon."),
-                "Projected gain": st.column_config.NumberColumn("Gain", format="%+.2f", help="Replacement proxy minus outgoing-player proxy."),
-                "Confidence": st.column_config.ProgressColumn("Confidence", min_value=0, max_value=100, format="%.0f", help="Decision-signal confidence, not a probability."),
+                "Replacement": st.column_config.TextColumn("Pemain Pengganti"),
+                "Team": st.column_config.TextColumn("Klub"),
+                "Price": st.column_config.NumberColumn("Harga", format="£%.1fm", help=ATTRIBUTE_HELP["price"]),
+                "Score": st.column_config.ProgressColumn("Skor", min_value=0, max_value=100, format="%.0f", help=ATTRIBUTE_HELP["score"]),
+                "Projected points": st.column_config.NumberColumn("Proyeksi Poin", format="%.2f", help="Proksi poin yang disesuaikan sinyal untuk horizon terpilih."),
+                "Projected gain": st.column_config.NumberColumn("Potensi Gain", format="%+.2f", help="Proksi pemain masuk dikurangi proksi pemain keluar."),
+                "Confidence": st.column_config.ProgressColumn("Keyakinan", min_value=0, max_value=100, format="%.0f", help="Tingkat keyakinan sinyal keputusan, bukan probabilitas statistik."),
+                "Trade-off": st.column_config.TextColumn("Trade-off & Pertimbangan"),
+                "Model reasons": st.column_config.TextColumn("Alasan Model"),
             },
         )
     else:
         render_empty_state(
-            "No affordable same-position upgrade",
-            "Increase the budget, choose another outgoing player, or refresh official FPL data.",
+            "Tidak ada opsi pengganti seposisi yang terjangkau",
+            "Tambah anggaran di bank, pilih pemain lain yang mau dilepas, atau segarkan data resmi FPL.",
         )
 
     section_heading(
-        "Captain shortlist",
-        f"Safe · Balanced · Differential · Next {horizon} GW",
-        "Each role uses the same official rankings but emphasises a different trade-off.",
+        "Kandidat Kapten",
+        f"Safe · Balanced · Differential · {horizon} GW ke depan",
+        "Setiap profil memakai data resmi yang sama namun mengutamakan trade-off risiko berbeda.",
     )
     captains = service.captain_shortlist(horizon)
     if captains:
         captain_columns = st.columns(len(captains))
         for column, captain in zip(captain_columns, captains):
             with column:
-                player_card(_player_card_data(captain.player), f"{captain.role} captain")
-                st.markdown(f"**Projected proxy:** {captain.projected_points:.2f} pts")
-                st.markdown(f"**Decision confidence:** {captain.confidence:.0f}/100")
+                player_card(_player_card_data(captain.player), f"Kapten {captain.role}")
+                st.markdown(f"**Proyeksi Poin:** {captain.projected_points:.2f} pts")
+                st.markdown(f"**Keyakinan Keputusan:** {captain.confidence:.0f}/100")
                 st.caption(captain.rationale)
                 st.caption(captain.trade_off)
     else:
         render_empty_state(
-            "No captain shortlist available",
-            "Refresh official FPL data and check player availability.",
+            "Daftar kandidat kapten belum tersedia",
+            "Segarkan data resmi FPL dan periksa ketersediaan pemain.",
         )
 
-    with st.expander("Projection method and important limits"):
+    with st.expander("Metodologi Proyeksi & Batasan Penting"):
         st.markdown(
-            "**Projected points proxy** = confidence-adjusted points per match × number of official fixtures in the selected horizon × fixture multiplier. "
-            "The fixture multiplier is `0.60 + fixture score / 125`, so a neutral fixture score of 50 gives a multiplier of 1.00. "
-            "The captain and transfer confidence values combine final score, minutes security, fixture ease, and availability; they are not probabilities or guarantees."
+            "**Proksi proyeksi poin** = poin per laga yang disesuaikan reliabilitas × jumlah fixture resmi pada horizon terpilih × pengali fixture. "
+            "Pengali fixture bernilai `0.60 + skor fixture / 125`, sehingga skor netral 50 menghasilkan pengali 1.00. "
+            "Nilai keyakinan kapten dan transfer menggabungkan skor akhir rekomendasi, jaminan menit, kemudahan fixture, dan status ketersediaan; nilai ini bukan probabilitas atau garansi perolehan poin."
         )
         st.markdown(
-            "This page does not import your squad, free transfers, chips, selling-price history, price changes, or latest unofficial team news. Use Advanced Planner for optional public squad import and a legal wildcard draft."
+            "Halaman ini tidak mengimpor skuad kamu, jatah free transfer, chip, riwayat harga jual, atau bocoran lineup tak resmi. Gunakan menu Advanced Planner untuk mengimpor skuad publik kamu dan merancang draft Wildcard yang sah."
         )
 
 
@@ -1980,39 +2033,39 @@ def render_advanced_planner(
     """Render guarded enrichment status, custom FDR, and squad planning."""
     del players, fixtures
     page_header(
-        "Advanced planning",
-        "Plan deeper without blurring the source of truth.",
-        "Compare an internal fixture view, import a public official FPL squad, suggest legal free transfers, and build a constraint-aware wildcard draft.",
+        "Perencana Lanjutan",
+        "Analisis Skuad Mendalam & Rencana Wildcard",
+        "Bandingkan fixture internal, impor skuad resmi FPL kamu, dapatkan rekomendasi free transfer legal, dan racik simulasi skuad wildcard.",
     )
     service = st.session_state.get("advanced_planner_service")
     if service is None:
         render_empty_state(
-            "Advanced planner unavailable",
-            "Reopen the app to initialize the Phase 11 service.",
+            "Layanan perencana tidak tersedia",
+            "Buka kembali aplikasi untuk menginisialisasi layanan perencana lanjutan.",
         )
         return
 
     horizon = st.select_slider(
-        "Planning horizon",
+        "Horizon perencanaan",
         [1, 3, 5, 8],
         value=scoring.default_horizon,
-        format_func=lambda value: f"Next {value} GW",
-        help="The official fixture window used for custom difficulty and squad rankings.",
+        format_func=lambda value: f"{value} GW ke depan",
+        help="Jendela fixture resmi FPL yang digunakan untuk kalkulasi tingkat kesulitan dan perankingan skuad.",
         key="advanced_horizon",
     )
 
     section_heading(
-        "External provider governance",
-        "No external provider is active",
-        "External data can only be enabled after access rights, terms, capabilities, and player identity validation are documented.",
+        "Tata Kelola Data Eksternal",
+        "Belum ada penyedia data eksternal yang aktif",
+        "Data eksternal hanya dapat diaktifkan setelah hak akses, ketentuan layanan, kapabilitas teknis, dan validasi identitas pemain terverifikasi.",
     )
     provider_rows = [
         {
-            "Provider": status.display_name,
+            "Penyedia Data": status.display_name,
             "Status": status.readiness,
-            "Access mode": status.access_mode,
-            "Terms reviewed": status.terms_reviewed,
-            "Capabilities": ", ".join(status.capabilities),
+            "Mode Akses": status.access_mode,
+            "Ketentuan": status.terms_reviewed,
+            "Kapabilitas": ", ".join(status.capabilities),
             "Detail": status.detail,
         }
         for status in service.provider_statuses()
@@ -2020,12 +2073,12 @@ def render_advanced_planner(
     if provider_rows:
         st.dataframe(pd.DataFrame(provider_rows), hide_index=True, width="stretch")
     st.info(
-        "FotMob remains a future option only. The app does not scrape it or use its data until an allowed access route and identity-validation workflow are configured."
+        "FotMob saat ini berstatus opsi pengembangan masa depan. Aplikasi tidak melakukan scraping atau menggunakan data FotMob sebelum jalur akses resmi dan alur validasi identitas terkonfigurasi."
     )
 
     section_heading(
-        "Custom fixture difficulty",
-        f"Official-first comparison · Next {horizon} GW",
+        "Tingkat Kesulitan Fixture (Custom FDR)",
+        f"Komparasi berbasis data resmi · {horizon} GW ke depan",
         ATTRIBUTE_HELP["custom_fdr"],
     )
     matrix = service.fixture_analytics.get_matrix(horizon)
@@ -2051,8 +2104,8 @@ def render_advanced_planner(
     fixture_frame = pd.DataFrame(fixture_rows)
     if fixture_frame.empty:
         render_empty_state(
-            "No upcoming fixtures",
-            "Refresh official FPL data from Data Status.",
+            "Tidak ada fixture mendatang",
+            "Segarkan data resmi FPL dari menu Data Status.",
         )
     else:
         fixture_frame = fixture_frame.sort_values(
@@ -2063,22 +2116,24 @@ def render_advanced_planner(
             hide_index=True,
             width="stretch",
             column_config={
+                "Team": st.column_config.TextColumn("Klub"),
                 "Official ease": st.column_config.ProgressColumn(
-                    "Official ease", min_value=0, max_value=100, format="%.1f",
+                    "Kemudahan Resmi", min_value=0, max_value=100, format="%.1f",
                     help=ATTRIBUTE_HELP["fixture_score"],
                 ),
                 "Custom ease": st.column_config.ProgressColumn(
-                    "Custom ease", min_value=0, max_value=100, format="%.1f",
+                    "Kemudahan Internal", min_value=0, max_value=100, format="%.1f",
                     help=ATTRIBUTE_HELP["custom_fdr"],
                 ),
                 "Difference": st.column_config.NumberColumn(
-                    "Custom − official", format="%+.1f",
-                    help="Positive means the internal view rates the horizon easier than official FDR does.",
+                    "Internal − Resmi", format="%+.1f",
+                    help="Nilai positif menandakan model internal menilai jadwal ke depan lebih mudah dibanding FDR resmi FPL.",
                 ),
+                "Fixtures": st.column_config.TextColumn("Jadwal Fixture"),
             },
         )
         st.caption(
-            "Fixture cells show opponent followed by official/custom difficulty. Recommendation Engine v1.1 continues to use official FDR; custom difficulty is a comparison signal only."
+            "Kolom fixture menampilkan lawan tanding diikuti tingkat kesulitan resmi / internal. Recommendation Engine v1.1 tetap menggunakan FDR resmi; kesulitan custom hanya sebagai sinyal pembanding."
         )
 
     _render_schedule_risk_section(st.session_state.get("schedule_congestion_service"))
@@ -2090,30 +2145,30 @@ def render_advanced_planner(
                 set_piece_service, service.decisions.player_options(horizon)
             )
         except Exception as exc:
-            st.warning(f"Set-piece insights are unavailable: {exc}")
+            st.warning(f"Wawasan bola mati (set-piece) belum tersedia: {exc}")
 
     section_heading(
-        "Squad import & wildcard planner",
-        "2 GK · 5 DEF · 5 MID · 3 FWD · max 3 per club",
-        "Imports one public official FPL squad for the active gameweek and keeps it only in the current app session.",
+        "Impor Skuad & Rencana Wildcard",
+        "2 GK · 5 DEF · 5 MID · 3 FWD · maks 3 per klub",
+        "Impor skuad publik resmi FPL kamu untuk Gameweek aktif. Data hanya disimpan selama sesi aplikasi berjalan.",
     )
     import_controls = st.columns([1, 1.4])
     with import_controls[0]:
         default_manager_id = int(st.session_state.get("fpl_manager_id", 1))
         manager_id = st.number_input(
-            "Public FPL manager ID",
+            "ID Manajer FPL Publik",
             min_value=1,
             value=default_manager_id,
             step=1,
-            help="Numeric ID from the manager's official fantasy.premierleague.com URL. No login or credential is required.",
+            help="Nomor ID manajer dari URL resmi fantasy.premierleague.com kamu. Tidak memerlukan login atau password.",
         )
     with import_controls[1]:
-        st.caption("Optional: import a current squad before building the wildcard comparison.")
-        import_squad = st.button("Import public official squad")
+        st.caption("Opsional: impor skuad kamu saat ini sebelum menyusun komparasi wildcard.")
+        import_squad = st.button("Impor Skuad Resmi FPL")
     if import_squad:
         st.session_state["fpl_manager_id"] = int(manager_id)
         try:
-            with st.spinner("Loading the public squad from official FPL..."):
+            with st.spinner("Mengambil data skuad publik dari server resmi FPL..."):
                 imported = service.import_public_squad(int(manager_id), horizon)
             st.session_state["advanced_imported_squad"] = imported
             st.session_state["advanced_imported_horizon"] = horizon
@@ -2121,10 +2176,10 @@ def render_advanced_planner(
             st.session_state.pop("advanced_transfer_plan", None)
             st.session_state.pop("advanced_transfer_plan_context", None)
             st.success(
-                f"Imported {imported.team_name} for GW {imported.gameweek}: 15 players, £{imported.bank:.1f}m bank."
+                f"Berhasil mengimpor {imported.team_name} untuk GW {imported.gameweek}: 15 pemain, sisa bank £{imported.bank:.1f}m."
             )
         except Exception as exc:
-            st.error(f"Squad import failed: {exc}")
+            st.error(f"Gagal mengimpor skuad: {exc}")
 
     imported = st.session_state.get("advanced_imported_squad")
     if st.session_state.get("advanced_imported_horizon") != horizon:
@@ -2132,19 +2187,20 @@ def render_advanced_planner(
     if imported is not None:
         league_shortcut_cols = st.columns([3, 1])
         with league_shortcut_cols[1]:
-            if st.button("🏆 View Leagues & Rival Chips →", key="btn_goto_leagues", help="Inspect your mini-leagues and rival chip usage"):
+            if st.button("🏆 Pantau Liga & Chip Rival →", key="btn_goto_leagues", help="Lihat mini-league dan pantau penggunaan chip rival kamu"):
                 st.session_state["fpl_manager_id"] = int(imported.manager_id)
+                st.session_state["league_auto_load"] = True
                 navigate_to("League & Rivals")
 
         imported_metrics = st.columns(4)
         with imported_metrics[0]:
-            metric_tile("Team", imported.team_name, imported.manager_name)
+            metric_tile("Tim", imported.team_name, imported.manager_name)
         with imported_metrics[1]:
-            metric_tile("Gameweek", f"GW {imported.gameweek}", "Official picks endpoint")
+            metric_tile("Gameweek", f"GW {imported.gameweek}", "Data picks resmi FPL")
         with imported_metrics[2]:
-            metric_tile("Squad cost", f"£{imported.current_squad_cost:.1f}m", "Current cached prices")
+            metric_tile("Nilai Skuad", f"£{imported.current_squad_cost:.1f}m", "Harga pasar FPL terkini")
         with imported_metrics[3]:
-            metric_tile("Bank", f"£{imported.bank:.1f}m", imported.active_chip or "No active chip")
+            metric_tile("Sisa Bank", f"£{imported.bank:.1f}m", imported.active_chip or "Tanpa chip aktif")
         squad_pitch(
             team_name=imported.team_name,
             manager_name=imported.manager_name,
@@ -2177,24 +2233,24 @@ def render_advanced_planner(
             _render_imported_squad_set_piece_insights(set_piece_service, imported)
 
         section_heading(
-            "Transfer suggestions",
-            "Personalised to your imported squad · No points hit",
-            "Each suggestion replaces a player from the imported squad with a same-position player who fits the bank and three-per-club rule, then ranks the move by the recommendation model, fixtures, minutes security, and availability.",
+            "Rekomendasi Transfer",
+            "Khusus untuk skuad kamu · Tanpa penalti poin (hit)",
+            "Setiap rekomendasi menggantikan pemain dari skuad kamu dengan pemain berposisi sama yang sesuai sisa bank dan aturan maksimal 3 pemain per klub, lalu diurutkan berdasarkan skor model, jadwal fixture, kepastian menit bermain, dan ketersediaan.",
         )
         transfer_controls = st.columns([1, 1.4])
         with transfer_controls[0]:
             free_transfers = st.selectbox(
-                "Free transfers to use",
+                "Jumlah Free Transfer yang Digunakan",
                 [1, 2, 3, 4, 5],
                 index=0,
-                help="Choose the number of available free transfers you want this plan to use. The planner does not recommend paid transfers or calculate points hits.",
+                help="Pilih berapa jatah free transfer yang ingin kamu alokasikan. Planner tidak merekomendasikan transfer berbayar (minus poin/hit).",
                 key=f"transfer_free_count_{horizon}_{imported.manager_id}",
             )
         with transfer_controls[1]:
             st.caption(
-                "The public FPL picks endpoint does not provide your historical selling prices, so affordability uses the current cached FPL price and official bank."
+                "Endpoint picks publik FPL tidak menyertakan harga beli historis kamu, sehingga kalkulasi bujet menggunakan harga terkini di cache FPL dan sisa bank resmi."
             )
-            suggest_transfers = st.button("Suggest transfers", type="primary")
+            suggest_transfers = st.button("Cari Rekomendasi Transfer", type="primary")
         transfer_context = (imported.manager_id, horizon, free_transfers)
         if suggest_transfers:
             try:
@@ -2220,7 +2276,7 @@ def render_advanced_planner(
                     player_priority_adjustments = set_piece_service.priority_adjustments(
                         service.decisions.player_options(horizon)
                     )
-                with st.spinner("Finding the best legal upgrades for this squad..."):
+                with st.spinner("Mencari opsi upgrade transfer paling optimal untuk skuad ini..."):
                     transfer_plan = service.suggest_transfers(
                         imported,
                         horizon,
@@ -2234,7 +2290,7 @@ def render_advanced_planner(
                 st.session_state["advanced_transfer_plan"] = transfer_plan
                 st.session_state["advanced_transfer_plan_context"] = transfer_context
             except Exception as exc:
-                st.error(f"Transfer suggestions could not be prepared: {exc}")
+                st.error(f"Rekomendasi transfer tidak dapat diproses: {exc}")
 
         transfer_plan = st.session_state.get("advanced_transfer_plan")
         if st.session_state.get("advanced_transfer_plan_context") != transfer_context:
@@ -2242,29 +2298,29 @@ def render_advanced_planner(
         if transfer_plan is not None:
             if not transfer_plan.transfers:
                 st.info(
-                    "Hold the transfer: no legal same-position upgrade improves the current model profile within your bank."
+                    "Pertahankan skuad (Hold): belum ada opsi upgrade pemain dengan posisi sama yang meningkatkan profil skor model sesuai sisa bujet bank."
                 )
             else:
                 transfer_metrics = st.columns(3)
                 with transfer_metrics[0]:
                     metric_tile(
-                        "Free transfers used",
+                        "Free Transfer Terpakai",
                         str(transfer_plan.free_transfers_used),
-                        f"of {free_transfers} selected",
+                        f"dari {free_transfers} yang dipilih",
                     )
                 with transfer_metrics[1]:
                     metric_tile(
-                        "Model lift",
+                        "Kenaikan Skor Model",
                         f"+{transfer_plan.total_score_gain:.1f}",
-                        "Sum of recommendation-score improvements",
+                        "Total peningkatan skor rekomendasi",
                         ATTRIBUTE_HELP["model_lift"],
                     )
                 with transfer_metrics[2]:
                     metric_tile(
-                        "Bank after moves",
+                        "Sisa Bank Setelah Transfer",
                         f"£{transfer_plan.bank_after:.1f}m",
-                        "Using current cached FPL prices",
-                        "Remaining bank balance after all suggested transfers, based on current official FPL prices and imported team funds.",
+                        "Berdasarkan harga pasar resmi FPL saat ini",
+                        "Estimasi sisa saldo bank setelah seluruh opsi transfer dieksekusi.",
                     )
                 st.dataframe(
                     pd.DataFrame(
@@ -2288,67 +2344,71 @@ def render_advanced_planner(
                     hide_index=True,
                     width="stretch",
                     column_config={
+                        "Out": st.column_config.TextColumn("Keluar (Out)"),
+                        "In": st.column_config.TextColumn("Masuk (In)"),
+                        "Pos": st.column_config.TextColumn("Pos"),
                         "Price change": st.column_config.NumberColumn(
-                            "Price Δ", format="£%+.1fm", help=ATTRIBUTE_HELP["price_change"]
+                            "Perubahan Harga", format="£%+.1fm", help=ATTRIBUTE_HELP["price_change"]
                         ),
                         "Model lift": st.column_config.NumberColumn(
-                            "Model Δ", format="%+.1f", help=ATTRIBUTE_HELP["model_lift"]
+                            "Kenaikan Skor", format="%+.1f", help=ATTRIBUTE_HELP["model_lift"]
                         ),
                         "Fixture lift": st.column_config.NumberColumn(
-                            "Fixture Δ", format="%+.1f", help=ATTRIBUTE_HELP["fixture_lift"]
+                            "Kenaikan Fixture", format="%+.1f", help=ATTRIBUTE_HELP["fixture_lift"]
                         ),
                         "Minutes lift": st.column_config.NumberColumn(
-                            "Minutes Δ", format="%+.1f", help=ATTRIBUTE_HELP["minutes_lift"]
+                            "Kenaikan Menit", format="%+.1f", help=ATTRIBUTE_HELP["minutes_lift"]
                         ),
                         "Base priority": st.column_config.NumberColumn(
-                            "Base priority", format="%.1f",
-                            help="Transfer priority before any schedule-risk adjustment.",
+                            "Prioritas Dasar", format="%.1f",
+                            help="Prioritas transfer dasar sebelum penyesuaian risiko jadwal.",
                         ),
                         "Schedule Δ": st.column_config.NumberColumn(
-                            "Schedule Δ", format="%+.1f",
-                            help="Applied only after all Phase F validation and explicit production approval gates pass.",
+                            "Δ Jadwal", format="%+.1f",
+                            help="Hanya diterapkan jika semua kriteria validasi jadwal Fase F terpenuhi.",
                         ),
                         "Set-piece Δ": st.column_config.NumberColumn(
-                            "Set-piece Δ", format="%+.1f",
+                            "Δ Bola Mati", format="%+.1f",
                             help=ATTRIBUTE_HELP["set_piece_signal"],
                         ),
+                        "Why": st.column_config.TextColumn("Alasan"),
                     },
                 )
                 if transfer_plan.schedule_adjustment_active:
-                    st.success("Validated Phase F schedule adjustment is active in this transfer plan.")
+                    st.success("Penyesuaian jadwal tervalidasi aktif pada rencana transfer ini.")
                 else:
                     st.caption(
-                        "Schedule adjustment is inactive: transfer order still uses the original transparent priority formula."
+                        "Penyesuaian jadwal tidak aktif: urutan transfer menggunakan formula prioritas transparan standar."
                     )
                 if transfer_plan.set_piece_signal_active:
                     st.caption(
-                        "Set-piece signal is active as a modest, source-dated tie-breaker; it does not change the base Recommendation Engine score."
+                        "Sinyal bola mati (set-piece) aktif sebagai pembeda tambahan; tidak mengubah skor dasar rekomendasi pemain."
                     )
 
     default_budget = imported.available_budget if imported is not None else 100.0
     planner_controls = st.columns([1, 1.4])
     with planner_controls[0]:
         budget = st.number_input(
-            "Wildcard budget (£m)",
+            "Bujet Wildcard (£m)",
             min_value=70.0,
             max_value=130.0,
             value=float(default_budget),
             step=0.1,
             format="%.1f",
-            help="Total spend available for all 15 players. Imported squads use cached current prices plus official bank.",
+            help="Total bujet yang tersedia untuk menyusun 15 pemain. Skuad impor menggunakan total harga terkini ditambah sisa bank resmi.",
             key=f"wildcard_budget_{horizon}_{imported.manager_id if imported else 'manual'}",
         )
     with planner_controls[1]:
-        st.caption("The optimizer is a deterministic heuristic and does not claim a mathematically unique optimum.")
-        build_draft = st.button("Build wildcard draft", type="primary")
+        st.caption("Optimizer ini menggunakan metode pencarian terukur (heuristik) untuk meracik kombinasi skuad terbaik.")
+        build_draft = st.button("Susun Skuad Wildcard", type="primary")
     if build_draft:
         try:
-            with st.spinner("Searching legal squad combinations..."):
+            with st.spinner("Menganalisis kombinasi skuad legal terbaik..."):
                 optimized = service.optimize_wildcard(float(budget), horizon)
             st.session_state["advanced_optimized_squad"] = optimized
             st.session_state["advanced_optimized_horizon"] = horizon
         except Exception as exc:
-            st.error(f"Wildcard draft could not be built: {exc}")
+            st.error(f"Gagal menyusun skuad wildcard: {exc}")
 
     optimized = st.session_state.get("advanced_optimized_squad")
     if st.session_state.get("advanced_optimized_horizon") != horizon:
@@ -2356,22 +2416,22 @@ def render_advanced_planner(
     if optimized is not None:
         result_metrics = st.columns(4)
         with result_metrics[0]:
-            metric_tile("Draft cost", f"£{optimized.total_cost:.1f}m", f"£{optimized.remaining_budget:.1f}m remaining")
+            metric_tile("Biaya Skuad", f"£{optimized.total_cost:.1f}m", f"Sisa bujet £{optimized.remaining_budget:.1f}m")
         with result_metrics[1]:
-            metric_tile("Squad signal", f"{optimized.total_score:.1f}", "Sum of 15 recommendation scores")
+            metric_tile("Total Skor Skuad", f"{optimized.total_score:.1f}", "Jumlah skor rekomendasi 15 pemain")
         with result_metrics[2]:
-            metric_tile("Captain", optimized.captain.name, f"Score {optimized.captain.final_score:.0f}")
+            metric_tile("Kapten", optimized.captain.name, f"Skor {optimized.captain.final_score:.0f}")
         with result_metrics[3]:
-            metric_tile("Vice-captain", optimized.vice_captain.name, f"Score {optimized.vice_captain.final_score:.0f}")
+            metric_tile("Wakil Kapten", optimized.vice_captain.name, f"Skor {optimized.vice_captain.final_score:.0f}")
 
         squad_rows = []
         starter_ids = {player.player_id for player in optimized.starters}
         for player in optimized.players:
             role = "Starting XI" if player.player_id in starter_ids else "Bench"
             if player.player_id == optimized.captain.player_id:
-                role += " · Captain"
+                role += " · Kapten"
             elif player.player_id == optimized.vice_captain.player_id:
-                role += " · Vice"
+                role += " · Wakil"
             squad_rows.append(
                 {
                     "Role": role,
@@ -2390,19 +2450,24 @@ def render_advanced_planner(
             hide_index=True,
             width="stretch",
             column_config={
-                "Price": st.column_config.NumberColumn("Price", format="£%.1fm"),
-                "Score": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.0f"),
+                "Role": st.column_config.TextColumn("Peran"),
+                "Player": st.column_config.TextColumn("Pemain"),
+                "Team": st.column_config.TextColumn("Klub"),
+                "Pos": st.column_config.TextColumn("Pos"),
+                "Price": st.column_config.NumberColumn("Harga", format="£%.1fm"),
+                "Score": st.column_config.ProgressColumn("Skor", min_value=0, max_value=100, format="%.0f"),
                 "Fixture": st.column_config.ProgressColumn("Fixture", min_value=0, max_value=100, format="%.0f"),
-                "Minutes": st.column_config.ProgressColumn("Minutes", min_value=0, max_value=100, format="%.0f"),
+                "Minutes": st.column_config.ProgressColumn("Menit", min_value=0, max_value=100, format="%.0f"),
+                "Reason": st.column_config.TextColumn("Alasan"),
             },
         )
 
         if imported is not None:
             changes = service.compare_squads(imported, optimized)
             section_heading(
-                "Wildcard changes",
-                f"{len(changes)} proposed swaps",
-                "Players outside the optimized 15 are paired with same-position additions for an auditable comparison.",
+                "Perubahan Pemain Wildcard",
+                f"{len(changes)} pergantian yang disarankan",
+                "Pemain dari skuad lama dipasangkan dengan pemain baru di posisi yang sama untuk memudahkan komparasi.",
             )
             if changes:
                 st.dataframe(
@@ -2421,37 +2486,40 @@ def render_advanced_planner(
                     hide_index=True,
                     width="stretch",
                     column_config={
-                        "Price change": st.column_config.NumberColumn(format="%+.1f"),
-                        "Score change": st.column_config.NumberColumn(format="%+.1f"),
+                        "Out": st.column_config.TextColumn("Keluar (Out)"),
+                        "In": st.column_config.TextColumn("Masuk (In)"),
+                        "Pos": st.column_config.TextColumn("Pos"),
+                        "Price change": st.column_config.NumberColumn("Perubahan Harga", format="%+.1f"),
+                        "Score change": st.column_config.NumberColumn("Perubahan Skor", format="%+.1f"),
                     },
                 )
             else:
-                st.success("The imported squad already matches this optimizer draft.")
+                st.success("Skuad impor kamu sudah identik dengan susunan draf optimizer ini.")
 
-        with st.expander("Planner method and limits"):
+        with st.expander("Metodologi dan batasan perencana"):
             st.markdown(
-                "The draft uses available official players, cached prices, Recommendation Engine v1.1 scores, a £ budget, exact position quotas, and the three-per-club constraint. "
-                "A beam-search heuristic evaluates a broad candidate pool, then chooses the strongest valid starting formation and captain signals."
+                "Draf disusun menggunakan daftar pemain resmi FPL yang tersedia, harga terkini, skor Recommendation Engine v1.1, batasan bujet £m, kuota posisi yang tepat, dan aturan maksimal 3 pemain per klub. "
+                "Algoritma heuristik mengevaluasi kombinasi kandidat terbaik lalu memilih formasi starting XI dan sinyal kapten paling optimal."
             )
             st.markdown(
-                "It does not execute transfers and does not model selling-price history, free transfers, transfer hits, chips, future price changes, or late team news. Verify the final draft in official FPL before acting."
+                "Fitur ini tidak melakukan eksekusi transfer langsung di situs FPL, tidak mencatat histori harga jual personal, pengurangan poin akibat hit, ataupun berita tim mendadak mendekati deadline. Pastikan untuk selalu memeriksa kembali skuad akhir di website/aplikasi resmi FPL sebelum batas waktu deadline."
             )
 
 
 def _render_schedule_risk_section(schedule_service: object) -> None:
     """Render Phase D schedule-risk signals without changing transfer priorities."""
     section_heading(
-        "Schedule congestion & GW risk",
-        "Phase D · official facts first, projections only with evidence",
+        "Kepadatan Jadwal & Risiko GW",
+        "Fase D · Fakta resmi FPL diutamakan, proyeksi hanya berbasis data valid",
         risk_status_help(),
     )
     if schedule_service is None:
-        render_empty_state("Schedule risk unavailable", "Reopen the app to initialize the schedule congestion service.")
+        render_empty_state("Data risiko jadwal tidak tersedia", "Buka kembali aplikasi untuk menginisialisasi layanan kepadatan jadwal.")
         return
     try:
         snapshot = schedule_service.get_phase_c_snapshot()  # type: ignore[attr-defined]
     except Exception as exc:
-        st.warning(f"Schedule risk is waiting for a valid official calendar snapshot: {exc}")
+        st.warning(f"Menunggu snapshot kalender resmi FPL yang valid: {exc}")
         return
 
     phase_b = snapshot.phase_b
@@ -2471,88 +2539,89 @@ def _render_schedule_risk_section(schedule_service: object) -> None:
     )
     st.markdown(f'<div class="schedule-risk-strip">{strip_html}</div>', unsafe_allow_html=True)
     st.caption(
-        "Hover a GW pill for the status definition. B = blank exposure, D = double exposure. "
-        "Green means one official fixture per club; gray means the official schedule is incomplete."
+        "Arahkan kursor ke pill GW untuk melihat status lengkap. B = blank exposure (laga kosong), D = double exposure (laga ganda). "
+        "Warna hijau berarti satu laga resmi per klub; abu-abu berarti jadwal resmi belum lengkap."
     )
     if not snapshot.fixture_projections and not snapshot.double_gameweek_projections:
         st.info(
-            "No probability projections are active yet. Confirmed blanks/doubles remain visible from the official FPL fixture allocation; projected likelihoods appear only after current audited inputs are added."
+            "Belum ada proyeksi probabilitas aktif. Status blank/double yang sudah pasti tetap ditampilkan dari alokasi resmi FPL; perkiraan peluang laga tunda hanya muncul jika data terverifikasi telah dikonfigurasi."
         )
-    with st.expander("Definitions, source & as-of"):
-        source_url = phase_b.gameweek_risks[0].source_url if phase_b.gameweek_risks else "Unavailable"
-        as_of = phase_b.gameweek_risks[0].as_of.isoformat() if phase_b.gameweek_risks else "Unavailable"
+    with st.expander("Definisi, sumber data & waktu pembaruan"):
+        source_url = phase_b.gameweek_risks[0].source_url if phase_b.gameweek_risks else "Tidak tersedia"
+        as_of = phase_b.gameweek_risks[0].as_of.isoformat() if phase_b.gameweek_risks else "Tidak tersedia"
         st.markdown(
-            f"**Model:** Phase D descriptive schedule-risk view; it does not alter Recommendation Engine scores.  \n"
-            f"**Probability:** an evidence-gated likelihood, currently unavailable because no current audited input is configured.  \n"
-            f"**Confidence:** shown with any future projection and inherited from its weakest evidence input.  \n"
-            f"**Blank / Double:** confirmed only when official FPL allocates zero / at least two fixtures in a GW.  \n"
-            f"**Congestion:** bounded workload score from match density, rest gaps, and verified European participation.  \n"
-            f"**Source:** [{source_url}]({source_url}) · **As-of:** `{as_of}` · **Probability inputs:** `{snapshot.probability_catalog.model_version}` ({len(snapshot.probability_catalog.inputs)} records)."
+            f"**Model:** Analisis deskriptif risiko jadwal Fase D; tidak mengubah skor Recommendation Engine.  \n"
+            f"**Probabilitas:** Peluang berbasis data terverifikasi, saat ini belum aktif karena tidak ada data asumsi tanpa bukti.  \n"
+            f"**Tingkat Keyakinan:** Ditampilkan pada proyeksi mendatang berdasarkan bukti terlemah.  \n"
+            f"**Blank / Double:** Dikonfirmasi pasti hanya saat FPL resmi menetapkan 0 / minimal 2 laga pada suatu GW.  \n"
+            f"**Kepadatan:** Skor beban tanding dari densitas laga, jeda istirahat, dan keikutsertaan kompetisi Eropa.  \n"
+            f"**Sumber:** [{source_url}]({source_url}) · **Per:** `{as_of}` · **Input probabilitas:** `{snapshot.probability_catalog.model_version}` ({len(snapshot.probability_catalog.inputs)} data)."
         )
 
     european_ids = {entry.fpl_team_id for entry in phase_b.catalog.participants}
     matrix_controls = st.columns([1, 1, 1])
     with matrix_controls[0]:
         team_filter = st.selectbox(
-            "Team filter", ("All clubs", "European clubs"),
+            "Filter klub", ("Semua klub", "Klub kompetisi Eropa"),
             key="schedule_risk_team_filter",
-            help="European clubs are the verified participant list in the 2026/27 calendar input.",
+            help="Klub Eropa mengacu pada daftar peserta kompetisi Eropa terverifikasi pada musim 2026/27.",
         )
     with matrix_controls[1]:
         matrix_window = st.selectbox(
-            "Matrix window", ("Next 5 GW", "Next 8 GW", "Full season"),
+            "Jendela matriks", ("5 GW ke depan", "8 GW ke depan", "Satu musim penuh"),
             key="schedule_risk_matrix_window",
-            help="Limits the visible columns only; it does not alter the underlying risk calculation.",
+            help="Membatasi kolom yang ditampilkan; tidak mengubah perhitungan risiko jadwal dasar.",
         )
     with matrix_controls[2]:
         st.checkbox(
-            "Confirmed only", value=True, key="schedule_risk_confirmed_only",
-            help="Confirmed statuses come from official FPL fixture allocation. Projections are not converted into confirmed statuses.",
+            "Hanya yang sudah pasti (Confirmed)", value=True, key="schedule_risk_confirmed_only",
+            help="Status pasti (confirmed) bersumber langsung dari alokasi fixture resmi FPL.",
         )
-    matrix_end = {"Next 5 GW": 5, "Next 8 GW": 8, "Full season": 38}[matrix_window]
+    matrix_end = {"5 GW ke depan": 5, "8 GW ke depan": 8, "Satu musim penuh": 38}[matrix_window]
     matrix_rows = build_team_risk_matrix(
         phase_b.gameweek_risks, phase_b.team_names, tuple(range(1, matrix_end + 1)),
-        european_ids if team_filter == "European clubs" else None,
+        european_ids if team_filter == "Klub kompetisi Eropa" else None,
     )
     if not matrix_rows:
-        render_empty_state("No clubs in this view", "Switch the team filter or refresh official FPL data.")
+        render_empty_state("Tidak ada klub pada tampilan ini", "Ubah filter klub atau segarkan data resmi FPL.")
     else:
         st.dataframe(
             pd.DataFrame(matrix_rows), hide_index=True, width="stretch",
             height=min(560, 115 + 35 * len(matrix_rows)),
             column_config={
-                "Club": st.column_config.TextColumn("Club", help="Official FPL club name."),
-                "Code": st.column_config.TextColumn("Code", help="Official FPL short code."),
+                "Club": st.column_config.TextColumn("Klub", help="Nama resmi klub di FPL."),
+                "Code": st.column_config.TextColumn("Kode", help="Singkatan resmi klub di FPL."),
             },
         )
         st.caption(
-            "Matrix legend: B = confirmed blank, D = confirmed double, · = one official fixture. "
-            "Probability is a separate, evidence-gated signal and never silently changes these cells."
+            "Keterangan matriks: B = confirmed blank (kosong), D = confirmed double (laga ganda), · = satu laga resmi. "
+            "Sinyal probabilitas dipisah agar tidak mengubah data resmi secara diam-diam."
         )
 
     section_heading(
-        "Congestion leaders", "Next 14 days · descriptive workload signal",
-        "Score blends match count (40%), shortest-rest pressure (30%), neutral travel (15%), and stage importance (15%). It is not a points or minutes prediction.",
+        "Klub Jadwal Terpadat", "14 hari ke depan · Indikator beban tanding",
+        "Skor memadukan jumlah laga (40%), jeda istirahat tersingkat (30%), jarak tempuh laga tandang (15%), dan bobot kompetisi (15%). Skor ini bukan prediksi poin atau menit bermain.",
     )
     leader_rows = build_congestion_leader_rows(phase_b.congestion_leaders)
     if not leader_rows:
-        render_empty_state("No congestion signal", "Upcoming kickoff dates are not available in the official cache.")
+        render_empty_state("Tidak ada sinyal kepadatan jadwal", "Jadwal kickoff mendatang belum tersedia di cache resmi.")
     else:
         st.dataframe(
             pd.DataFrame(leader_rows), hide_index=True, width="stretch",
             column_config={
+                "Club": st.column_config.TextColumn("Klub"),
                 "Congestion score": st.column_config.ProgressColumn(
-                    "Congestion score", min_value=0, max_value=100, format="%.1f",
-                    help="Bounded descriptive score: match density, short-rest intervals, and European participation.",
+                    "Skor Kepadatan", min_value=0, max_value=100, format="%.1f",
+                    help="Skor deskriptif terukur: densitas pertandingan, jeda istirahat singkat, dan keikutsertaan kompetisi Eropa.",
                 ),
                 "Shortest rest (days)": st.column_config.NumberColumn(
-                    "Shortest rest (days)", help="Smallest calendar-day gap between two official fixtures in the 14-day window."
+                    "Jeda Singkat (Hari)", help="Jumlah hari istirahat paling sedikit di antara dua pertandingan resmi dalam 14 hari ke depan."
                 ),
             },
         )
         st.caption(
-            "Source: official FPL fixture cache + verified 2026/27 European participant calendar. "
-            "As-of timestamps and source links remain available in the underlying schedule-risk contracts."
+            "Sumber: Cache fixture resmi FPL + kalender peserta kompetisi Eropa musim 2026/27 terverifikasi. "
+            "Waktu pembaruan dan tautan sumber data tetap tersedia di kontrak integritas data."
         )
 
 
@@ -2563,33 +2632,33 @@ def _render_imported_squad_schedule_exposure(
 ) -> None:
     """Show a session-only schedule view for the user's imported official squad."""
     section_heading(
-        "Your schedule exposure",
-        f"Imported squad · GW{imported.gameweek}–GW{min(38, imported.gameweek + horizon - 1)}",
-        "Uses the imported squad only in this browser session. It is a separate risk view and does not alter transfer priority in Phase E.",
+        "Eksposur Jadwal Skuad Kamu",
+        f"Skuad impor · GW{imported.gameweek}–GW{min(38, imported.gameweek + horizon - 1)}",
+        "Hanya menggunakan data skuad impor selama sesi browser ini. Bagian ini merupakan analisis risiko terpisah dan tidak mengubah prioritas transfer.",
     )
     if schedule_service is None:
-        st.info("Schedule exposure will appear after the schedule congestion service initializes.")
+        st.info("Eksposur jadwal akan muncul setelah layanan kepadatan jadwal terinisialisasi.")
         return
     try:
         snapshot = schedule_service.get_phase_c_snapshot()  # type: ignore[attr-defined]
         exposure = calculate_squad_schedule_exposure(imported, snapshot, horizon)
     except Exception as exc:
-        st.warning(f"Could not calculate squad schedule exposure: {exc}")
+        st.warning(f"Tidak dapat menghitung eksposur jadwal skuad: {exc}")
         return
 
     metrics = st.columns(3)
     with metrics[0]:
         metric_tile(
-            "Expected blank starters",
+            "Starter Berpotensi Blank",
             f"{exposure.expected_blank_starters:.2f}",
-            "Weighted across starter, bench, and captain exposure",
+            "Berbobot antara starter, cadangan, dan kapten",
             ATTRIBUTE_HELP["schedule_blank"],
         )
     with metrics[1]:
         metric_tile(
-            "Expected extra fixtures",
+            "Potensi Laga Ekstra",
             f"{exposure.expected_extra_fixtures:.2f}",
-            "Confirmed allocation plus evidence-backed projections",
+            "Jadwal pasti plus proyeksi berbasis data",
             ATTRIBUTE_HELP["schedule_double"],
         )
     with metrics[2]:
@@ -2598,9 +2667,9 @@ def _render_imported_squad_schedule_exposure(
             default=0,
         )
         metric_tile(
-            "Highest squad congestion",
+            "Beban Jadwal Tertinggi",
             f"{highest_congestion:.1f}/100",
-            "Highest club workload signal in the imported squad",
+            "Sinyal beban tanding klub tertinggi di skuad kamu",
             ATTRIBUTE_HELP["schedule_congestion"],
         )
 
@@ -2611,32 +2680,34 @@ def _render_imported_squad_schedule_exposure(
             hide_index=True,
             width="stretch",
             column_config={
+                "Player": st.column_config.TextColumn("Pemain"),
+                "Club": st.column_config.TextColumn("Klub"),
+                "Role": st.column_config.TextColumn("Peran"),
                 "Squad weight": st.column_config.NumberColumn(
-                    "Squad weight", format="%.2f",
-                    help="Starter 1.00; bench outfield 0.35; bench goalkeeper 0.20; captain receives an additional 1.00.",
+                    "Bobot Skuad", format="%.2f",
+                    help="Starter 1.00; bench outfield 0.35; bench kiper 0.20; kapten mendapat tambahan 1.00.",
                 ),
                 "Expected blank": st.column_config.NumberColumn(
-                    "Expected blank", format="%.2f", help=ATTRIBUTE_HELP["schedule_blank"]
+                    "Potensi Blank", format="%.2f", help=ATTRIBUTE_HELP["schedule_blank"]
                 ),
                 "Expected extra fixtures": st.column_config.NumberColumn(
-                    "Expected extra fixtures", format="%.2f", help=ATTRIBUTE_HELP["schedule_double"]
+                    "Potensi Laga Ekstra", format="%.2f", help=ATTRIBUTE_HELP["schedule_double"]
                 ),
                 "Congestion": st.column_config.ProgressColumn(
-                    "Congestion", min_value=0, max_value=100, format="%.1f",
+                    "Kepadatan Jadwal", min_value=0, max_value=100, format="%.1f",
                     help=ATTRIBUTE_HELP["schedule_congestion"],
                 ),
             },
         )
     else:
-        st.success("No confirmed or evidence-backed blank/double exposure in this planning window.")
+        st.success("Tidak ada potensi laga blank maupun double pada jendela perencanaan ini.")
     if exposure.unresolved_player_ids:
         st.warning(
-            "Some imported players could not be mapped to an official FPL club, so their schedule exposure is omitted: "
+            "Beberapa pemain di skuad impor tidak dapat dipetakan ke klub resmi FPL: "
             + ", ".join(str(player_id) for player_id in exposure.unresolved_player_ids)
         )
     st.caption(
-        "Phase E does not change the transfer suggestions above or below this section. "
-        "Schedule-adjusted transfer priorities remain reserved for Phase F backtesting."
+        "Bagian ini bersifat informatif untuk membantu keputusan manajer tanpa mengubah formula prioritas transfer secara sepihak."
     )
 
 
@@ -2648,33 +2719,33 @@ def _render_set_piece_market_section(
     catalog = set_piece_service.catalog
     insights = set_piece_service.player_insights(rankings)  # type: ignore[arg-type]
     section_heading(
-        "Set-piece insights",
-        f"Expected roles · {catalog.season} snapshot · as of {catalog.as_of}",
-        "A transparent tie-breaker for penalties, direct free-kicks, and corners. It stays separate from the base FPL Signal score because the next taker can change with the XI and match context.",
+        "Wawasan Bola Mati (Set-Piece)",
+        f"Peran pengambil · Snapshot musim {catalog.season} · per {catalog.as_of}",
+        "Faktor penentu tambahan untuk penalti, tendangan bebas langsung, dan sepak pojok. Ditampilkan terpisah dari skor dasar FPL Signal karena eksekutor dapat berubah tergantung susunan pemain inti dan situasi laga.",
     )
     metrics = st.columns(3)
     with metrics[0]:
         metric_tile(
-            "Listed current players",
+            "Pemain Terdata",
             str(len(insights)),
-            "Resolved against the current official FPL player cache",
+            "Disesuaikan dengan cache pemain resmi FPL saat ini",
             ATTRIBUTE_HELP["set_piece_signal"],
         )
     with metrics[1]:
         metric_tile(
-            "Clubs covered",
+            "Klub Terliput",
             str(len(catalog.teams)),
-            "Expected set-piece role snapshot",
+            "Snapshot peran bola mati tim",
         )
     with metrics[2]:
         metric_tile(
-            "Historical context",
+            "Konteks Historis",
             catalog.historical_season,
             catalog.historical_metric_label,
             ATTRIBUTE_HELP["historical_set_piece_goals"],
         )
     if not insights:
-        st.info("No expected set-piece roles could be matched to the current official FPL player cache.")
+        st.info("Tidak ada peran pengambil bola mati yang cocok dengan cache pemain FPL saat ini.")
         return
     rows = [
         {
@@ -2692,19 +2763,22 @@ def _render_set_piece_market_section(
         width="stretch",
         height=min(520, 115 + 35 * len(rows)),
         column_config={
+            "Player": st.column_config.TextColumn("Pemain"),
+            "Team": st.column_config.TextColumn("Klub"),
+            "Expected duties": st.column_config.TextColumn("Tugas Bola Mati"),
             "Role signal": st.column_config.NumberColumn(
-                "Role signal", format="%.1f", help=ATTRIBUTE_HELP["set_piece_signal"]
+                "Sinyal Peran", format="%.1f", help=ATTRIBUTE_HELP["set_piece_signal"]
             ),
             f"{catalog.historical_season} SPG": st.column_config.NumberColumn(
-                f"{catalog.historical_season} SPG",
+                f"Gol Bola Mati {catalog.historical_season}",
                 help=ATTRIBUTE_HELP["historical_set_piece_goals"],
             ),
         },
     )
     st.caption(catalog.limitations)
     st.markdown(
-        f"Role source: [{catalog.source_label}]({catalog.source_url}) · "
-        f"Historical SPG source: [historical team context]({catalog.historical_source_url})"
+        f"Sumber peran: [{catalog.source_label}]({catalog.source_url}) · "
+        f"Sumber riwayat gol: [konteks tim historis]({catalog.historical_source_url})"
     )
 
 
@@ -2717,12 +2791,12 @@ def _render_imported_squad_set_piece_insights(
         (pick.player for pick in imported.picks)
     )
     section_heading(
-        "Your squad's set-piece exposure",
-        "Imported squad · expected roles only",
-        "Useful for spotting penalties, deliveries, and indirect free-kick involvement in your current team. This view does not guarantee the next taker.",
+        "Eksposur Bola Mati Skuad Kamu",
+        "Skuad impor · Peran eksekutor di lapangan",
+        "Membantu kamu memetakan siapa saja penendang penalti, tendangan bebas, dan sepak pojok di tim kamu saat ini. Tampilan ini adalah proyeksi berdasarkan riwayat dan tidak menjamin eksekutor pasti di laga berikutnya.",
     )
     if not insights:
-        st.info("No imported players are listed in the current set-piece snapshot.")
+        st.info("Tidak ada pemain di skuad impor yang terdaftar sebagai eksekutor bola mati pada snapshot saat ini.")
         return
     penalty_holders = sum(
         any(role.role_type == "penalties" for role in insight.roles)
@@ -2731,16 +2805,16 @@ def _render_imported_squad_set_piece_insights(
     metrics = st.columns(2)
     with metrics[0]:
         metric_tile(
-            "Listed role holders",
+            "Pemain Eksekutor",
             str(len(insights)),
-            "Imported players with an expected dead-ball duty",
+            "Pemain di skuad kamu yang memiliki tugas bola mati",
             ATTRIBUTE_HELP["set_piece_signal"],
         )
     with metrics[1]:
         metric_tile(
-            "Penalty options",
+            "Eksekutor Penalti",
             str(penalty_holders),
-            "May be first, secondary, or conditional in the snapshot",
+            "Dapat berupa penendang utama, kedua, atau situasional",
         )
     st.dataframe(
         pd.DataFrame(
@@ -2758,11 +2832,14 @@ def _render_imported_squad_set_piece_insights(
         hide_index=True,
         width="stretch",
         column_config={
+            "Player": st.column_config.TextColumn("Pemain"),
+            "Team": st.column_config.TextColumn("Klub"),
+            "Expected duties": st.column_config.TextColumn("Tugas Bola Mati"),
             "Role signal": st.column_config.NumberColumn(
-                "Role signal", format="%.1f", help=ATTRIBUTE_HELP["set_piece_signal"]
+                "Sinyal Peran", format="%.1f", help=ATTRIBUTE_HELP["set_piece_signal"]
             ),
             f"{set_piece_service.catalog.historical_season} SPG": st.column_config.NumberColumn(
-                f"{set_piece_service.catalog.historical_season} SPG",
+                f"Gol Bola Mati {set_piece_service.catalog.historical_season}",
                 help=ATTRIBUTE_HELP["historical_set_piece_goals"],
             ),
         },
@@ -2773,13 +2850,13 @@ def render_data_status(
     players: pd.DataFrame, fixtures: pd.DataFrame, scoring: ScoringConfig
 ) -> None:
     page_header(
-        "System status",
-        "Know what the app knows.",
-        "Monitor sources, freshness, coverage, model version, and data limitations before trusting insights.",
+        "Status Sistem & Data",
+        "Transparansi Penuh Sumber & Integritas Data",
+        "Pantau sumber data resmi, kesegaran data, cakupan database, versi model, dan batasan data sebelum mengambil keputusan.",
     )
     ingestion_status = st.session_state.get("ingestion_status", {})
     refresh_status = ingestion_status.get("refresh", {})
-    last_refresh = refresh_status.get("last_successful_at") or "Never"
+    last_refresh = refresh_status.get("last_successful_at") or "Belum pernah"
     freshness, freshness_detail = _freshness_label(refresh_status.get("last_successful_at"))
     player_count = int(ingestion_status.get("players_in_database", 0))
     current_stats_count = int(ingestion_status.get("current_stats_in_database", 0))
@@ -2792,20 +2869,20 @@ def render_data_status(
     status_columns = st.columns(4)
     with status_columns[0]:
         metric_tile(
-            "App mode", "Official", "All pages use the official FPL cache",
-            "No MVP page depends on mock player or fixture data.",
+            "Mode Aplikasi", "Resmi FPL", "Semua halaman menggunakan cache resmi FPL",
+            "Aplikasi tidak menggunakan data pemain atau fixture buatan (mock).",
         )
     with status_columns[1]:
-        metric_tile("Data freshness", freshness, freshness_detail, "Age of the last successful official FPL refresh.")
+        metric_tile("Kesegaran Data", freshness, freshness_detail, "Usia data sejak pembaruan resmi FPL terakhir yang berhasil.")
     with status_columns[2]:
         metric_tile(
-            "Data coverage",
+            "Cakupan Data",
             f"{current_stats_count}/{player_count}",
-            f"Current stats · {missing_current_stats} missing",
-            "Official current-stat rows available out of the roster stored in SQLite.",
+            f"Statistik terkini · {missing_current_stats} belum sinkron",
+            "Jumlah statistik pemain resmi yang tersimpan di database SQLite lokal.",
         )
     with status_columns[3]:
-        metric_tile("Last success", last_refresh[:19] if last_refresh != "Never" else last_refresh, "UTC")
+        metric_tile("Sinkronisasi Terakhir", last_refresh[:19] if last_refresh != "Belum pernah" else last_refresh, "UTC")
 
     fpl_service = st.session_state.get("fpl_ingestion_service")
     historical_service = st.session_state.get("historical_data_service")
@@ -2837,26 +2914,26 @@ def render_data_status(
             refresh_fpl = st.button("Refresh official FPL data", type="primary")
         if refresh_fpl:
             try:
-                with st.spinner("Fetching, validating, and saving official FPL data..."):
+                with st.spinner("Mengambil, memvalidasi, dan menyimpan data resmi FPL..."):
                     result = fpl_service.refresh()
                 st.session_state["ingestion_status"] = asdict(fpl_service.get_status())
                 st.success(
-                    f"Refresh complete: {result.players} players, {result.teams} teams, "
-                    f"{result.fixtures} fixtures."
+                    f"Pembaruan selesai: {result.players} pemain, {result.teams} klub, "
+                    f"{result.fixtures} fixture."
                 )
             except Exception:
                 st.session_state["ingestion_status"] = asdict(fpl_service.get_status())
-                st.error("Refresh failed. The last successful data remains available; see the latest error below.")
+                st.error("Pembaruan gagal. Data terakhir yang berhasil tetap tersedia; periksa detail error di bawah.")
 
     if historical_service is not None:
         with action_columns[1]:
             import_history = st.button(
                 "Import historical seasons",
-                help="Download, validate, archive, and idempotently import the configured completed seasons.",
+                help="Unduh, validasi, arsipkan, dan impor musim historis terkonfigurasi secara aman (idempoten).",
             )
         if import_history:
             try:
-                with st.spinner("Importing historical seasons and calculating identity mappings..."):
+                with st.spinner("Mengimpor data musim historis dan memetakan identitas pemain..."):
                     result = historical_service.import_default_seasons()
                 recommendation_service = st.session_state.get("recommendation_engine_service")
                 if recommendation_service is not None:
@@ -2864,164 +2941,164 @@ def render_data_status(
                 if fpl_service is not None:
                     st.session_state["ingestion_status"] = asdict(fpl_service.get_status())
                 st.success(
-                    f"Historical import complete: {result.seasons} seasons, {result.rows} rows, "
-                    f"{result.matched} matched, {result.review} review, {result.scores} scores."
+                    f"Impor data historis selesai: {result.seasons} musim, {result.rows} baris data, "
+                    f"{result.matched} cocok, {result.review} tinjauan, {result.scores} skor."
                 )
             except Exception:
-                st.error("Historical import failed validation. The previous dataset and scores remain safe.")
+                st.error("Validasi impor historis gagal. Dataset dan skor sebelumnya tetap aman.")
 
     if refresh_status.get("last_error"):
-        st.warning(f"Last refresh error: {refresh_status['last_error']}")
+        st.warning(f"Error pembaruan terakhir: {refresh_status['last_error']}")
 
     core_status = st.session_state.get("core_status", {})
-    database_detail = "Schema not initialized"
-    database_status = "Not ready"
+    database_detail = "Skema belum diinisialisasi"
+    database_status = "Belum siap"
     if core_status.get("database_ready"):
-        database_status = "Ready"
+        database_status = "Siap"
         database_detail = (
-            f"Schema v{core_status.get('schema_version')} · "
-            f"{core_status.get('table_count')} tables"
+            f"Skema v{core_status.get('schema_version')} · "
+            f"{core_status.get('table_count')} tabel"
         )
 
     section_heading(
-        "Data coverage & pipeline readiness", "Phase F · operational readiness",
-        "Coverage makes missing cache rows explicit; player history remains an on-demand cache by design.",
+        "Kesiapan Pipeline & Cakupan Data", "Fase F · Kesiapan operasional sistem",
+        "Transparansi data memastikan baris cache yang hilang teridentifikasi jelas; riwayat laga pemain disimpan on-demand sesuai kebutuhan.",
     )
     readiness = pd.DataFrame(
         [
-            ["Frontend shell", "Ready", "All planned MVP routes"],
-            ["Official FPL API", "Ready", "Manual refresh with validation and retry"],
-            ["FPL client", "Ready", "Timeout, retry, cache, and validation"],
+            ["Antarmuka aplikasi", "Siap", "Semua rute MVP berfungsi"],
+            ["API Resmi FPL", "Siap", "Pembaruan manual dengan validasi dan mekanisme retry"],
+            ["Klien FPL", "Siap", "Timeout, retry, cache, dan validasi"],
             ["SQLite", database_status, database_detail],
             [
-                "Current player stats",
-                "Ready" if player_count and not missing_current_stats else "Coverage gap",
-                f"{current_stats_count}/{player_count} rows · {missing_current_stats} missing",
+                "Statistik pemain saat ini",
+                "Siap" if player_count and not missing_current_stats else "Celah data",
+                f"{current_stats_count}/{player_count} baris · {missing_current_stats} belum sinkron",
             ],
             [
-                "Gameweek snapshots",
-                "Ready" if player_count and not missing_snapshots else "Coverage gap",
-                f"{snapshot_count}/{player_count} rows · {missing_snapshots} missing",
+                "Snapshot Gameweek",
+                "Siap" if player_count and not missing_snapshots else "Celah data",
+                f"{snapshot_count}/{player_count} baris · {missing_snapshots} belum sinkron",
             ],
-            ["Fixture matrix", "Ready", "Official FDR scored across 1, 3, 5, and 8 GW"],
+            ["Matriks fixture", "Siap", "FDR resmi FPL dihitung untuk 1, 3, 5, dan 8 GW"],
             [
-                "Custom fixture difficulty",
-                "Ready",
-                "Official FDR + relative opponent strength + venue; comparison signal only",
+                "Tingkat kesulitan custom (FDR)",
+                "Siap",
+                "FDR resmi + kekuatan relatif lawan + status kandang/tandang; sinyal pembanding",
             ],
             [
                 "Recommendation Engine V1",
-                "Ready" if expected_scores and not missing_scores else "Coverage gap",
-                f"{score_count}/{expected_scores} persisted scores · {missing_scores} missing · {scoring.model_version}",
+                "Siap" if expected_scores and not missing_scores else "Celah data",
+                f"{score_count}/{expected_scores} skor tersimpan · {missing_scores} belum ada · {scoring.model_version}",
             ],
             [
-                "Official endpoint contract",
-                "Ready",
-                "Core bootstrap fields are validated before ETL; positional fields remain nullable when FPL does not supply them",
+                "Kontrak endpoint resmi",
+                "Siap",
+                "Data utama bootstrap divalidasi sebelum disimpan ke DB lokal",
             ],
             [
-                "Positional candidate gate",
+                "Gate kandidat posisi",
                 (
-                    "Approved"
+                    "Disetujui"
                     if positional_report is not None and positional_report.production_active
-                    else "Experimental"
+                    else "Eksperimental"
                 ),
                 (
                     f"{positional_report.candidate_version} · "
-                    f"{sum(item.gate_passed for item in positional_report.evaluations)}/4 positions passed"
+                    f"{sum(item.gate_passed for item in positional_report.evaluations)}/4 posisi lolos gate"
                     if positional_report is not None
-                    else "Run the historical import/backtest to calculate the release gate"
+                    else "Jalankan impor historis / backtest untuk menghitung gate rilis"
                 ),
             ],
             [
-                "Player gameweek history",
-                "On demand",
-                f"{ingestion_status.get('gameweek_history_in_database', 0)} rows across "
-                f"{ingestion_status.get('history_synced_players_in_database', 0)}/{player_count} synced players",
+                "Riwayat Gameweek pemain",
+                "On-demand",
+                f"{ingestion_status.get('gameweek_history_in_database', 0)} baris dari "
+                f"{ingestion_status.get('history_synced_players_in_database', 0)}/{player_count} pemain tersinkron",
             ],
             [
-                "Feature engineering",
-                "Ready",
-                f"Rolling 3/5/10 · per-90 · minimum {scoring.minimum_minutes} minutes",
+                "Rekayasa fitur (Features)",
+                "Siap",
+                f"Rolling 3/5/10 · per-90 · minimal {scoring.minimum_minutes} menit",
             ],
             [
-                "Raw snapshot store",
+                "Penyimpanan snapshot mentah",
                 freshness,
-                f"{freshness_detail} Last refresh: {last_refresh[:19] if last_refresh != 'Never' else last_refresh}",
+                f"{freshness_detail} Pembaruan terakhir: {last_refresh[:19] if last_refresh != 'Belum pernah' else last_refresh}",
             ],
             [
-                "Historical dataset",
-                "Ready" if ingestion_status.get("historical_seasons_in_database", 0) else "Not imported",
-                f"{ingestion_status.get('historical_seasons_in_database', 0)} seasons · "
-                f"{ingestion_status.get('historical_rows_in_database', 0)} validated player-season rows",
+                "Dataset historis",
+                "Siap" if ingestion_status.get("historical_seasons_in_database", 0) else "Belum diimpor",
+                f"{ingestion_status.get('historical_seasons_in_database', 0)} musim · "
+                f"{ingestion_status.get('historical_rows_in_database', 0)} baris data pemain-musim tervalidasi",
             ],
             [
-                "Historical identity mapping",
-                "Ready" if ingestion_status.get("historical_matched_in_database", 0) else "Waiting for import",
-                f"{ingestion_status.get('historical_matched_in_database', 0)} matched · "
-                f"{ingestion_status.get('historical_review_in_database', 0)} review · "
-                f"{ingestion_status.get('historical_unmatched_in_database', 0)} unmatched",
+                "Pemetaan identitas historis",
+                "Siap" if ingestion_status.get("historical_matched_in_database", 0) else "Menunggu impor",
+                f"{ingestion_status.get('historical_matched_in_database', 0)} cocok · "
+                f"{ingestion_status.get('historical_review_in_database', 0)} tinjauan · "
+                f"{ingestion_status.get('historical_unmatched_in_database', 0)} tidak cocok",
             ],
             [
-                "Historical stability score",
-                "Ready" if ingestion_status.get("historical_scores_in_database", 0) else "Waiting for matches",
-                f"{ingestion_status.get('historical_scores_in_database', 0)}/{player_count} current players scored · "
-                "neutral 50 fallback for missing history",
+                "Skor stabilitas historis",
+                "Siap" if ingestion_status.get("historical_scores_in_database", 0) else "Menunggu data cocok",
+                f"{ingestion_status.get('historical_scores_in_database', 0)}/{player_count} pemain aktif dinilai · "
+                "skor netral 50 jika tidak ada riwayat",
             ],
             [
-                "Time-safe backtest dataset",
-                "Ready" if backtest_status and backtest_status.gameweek_rows else "Not imported",
+                "Dataset backtest berbasis waktu",
+                "Siap" if backtest_status and backtest_status.gameweek_rows else "Belum diimpor",
                 (
-                    f"{backtest_status.gameweek_rows} player-fixture rows · "
-                    f"{backtest_status.fixture_rows} fixtures"
+                    f"{backtest_status.gameweek_rows} baris pemain-fixture · "
+                    f"{backtest_status.fixture_rows} fixture"
                     if backtest_status
-                    else "Backtesting service unavailable"
+                    else "Layanan backtesting tidak tersedia"
                 ),
             ],
             [
-                "Model calibration runs",
-                "Ready" if backtest_status and backtest_status.runs else "Waiting for run",
+                "Kalibrasi model",
+                "Siap" if backtest_status and backtest_status.runs else "Menunggu pengujian",
                 (
-                    f"{backtest_status.runs} runs · {backtest_status.prediction_rows} persisted predictions"
+                    f"{backtest_status.runs} kali pengujian · {backtest_status.prediction_rows} prediksi tersimpan"
                     if backtest_status
-                    else "Backtesting service unavailable"
+                    else "Layanan backtesting tidak tersedia"
                 ),
             ],
             [
-                "Squad import & wildcard planner",
-                "Ready" if advanced_service is not None else "Unavailable",
-                "Public official picks · legal 15-player heuristic draft · session-only import",
+                "Impor skuad & perencana wildcard",
+                "Siap" if advanced_service is not None else "Tidak tersedia",
+                "Picks resmi publik · draf 15 pemain legal · impor khusus sesi aktif",
             ],
             [
-                "FotMob enrichment",
-                fotmob_status.readiness if fotmob_status is not None else "Not configured",
-                fotmob_status.detail if fotmob_status is not None else "Provider policy unavailable",
+                "Pengayaan data FotMob",
+                fotmob_status.readiness if fotmob_status is not None else "Belum dikonfigurasi",
+                fotmob_status.detail if fotmob_status is not None else "Kebijakan penyedia data belum tersedia",
             ],
         ],
-        columns=["Component", "Status", "Detail"],
+        columns=["Komponen", "Status", "Detail"],
     )
     st.dataframe(readiness, hide_index=True, width="stretch")
 
-    with st.expander("Phase F · Sources, Refresh, and Rollback"):
+    with st.expander("Sumber Data Resmi, Pembaruan & Prosedur Rollback"):
         st.markdown(
-            "**Official sources.** Current-season rankings use official FPL `bootstrap-static` and "
-            "fixtures. Core fields are validated before processing; optional positional fields not "
-            "supplied by FPL are shown as *Not supplied* rather than zero.\n\n"
-            "**Post-deployment.** Startup runs forward-only SQLite migrations. "
-            "After schema migration, click **Refresh official FPL data** to populate the latest "
-            "official fields. For positional candidates, run import/backtest so coverage "
-            "and evaluation gates can be recomputed.\n\n"
-            "**Model status.** `v1.1` remains in production; `candidate-v1.3-positional` is experimental "
-            "until position-specific gates and explicit activation approval are fulfilled. Changelog details "
-            "and rollback procedures are documented in `docs/MODEL_CHANGELOG.md`."
+            "**Sumber resmi.** Peringkat musim berjalan menggunakan `bootstrap-static` dan jadwal "
+            "resmi FPL. Kolom data utama divalidasi sebelum diproses; atribut posisi opsional yang "
+            "tidak disediakan oleh FPL ditampilkan sebagai *Tidak tersedia* dan bukan nol.\n\n"
+            "**Setelah deployment.** Aplikasi secara otomatis menjalankan migrasi SQLite ke depan. "
+            "Setelah migrasi skema, klik **Refresh official FPL data** untuk mengisi data resmi "
+            "terbaru. Untuk kandidat model posisi, jalankan impor/backtest agar cakupan data "
+            "dan kriteria gate evaluasi dapat dihitung ulang.\n\n"
+            "**Status model.** Model `v1.1` aktif di tahap produksi; `candidate-v1.3-positional` berstatus eksperimental "
+            "hingga kriteria evaluasi spesifik posisi dan persetujuan aktivasi resmi terpenuhi. Rincian changelog "
+            "dan prosedur rollback terdokumentasi di `docs/MODEL_CHANGELOG.md`."
         )
 
     if historical_service is not None and ingestion_status.get("historical_review_in_database", 0):
         with st.expander(
-            f"Identity review queue ({ingestion_status.get('historical_review_in_database', 0)})"
+            f"Antrean tinjauan identitas pemain ({ingestion_status.get('historical_review_in_database', 0)})"
         ):
             st.caption(
-                "Only unresolved REVIEW candidates are excluded from scoring; unique matches above 90% and manually confirmed identity overrides are treated as MATCHED."
+                "Hanya kandidat TINJAUAN yang belum terselesaikan yang dikecualikan dari perhitungan skor; kecocokan unik di atas 90% dan penetapan manual diperlakukan sebagai COCOK."
             )
             review_rows = historical_service.get_review_queue(limit=20)
             st.dataframe(
@@ -3029,30 +3106,30 @@ def render_data_status(
                 hide_index=True,
                 width="stretch",
                 column_config={
-                    "season": st.column_config.TextColumn("Season"),
-                    "historical_name": st.column_config.TextColumn("Historical player"),
+                    "season": st.column_config.TextColumn("Musim"),
+                    "historical_name": st.column_config.TextColumn("Pemain historis"),
                     "position": st.column_config.TextColumn("Pos", width="small"),
-                    "candidate_name": st.column_config.TextColumn("Current candidate"),
+                    "candidate_name": st.column_config.TextColumn("Kandidat saat ini"),
                     "match_score": st.column_config.ProgressColumn(
-                        "Match confidence", min_value=0, max_value=100, format="%.0f%%"
+                        "Tingkat kecocokan", min_value=0, max_value=100, format="%.0f%%"
                     ),
-                    "match_method": st.column_config.TextColumn("Method"),
+                    "match_method": st.column_config.TextColumn("Metode"),
                 },
             )
 
-    section_heading("State preview", "UX validation utilities")
+    section_heading("Pratinjau Status", "Alat validasi tampilan UI")
     preview = st.selectbox(
-        "Preview application state", ["Normal", "Empty", "Error"],
-        help="UX utility for previewing normal, empty, and error messaging states.",
+        "Pratinjau status tampilan", ["Normal", "Kosong", "Error"],
+        help="Alat bantu untuk memverifikasi tampilan dalam kondisi normal, kosong, dan error.",
     )
     if preview == "Normal":
-        st.success("Official fixture cache and all frontend routes are available.")
-    elif preview == "Empty":
-        render_empty_state("No data available", "Refresh data or adjust the active filters.")
+        st.success("Cache fixture resmi dan seluruh rute navigasi berfungsi normal.")
+    elif preview == "Kosong":
+        render_empty_state("Tidak ada data tersedia", "Segarkan data atau sesuaikan filter pencarian.")
     else:
-        st.error("Example error state: the last successful dataset would remain visible here.")
+        st.error("Contoh tampilan error: dataset terakhir yang berhasil tetap akan terlihat di sini.")
 
-    with st.expander("Scoring configuration"):
+    with st.expander("Konfigurasi pembobotan skor (Scoring configuration)"):
         st.json(scoring.position_weights)
 
 
@@ -3113,11 +3190,8 @@ def render_league_rivals(
         st.caption("Tarik data liga langsung dari server resmi FPL.")
         load_leagues = st.button("Muat Liga Manajer", type="primary", key="btn_load_leagues")
 
-    should_load = (
-        load_leagues
-        or "discovered_leagues" not in st.session_state
-        or st.session_state.get("league_active_manager_id") != int(manager_id)
-    )
+    auto_load = bool(st.session_state.pop("league_auto_load", False))
+    should_load = load_leagues or auto_load
 
     if should_load:
         st.session_state["fpl_manager_id"] = int(manager_id)
@@ -3136,7 +3210,13 @@ def render_league_rivals(
     entry_info = st.session_state.get("discovered_entry_info", {})
 
     if not leagues:
-        render_empty_state("Tidak ada liga ditemukan", "ID manajer ini belum bergabung ke private maupun public mini-league.")
+        if "discovered_leagues" in st.session_state:
+            render_empty_state("Tidak ada liga ditemukan", "ID manajer ini belum bergabung ke private maupun public mini-league.")
+        else:
+            render_action_state(
+                "Pantau Mini-League Kamu",
+                "Masukkan FPL Manager ID kamu di atas lalu klik 'Muat Liga Manajer' untuk membedah klasemen, riwayat chip rival, dan pilihan kapten.",
+            )
         return
 
     mgr_name = f"{entry_info.get('player_first_name', '')} {entry_info.get('player_last_name', '')}".strip()
@@ -3211,18 +3291,22 @@ def render_league_rivals(
         return
 
     st.divider()
-    with st.spinner(f"Menganalisa klasemen {selected_league.name} dan status chip rival..."):
-        try:
-            report = service.analyze_classic_league(
-                league_id=selected_league.id,
-                user_entry_id=int(manager_id),
-                current_gameweek=current_gw,
-                page=1,
-                max_teams_to_enrich=50,
-            )
-        except Exception as exc:
-            st.error(f"Gagal menganalisa liga {selected_league.name}: {exc}")
-            return
+    report_cache_key = f"league_report_{selected_league.id}_{manager_id}"
+    report = st.session_state.get(report_cache_key)
+    if report is None or load_leagues:
+        with st.spinner(f"Menganalisa klasemen {selected_league.name} dan status chip rival..."):
+            try:
+                report = service.analyze_classic_league(
+                    league_id=selected_league.id,
+                    user_entry_id=int(manager_id),
+                    current_gameweek=current_gw,
+                    page=1,
+                    max_teams_to_enrich=50,
+                )
+                st.session_state[report_cache_key] = report
+            except Exception as exc:
+                st.error(f"Gagal menganalisa liga {selected_league.name}: {exc}")
+                return
 
     user_row = next((r for r in report.standings if r.is_user), None)
     user_rank_str = f"#{user_row.rank}" if user_row else f"#{selected_league.entry_rank or '-'}"
@@ -3295,17 +3379,21 @@ def render_league_rivals(
             f"{report.league_name} · Perjalanan peringkat kamu",
             "Grafik perubahan posisi kamu di klasemen liga dari Gameweek ke Gameweek.",
         )
-        with st.spinner("Menghitung histori peringkat liga..."):
-            try:
-                rank_history = service.get_league_rank_history(
-                    league_id=selected_league.id,
-                    user_entry_id=int(manager_id),
-                    current_gameweek=current_gw,
-                    max_teams=total_teams_display,
-                )
-            except Exception as exc:
-                rank_history = ()
-                st.warning(f"Gagal menghitung histori peringkat: {exc}")
+        history_cache_key = f"league_rank_history_{selected_league.id}_{manager_id}"
+        rank_history = st.session_state.get(history_cache_key)
+        if rank_history is None or load_leagues:
+            with st.spinner("Menghitung histori peringkat liga..."):
+                try:
+                    rank_history = service.get_league_rank_history(
+                        league_id=selected_league.id,
+                        user_entry_id=int(manager_id),
+                        current_gameweek=current_gw,
+                        max_teams=total_teams_display,
+                    )
+                    st.session_state[history_cache_key] = rank_history
+                except Exception as exc:
+                    rank_history = ()
+                    st.warning(f"Gagal menghitung histori peringkat: {exc}")
 
         if rank_history:
             import plotly.graph_objects as go

@@ -103,15 +103,15 @@ def deadline_countdown_markup(deadline: FPLDeadline) -> str:
     </style>
     <section class="deadline-banner" aria-label="Official FPL deadline countdown" data-deadline="{deadline_iso}">
       <div class="deadline-intro">
-        <div class="deadline-label">Official FPL deadline</div>
+        <div class="deadline-label">Deadline Resmi FPL</div>
         <div class="deadline-title">Gameweek {deadline.gameweek}</div>
-        <div class="deadline-date" id="deadline-date">Loading deadline…</div>
+        <div class="deadline-date" id="deadline-date">Memuat deadline…</div>
       </div>
       <div class="deadline-clock" aria-live="polite">
-        <div class="deadline-unit"><b class="deadline-value" id="deadline-days">00</b><span>Days</span></div>
-        <div class="deadline-unit"><b class="deadline-value" id="deadline-hours">00</b><span>Hours</span></div>
-        <div class="deadline-unit"><b class="deadline-value" id="deadline-minutes">00</b><span>Mins</span></div>
-        <div class="deadline-unit"><b class="deadline-value" id="deadline-seconds">00</b><span>Secs</span></div>
+        <div class="deadline-unit"><b class="deadline-value" id="deadline-days">00</b><span>Hari</span></div>
+        <div class="deadline-unit"><b class="deadline-value" id="deadline-hours">00</b><span>Jam</span></div>
+        <div class="deadline-unit"><b class="deadline-value" id="deadline-minutes">00</b><span>Menit</span></div>
+        <div class="deadline-unit"><b class="deadline-value" id="deadline-seconds">00</b><span>Detik</span></div>
       </div>
     </section>
     <script>
@@ -242,28 +242,49 @@ def wrapped_chip_card(name: str, uses: int) -> None:
     st.markdown(
         f'''<div class="wrapped-chip">
             <div class="wrapped-chip-label">{escape(name)}</div>
-            <strong>{uses:,}</strong><span>managers played it</span>
+            <strong>{uses:,}</strong><span>manajer memainkannya</span>
         </div>''',
         unsafe_allow_html=True,
     )
 
 
-def player_card(player: Mapping[str, object], label: str = "Recommendation") -> None:
-    status = str(player["status"])
+_CATEGORY_DISPLAY = {
+    "Elite Target": "Target Unggulan",
+    "Strong Buy": "Prioritas Beli",
+    "Good Option": "Pilihan Bagus",
+    "Watchlist": "Masuk Pantauan",
+    "Neutral": "Netral",
+    "Avoid": "Sebaiknya Hindari",
+}
+
+_STATUS_DISPLAY = {
+    "Available": "Tersedia",
+    "Doubtful": "Meragukan",
+    "Injured": "Cedera",
+    "Suspended": "Hukuman Kartu",
+    "Unavailable": "Tidak Tersedia",
+}
+
+
+def player_card(player: Mapping[str, object], label: str = "Rekomendasi") -> None:
+    raw_status = str(player["status"])
+    status = _STATUS_DISPLAY.get(raw_status, raw_status)
     status_html = f'<span class="status-dot"></span>{escape(status)}'
-    if status != "Available":
+    if status != "Tersedia" and raw_status != "Available":
         status_html = f'<span style="color:#ffcf5c">● {escape(status)}</span>'
+    raw_cat = str(player["category"])
+    category = _CATEGORY_DISPLAY.get(raw_cat, raw_cat)
     st.markdown(
         f"""
         <div class="player-card">
-            <div class="card-label has-tooltip" title="Ranking category from the recommendation model">{escape(label)}</div>
-            <div class="player-name has-tooltip" title="Official FPL player name">{escape(str(player['name']))}</div>
-            <div class="card-meta has-tooltip" title="Official club, position, and current FPL price">{escape(str(player['team']))} · {escape(str(player['position']))} · £{float(player['price']):.1f}m</div>
+            <div class="card-label has-tooltip" title="Kategori peringkat dari model rekomendasi">{escape(label)}</div>
+            <div class="player-name has-tooltip" title="Nama resmi pemain FPL">{escape(str(player['name']))}</div>
+            <div class="card-meta has-tooltip" title="Klub, posisi, dan harga resmi FPL saat ini">{escape(str(player['team']))} · {escape(str(player['position']))} · £{float(player['price']):.1f}m</div>
             <div style="display:flex;justify-content:space-between;align-items:end;margin-top:1rem">
-                <div><div class="score-number has-tooltip" title="Final recommendation score from 0 to 100">{int(player['recommendation'])}<small>/100</small></div><div class="card-meta">{status_html}</div></div>
-                <div style="text-align:right"><strong class="has-tooltip" title="The team's nearest unstarted official fixture">{escape(str(player['next_fixture']))}</strong><div class="card-meta">Next fixture</div></div>
+                <div><div class="score-number has-tooltip" title="Skor akhir rekomendasi dari 0 hingga 100">{int(player['recommendation'])}<small>/100</small></div><div class="card-meta">{status_html}</div></div>
+                <div style="text-align:right"><strong class="has-tooltip" title="Laga resmi terdekat yang belum dimulai">{escape(str(player['next_fixture']))}</strong><div class="card-meta">Fixture berikutnya</div></div>
             </div>
-            <div class="category">{escape(str(player['category']))}</div>
+            <div class="category">{escape(category)}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -340,13 +361,13 @@ def build_squad_pitch_markup(
         <section class="squad-visual" aria-label="Official FPL squad formation">
             <div class="squad-visual-header">
                 <div>
-                    <div class="card-label">Official current squad · GW {gameweek}</div>
+                    <div class="card-label">Skuad resmi saat ini · GW {gameweek}</div>
                     <strong>{escape(team_name)}</strong>
                     <span>{escape(manager_name)} · Formation {formation}</span>
                 </div>
                 <div class="squad-visual-stats">
                     <div><b>{points}</b><span>GW points</span></div>
-                    <div><b>{rank}</b><span>GW rank</span></div>
+                    <div><b>{rank}</b><span>Rank GW</span></div>
                 </div>
             </div>
             <div class="fpl-pitch">
@@ -354,7 +375,7 @@ def build_squad_pitch_markup(
             </div>
             <div class="squad-bench-heading">Bench</div>
             <div class="squad-bench">{bench_markup}</div>
-            <div class="squad-visual-note">Player layout, captaincy, points, and rank come from the official FPL picks response. Model score is shown separately for analysis.</div>
+            <div class="squad-visual-note">Susunan pemain, ban kapten, perolehan poin, dan rank diambil langsung dari data picks resmi FPL. Skor model ditampilkan terpisah sebagai bahan analisis.</div>
         </section>
     """
 
