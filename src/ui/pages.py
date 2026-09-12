@@ -48,7 +48,7 @@ ATTRIBUTE_HELP = {
     "position": "FPL position used for position-relative percentile ranking.",
     "price": "Current official FPL player price in millions.",
     "ownership": "Percentage of FPL managers currently owning the player.",
-    "transfers_in_event": "Jumlah transfer masuk pada gameweek aktif yang dilaporkan FPL. Ini mengukur demand manager, bukan rekomendasi atau prediksi poin.",
+    "transfers_in_event": "Number of transfers in for the active gameweek as reported by FPL. Measures manager demand, not a point projection.",
     "minutes": "Minutes played in the latest official current-stat snapshot.",
     "form": "Official FPL form signal based on recent points output.",
     "confidence": "How much evidence supports the signal; it reaches 100% at the configured minimum minutes.",
@@ -64,17 +64,17 @@ ATTRIBUTE_HELP = {
     "spearman": "Average rank correlation between recommendation score and future FPL points; 1 is perfect and higher is better.",
     "top_10_hit": "Average percentage overlap between the predicted top 10 and actual top 10 players.",
     "top_10_points": "Average future FPL points scored by the ten highest-ranked players at each cutoff.",
-    "model_lift": "Kenaikan skor rekomendasi FPL Signal (0–100) dari pemain Out ke pemain In. Skor ini menggabungkan performa, fixture, value, minutes, riwayat, dan availability; bukan prediksi poin pasti.",
-    "fixture_lift": "Perubahan skor kemudahan fixture untuk horizon yang dipilih. Angka positif berarti jadwal pemain In dinilai lebih mudah.",
-    "minutes_lift": "Perubahan skor keamanan menit bermain. Angka positif berarti pemain In dinilai lebih mungkin mendapat menit bermain reguler.",
-    "price_change": "Selisih harga pemain In dikurangi pemain Out. Positif memakai bank, negatif menambah bank. Harga jual historis tidak tersedia dari public FPL picks endpoint.",
-    "schedule_blank": "Eksposur fixture kosong. Confirmed hanya berasal dari alokasi fixture resmi FPL; proyeksi muncul hanya bila input probabilitasnya memiliki source, as-of, expiry, dan confidence.",
-    "schedule_double": "Eksposur fixture tambahan. Confirmed berarti FPL memasang minimal dua fixture; proyeksi tetap terpisah dan tidak mengubah status confirmed.",
-    "schedule_congestion": "Indikator workload 14 hari dari kepadatan jadwal, rest pendek, travel netral, dan tahap kompetisi. Ini bukan prediksi poin, cedera, atau menit bermain.",
-    "brier": "Mean squared error untuk probabilitas terhadap hasil 0/1. Nilai 0 sempurna; semakin rendah semakin baik.",
-    "calibration_error": "Selisih berbobot antara probabilitas rata-rata dan frekuensi hasil aktual pada reliability buckets. Semakin rendah semakin baik.",
-    "set_piece_signal": "Sinyal kecil untuk peran set piece yang diperkirakan: penalti, direct free kick, serta corner/indirect free kick. Ini bukan jaminan pemain mengambil tendangan berikutnya dan bukan prediksi poin.",
-    "historical_set_piece_goals": "Jumlah gol set piece level tim pada musim historis yang dicantumkan. Angka ini hanya memberi konteks tim dan tidak boleh dianggap sebagai kontribusi langsung pemain taker.",
+    "model_lift": "Net increase in FPL Signal recommendation score (0–100) from player Out to player In, combining form, fixtures, value, minutes security, and availability.",
+    "fixture_lift": "Change in fixture ease score for the selected horizon. A positive value indicates a more favourable fixture run for player In.",
+    "minutes_lift": "Change in minutes security score. A positive value indicates player In is more likely to secure regular starts.",
+    "price_change": "Cost difference between player In and player Out. Positive uses bank funds; negative frees up budget.",
+    "schedule_blank": "Blank gameweek exposure. Confirmed status derives strictly from official FPL fixture allocation.",
+    "schedule_double": "Double gameweek exposure. Confirmed means FPL has scheduled at least two fixtures for the team in that gameweek.",
+    "schedule_congestion": "14-day workload indicator derived from fixture density, turnaround days, travel burden, and competition phase.",
+    "brier": "Mean squared error of probability forecasts against binary 0/1 outcomes. 0 is perfect; lower is better.",
+    "calibration_error": "Weighted difference between average forecast probabilities and empirical outcome frequencies across reliability bins. Lower is better.",
+    "set_piece_signal": "Heuristic signal reflecting expected set-piece responsibilities: penalties, direct free kicks, and corners. Not a guarantee or points forecast.",
+    "historical_set_piece_goals": "Team-level set-piece goals scored in the listed historical season. Provides club context rather than individual credit.",
 }
 
 
@@ -788,7 +788,7 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
     for c in report.suitability_matrix:
         tags_html = ""
         if c.is_international_break:
-            tags_html += '<br><span class="tag-ib">🌍 Pasca-IB</span>'
+            tags_html += '<br><span class="tag-ib">🌍 Post-IB</span>'
         if c.is_festive_period:
             tags_html += '<br><span class="tag-festive">🎄 Festive Rotation</span>'
 
@@ -2264,7 +2264,7 @@ def render_advanced_planner(
                         "Bank after moves",
                         f"£{transfer_plan.bank_after:.1f}m",
                         "Using current cached FPL prices",
-                        "Sisa dana setelah seluruh transfer yang disarankan, dihitung dari harga FPL cache saat ini dan bank resmi saat squad diimpor.",
+                        "Remaining bank balance after all suggested transfers, based on current official FPL prices and imported team funds.",
                     )
                 st.dataframe(
                     pd.DataFrame(
@@ -3002,18 +3002,18 @@ def render_data_status(
     )
     st.dataframe(readiness, hide_index=True, width="stretch")
 
-    with st.expander("Phase F · sumber, refresh, dan rollback"):
+    with st.expander("Phase F · Sources, Refresh, and Rollback"):
         st.markdown(
-            "**Sumber resmi.** Ranking current-season menggunakan `bootstrap-static` dan "
-            "fixture resmi FPL. Field inti divalidasi sebelum diproses; field positional "
-            "yang tidak dikirim FPL ditampilkan sebagai *Not supplied*, bukan angka nol.\n\n"
-            "**Setelah deployment.** Startup menjalankan migrasi SQLite forward-only. "
-            "Setelah migrasi schema, tekan **Refresh official FPL data** untuk mengisi field "
-            "resmi terbaru. Untuk candidate positional, jalankan import/backtest agar coverage "
-            "dan gate dapat dihitung ulang.\n\n"
-            "**Model.** `v1.1` tetap production; `candidate-v1.3-positional` bersifat eksperimental "
-            "sampai gate per posisi dan persetujuan aktivasi terpenuhi. Detail perubahan dan "
-            "prosedur rollback ada di `docs/MODEL_CHANGELOG.md`."
+            "**Official sources.** Current-season rankings use official FPL `bootstrap-static` and "
+            "fixtures. Core fields are validated before processing; optional positional fields not "
+            "supplied by FPL are shown as *Not supplied* rather than zero.\n\n"
+            "**Post-deployment.** Startup runs forward-only SQLite migrations. "
+            "After schema migration, click **Refresh official FPL data** to populate the latest "
+            "official fields. For positional candidates, run import/backtest so coverage "
+            "and evaluation gates can be recomputed.\n\n"
+            "**Model status.** `v1.1` remains in production; `candidate-v1.3-positional` is experimental "
+            "until position-specific gates and explicit activation approval are fulfilled. Changelog details "
+            "and rollback procedures are documented in `docs/MODEL_CHANGELOG.md`."
         )
 
     if historical_service is not None and ingestion_status.get("historical_review_in_database", 0):

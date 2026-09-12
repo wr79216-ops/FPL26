@@ -87,25 +87,25 @@ class Round1ChipInventory:
     @property
     def urgency_message(self) -> str:
         if self.remaining_chips_count == 0:
-            return "Semua 4 chip putaran pertama telah berhasil diaktifkan. Anda siap menyongsong 4 chip baru di putaran kedua (GW 20–38)."
+            return "All 4 Round 1 chips have been successfully activated. You are ready for Round 2 in GW 20–38."
         if self.urgency_level == "CRITICAL":
             return (
-                f"🚨 SANGAT KRITIS: Tersisa {self.gws_until_expiry} GW untuk menghabiskan {self.remaining_chips_count} chip! "
-                "Karena aturan 1 chip per pekan, Anda WAJIB mengaktifkan chip sekarang agar tidak hangus di GW 19!"
+                f"🚨 CRITICAL: Only {self.gws_until_expiry} GWs left to deploy {self.remaining_chips_count} chips! "
+                "Per the 1 chip per gameweek rule, you MUST activate a chip now to prevent forfeiture at GW 19!"
             )
         if self.urgency_level == "HIGH":
             return (
-                f"⚠️ URGENT: Masih tersisa {self.remaining_chips_count} chip dengan {self.gws_until_expiry} pekan tersisa. "
-                "Ruang tunda sangat terbatas sebelum batas waktu GW 19."
+                f"⚠️ HIGH URGENCY: {self.remaining_chips_count} chips remaining with only {self.gws_until_expiry} gameweeks left. "
+                "Limited room for delay before the GW 19 deadline."
             )
         if self.urgency_level == "MODERATE":
             return (
-                f"💡 PERHATIAN: Menyimpan {self.remaining_chips_count} chip (sisa {self.gws_until_expiry} GW). "
-                "Mulai jadwalkan pemakaian sekarang agar tidak menumpuk di pekan-pekan terakhir."
+                f"💡 MODERATE: Holding {self.remaining_chips_count} chips with {self.gws_until_expiry} GWs remaining. "
+                "Plan your deployment schedule to avoid end-of-half congestion."
             )
         return (
-            f"✅ TERKENDALI: Tersisa {self.remaining_chips_count} chip untuk {self.gws_until_expiry} GW ke depan. "
-            "Anda memiliki fleksibilitas tinggi menunggu momen paling tepat."
+            f"✅ ON TRACK: {self.remaining_chips_count} chips remaining across {self.gws_until_expiry} upcoming gameweeks. "
+            "You have ample flexibility to target optimal fixture windows."
         )
 
 
@@ -268,7 +268,7 @@ class ChipStrategyService:
 
             if is_ib:
                 wc_score += 26.0
-                wc_reasons.append("Pasca-International Break (jeda transfer 2 pekan & pantau cedera)")
+                wc_reasons.append("Post-International Break (2-week transfer window & injury monitoring)")
 
             # Check fixture swings for top teams in next 5 GWs
             fdr_sums: List[float] = []
@@ -287,20 +287,20 @@ class ChipStrategyService:
             avg_top_fdr = sum(fdr_sums) / max(1, len(fdr_sums))
             if avg_top_fdr <= 2.8:
                 wc_score += 16.0
-                wc_reasons.append("Jadwal empuk 5 pekan ke depan untuk klub papan atas")
+                wc_reasons.append("Favourable 5-GW fixture run for elite clubs")
             elif avg_top_fdr >= 3.4:
                 wc_score -= 8.0
 
             # Urgency ramp up as GW 19 approaches
             if gw == 19:
                 wc_score = max(wc_score, 92.0)
-                wc_reasons.append("DEADLINE TERAKHIR: Wajib pakai sebelum hangus!")
+                wc_reasons.append("FINAL DEADLINE: Must activate before expiration!")
             elif gw == 18:
                 wc_score = max(wc_score, 82.0)
-                wc_reasons.append("Pekan krusial jelang batas waktu GW 19")
+                wc_reasons.append("Crucial gameweek ahead of the GW 19 deadline")
 
             wc_score = min(98.0, max(25.0, wc_score))
-            wc_reason_str = " · ".join(wc_reasons) if wc_reasons else "Jadwal standar; amunisi bisa disimpan untuk momentum lebih baik."
+            wc_reason_str = " · ".join(wc_reasons) if wc_reasons else "Standard schedule; hold for a higher-impact swing window."
 
             # -------------------------------------------------------------
             # 2. TRIPLE CAPTAIN 1 (TC1)
@@ -309,7 +309,7 @@ class ChipStrategyService:
             # -------------------------------------------------------------
             tc_score = 40.0
             best_cap_name = "Haaland"
-            best_cap_reason = "Jadwal reguler"
+            best_cap_reason = "Regular fixture"
 
             top_picks: List[Tuple[float, str, str]] = []
             for p in premium_targets:
@@ -325,17 +325,17 @@ class ChipStrategyService:
                         score = 50.0 + ep * 4.0
                         if diff <= 2:
                             score += 24.0
-                            top_picks.append((score, p_name, f"{p_name} (H vs {opp}) · Lawan FDR 2 di kandang"))
+                            top_picks.append((score, p_name, f"{p_name} (H vs {opp}) · Home fixture vs FDR 2 defence"))
                         elif diff == 3:
                             score += 8.0
-                            top_picks.append((score, p_name, f"{p_name} (H vs {opp}) · Laga kandang"))
+                            top_picks.append((score, p_name, f"{p_name} (H vs {opp}) · Home fixture"))
                     elif f.get("team_a") == p_team_id:
                         opp = teams_dict.get(f.get("team_h", 0), {}).get("short_name", "OPP")
                         diff = f.get("team_a_difficulty", 3)
                         score = 42.0 + ep * 3.5
                         if diff <= 2:
                             score += 15.0
-                            top_picks.append((score, p_name, f"{p_name} (A vs {opp}) · Laga tandang vs FDR 2"))
+                            top_picks.append((score, p_name, f"{p_name} (A vs {opp}) · Away fixture vs FDR 2 defence"))
 
             if top_picks:
                 top_picks.sort(key=lambda x: -x[0])
@@ -344,11 +344,11 @@ class ChipStrategyService:
                 best_cap_reason = top_picks[0][2]
             else:
                 tc_score = 45.0
-                best_cap_reason = "Tidak ada fixture unggulan yang menonjol pekan ini"
+                best_cap_reason = "No standout captaincy ceiling this gameweek"
 
             if gw == 19:
                 tc_score = max(tc_score, 88.0)
-                best_cap_reason += " (Batas akhir GW 19)"
+                best_cap_reason += " (GW 19 final deadline)"
 
             # -------------------------------------------------------------
             # 3. FREE HIT 1 (FH1)
@@ -367,21 +367,21 @@ class ChipStrategyService:
 
             if len(clashes) >= 3:
                 fh_score += 34.0
-                fh_reasons.append(f"Clash akbar ({len(clashes)} big match: {', '.join(clashes[:2])}) · Potensi diferensial masif")
+                fh_reasons.append(f"Heavyweight clash ({len(clashes)} big matches: {', '.join(clashes[:2])}) · Massive differential upside")
             elif len(clashes) == 2:
                 fh_score += 22.0
-                fh_reasons.append(f"2 laga antar klub top ({', '.join(clashes)}) · Pemain template berpotensi saling meniadakan poin")
+                fh_reasons.append(f"2 top-club clashes ({', '.join(clashes)}) · Template assets may cancel each other out")
 
             if is_festive:
                 fh_score += 18.0
-                fh_reasons.append("Jadwal padat Boxing Day / Tahun Baru dengan rotasi starter ekstrem")
+                fh_reasons.append("Festive congestion (Boxing Day / New Year) with heavy squad rotation")
 
             if gw == 19:
                 fh_score = max(fh_score, 90.0)
-                fh_reasons.append("Deadline GW 19: Gunakan sebelum hangus!")
+                fh_reasons.append("GW 19 deadline: Use before expiration!")
 
             fh_score = min(95.0, max(30.0, fh_score))
-            fh_reason_str = " · ".join(fh_reasons) if fh_reasons else "Pekan standar; tim template bermain normal tanpa krisis."
+            fh_reason_str = " · ".join(fh_reasons) if fh_reasons else "Standard gameweek; template teams operate normally without crisis."
 
             # -------------------------------------------------------------
             # 4. BENCH BOOST 1 (BB1)
@@ -400,21 +400,21 @@ class ChipStrategyService:
 
             if easy_home_count >= 4:
                 bb_score += 26.0
-                bb_reasons.append(f"{easy_home_count} tim medioker bermain kandang dengan FDR 2 (potensi clean sheet & poin bangku cadangan)")
+                bb_reasons.append(f"{easy_home_count} budget teams playing at home with FDR 2 (high clean sheet & bench return potential)")
             elif easy_home_count >= 2:
                 bb_score += 15.0
-                bb_reasons.append("Beberapa pemain cadangan memiliki jadwal kandang menguntungkan")
+                bb_reasons.append("Multiple bench assets enjoy favourable home fixtures")
 
             if is_festive:
                 bb_score += 14.0
-                bb_reasons.append("Mitigasi rotasi 15 pemain saat periode padat akhir tahun")
+                bb_reasons.append("15-player squad rotation hedge during festive congestion")
 
             if gw == 19:
                 bb_score = max(bb_score, 90.0)
-                bb_reasons.append("Kesempatan terakhir aktivasi BB1 sebelum hangus")
+                bb_reasons.append("Final opportunity to activate Bench Boost 1 before expiration")
 
             bb_score = min(94.0, max(28.0, bb_score))
-            bb_reason_str = " · ".join(bb_reasons) if bb_reasons else "Pemain cadangan menghadapi jadwal campuran."
+            bb_reason_str = " · ".join(bb_reasons) if bb_reasons else "Bench assets face mixed fixture difficulty."
 
             result.append(
                 GameweekSuitability(
@@ -497,24 +497,24 @@ class ChipStrategyService:
 
             if chip_key == "wildcard":
                 label = "Wildcard 1"
-                headline = f"GW {chosen_gw} · Rombak Total Skuad"
-                rationale = c_meta.wc_reason if c_meta else "Momentum restrukturisasi formasi & kapitalisasi fixture swing."
-                contingency = "Jika skuad terkena badai cedera massal lebih awal, aktifkan 1 pekan lebih cepat."
+                headline = f"GW {chosen_gw} · Full Squad Overhaul"
+                rationale = c_meta.wc_reason if c_meta else "Restructure team formation & capitalize on major fixture swings."
+                contingency = "If an injury crisis hits earlier, pull activation forward by 1 gameweek."
             elif chip_key == "triple_captain":
                 label = "Triple Captain 1"
-                headline = f"GW {chosen_gw} · Armband {c_meta.tc_captain_pick if c_meta else 'Haaland'}"
-                rationale = c_meta.tc_reason if c_meta else "Laga kandang dengan peluang pesta gol tertinggi."
-                contingency = "Jika target kapten cedera saat konferensi pers, alihkan ke alternatif pekan berikutnya."
+                headline = f"GW {chosen_gw} · Armband on {c_meta.tc_captain_pick if c_meta else 'Haaland'}"
+                rationale = c_meta.tc_reason if c_meta else "Home fixture with highest projected goal ceiling."
+                contingency = "If primary captain pick is ruled out in press conference, pivot to the alternative window."
             elif chip_key == "freehit":
                 label = "Free Hit 1"
-                headline = f"GW {chosen_gw} · Skuad Khusus 1 Pekan"
-                rationale = c_meta.fh_reason if c_meta else "Eksploitasi fixture clash untuk panen poin pembeda."
-                contingency = "Simpan sebagai kartu penyelamat jika terjadi penundaan laga atau krisis mendadak."
+                headline = f"GW {chosen_gw} · 1-Gameweek Bespoke Squad"
+                rationale = c_meta.fh_reason if c_meta else "Target fixture clashes to harvest high-upside differentials."
+                contingency = "Hold as emergency contingency if postponements or sudden injuries strike."
             else:  # bench_boost
                 label = "Bench Boost 1"
-                headline = f"GW {chosen_gw} · 15 Pemain Aktif Mendulang Poin"
-                rationale = c_meta.bb_reason if c_meta else "Maksimalkan poin cadangan saat seluruh bangku memiliki laga mudah."
-                contingency = "Pastikan seluruh 4 pemain cadangan berstatus starter reguler tanpa cedera."
+                headline = f"GW {chosen_gw} · All 15 Squad Players Active"
+                rationale = c_meta.bb_reason if c_meta else "Maximize bench returns when reserves all face easy matchups."
+                contingency = "Ensure all 4 bench players are confirmed starters without injury flags."
 
             plan.append(
                 ScheduledChipPlan(
@@ -546,27 +546,27 @@ class ChipStrategyService:
         takeaways: List[str] = []
         if inventory.urgency_level == "CRITICAL":
             takeaways.append(
-                f"🚨 **Urgensi Ekstrem**: Anda memiliki {inventory.remaining_chips_count} chip tersisa dengan hanya {inventory.gws_until_expiry} GW tersisa di putaran pertama. Anda harus mengaktifkan chip sekarang!"
+                f"🚨 **Extreme Urgency**: You have {inventory.remaining_chips_count} chips remaining with only {inventory.gws_until_expiry} GWs left in Round 1. Immediate activation required!"
             )
         elif inventory.remaining_chips_count > 0:
             takeaways.append(
-                f"⏱️ **Batas Waktu GW 19**: Seluruh {inventory.remaining_chips_count} chip yang belum terpakai akan **hangus otomatis** jika tidak diaktifkan sebelum deadline GW 19."
+                f"⏱️ **GW 19 Expiration**: All {inventory.remaining_chips_count} unplayed Round 1 chips will **expire automatically** if not activated before the GW 19 deadline."
             )
 
         wc_plan = next((p for p in plan if p.chip_key == "wildcard"), None)
         if wc_plan:
             takeaways.append(
-                f"🃏 **Wildcard 1 Target**: GW {wc_plan.recommended_gw} direkomendasikan sebagai momen terbaik perombakan skuad ({wc_plan.rationale})."
+                f"🃏 **Wildcard 1 Target**: GW {wc_plan.recommended_gw} is recommended as the optimal squad overhaul window ({wc_plan.rationale})."
             )
 
         tc_plan = next((p for p in plan if p.chip_key == "triple_captain"), None)
         if tc_plan:
             takeaways.append(
-                f"👑 **Triple Captain 1 Target**: GW {tc_plan.recommended_gw} ({tc_plan.headline}) menawarkan probabilitas poin tertinggi."
+                f"👑 **Triple Captain 1 Target**: GW {tc_plan.recommended_gw} ({tc_plan.headline}) offers the highest ceiling opportunity."
             )
 
         takeaways.append(
-            "🔄 **Putaran Kedua (GW 20–38)**: Anda akan otomatis menerima 4 chip baru (WC2, FH2, TC2, BB2) yang bisa disimpan hingga akhir musim."
+            "🔄 **Second Half (GW 20–38)**: You will automatically receive 4 brand new chips (WC2, FH2, TC2, BB2) to deploy through Gameweek 38."
         )
 
         return ChipStrategyReport(
