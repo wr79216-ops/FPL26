@@ -31,26 +31,54 @@ class ManagerLeague:
 
 @dataclass(frozen=True)
 class RivalChipStatus:
-    """Status of chips for one manager."""
+    """Status of chips for one manager across both halves of the season (8 chips total)."""
 
     wc1: Optional[int] = None  # Gameweek played (<= 19) or None if available
     wc2: Optional[int] = None  # Gameweek played (>= 20) or None if available
-    freehit: Optional[int] = None
-    triple_captain: Optional[int] = None
-    bench_boost: Optional[int] = None
+    fh1: Optional[int] = None  # Free Hit Round 1 (<= 19)
+    fh2: Optional[int] = None  # Free Hit Round 2 (>= 20)
+    tc1: Optional[int] = None  # Triple Captain Round 1 (<= 19)
+    tc2: Optional[int] = None  # Triple Captain Round 2 (>= 20)
+    bb1: Optional[int] = None  # Bench Boost Round 1 (<= 19)
+    bb2: Optional[int] = None  # Bench Boost Round 2 (>= 20)
     active_chip: Optional[str] = None  # Active chip for the current gameweek
+
+    # Backwards compatibility properties
+    @property
+    def freehit(self) -> Optional[int]:
+        return self.fh1 if self.fh1 is not None else self.fh2
+
+    @property
+    def triple_captain(self) -> Optional[int]:
+        return self.tc1 if self.tc1 is not None else self.tc2
+
+    @property
+    def bench_boost(self) -> Optional[int]:
+        return self.bb1 if self.bb1 is not None else self.bb2
+
+    @property
+    def round_1_used(self) -> int:
+        return sum(1 for c in (self.wc1, self.fh1, self.tc1, self.bb1) if c is not None)
+
+    @property
+    def round_1_remaining(self) -> int:
+        return 4 - self.round_1_used
+
+    @property
+    def round_2_used(self) -> int:
+        return sum(1 for c in (self.wc2, self.fh2, self.tc2, self.bb2) if c is not None)
+
+    @property
+    def round_2_remaining(self) -> int:
+        return 4 - self.round_2_used
 
     @property
     def total_used(self) -> int:
-        return sum(
-            1
-            for chip in (self.wc1, self.wc2, self.freehit, self.triple_captain, self.bench_boost)
-            if chip is not None
-        )
+        return self.round_1_used + self.round_2_used
 
     @property
     def total_remaining(self) -> int:
-        return 5 - self.total_used
+        return 8 - self.total_used
 
 
 @dataclass(frozen=True)
@@ -224,9 +252,12 @@ class LeagueAnalyticsService:
 
         wc1: Optional[int] = None
         wc2: Optional[int] = None
-        freehit: Optional[int] = None
-        triple_captain: Optional[int] = None
-        bench_boost: Optional[int] = None
+        fh1: Optional[int] = None
+        fh2: Optional[int] = None
+        tc1: Optional[int] = None
+        tc2: Optional[int] = None
+        bb1: Optional[int] = None
+        bb2: Optional[int] = None
 
         for chip in raw_chips:
             if not isinstance(chip, Mapping):
@@ -243,18 +274,30 @@ class LeagueAnalyticsService:
                 else:
                     wc2 = event_gw
             elif name == "freehit":
-                freehit = event_gw
+                if event_gw <= 19:
+                    fh1 = event_gw
+                else:
+                    fh2 = event_gw
             elif name in ("3xc", "triple_captain"):
-                triple_captain = event_gw
+                if event_gw <= 19:
+                    tc1 = event_gw
+                else:
+                    tc2 = event_gw
             elif name in ("bboost", "bench_boost"):
-                bench_boost = event_gw
+                if event_gw <= 19:
+                    bb1 = event_gw
+                else:
+                    bb2 = event_gw
 
         return RivalChipStatus(
             wc1=wc1,
             wc2=wc2,
-            freehit=freehit,
-            triple_captain=triple_captain,
-            bench_boost=bench_boost,
+            fh1=fh1,
+            fh2=fh2,
+            tc1=tc1,
+            tc2=tc2,
+            bb1=bb1,
+            bb2=bb2,
             active_chip=active_chip,
         )
 

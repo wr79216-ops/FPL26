@@ -25,6 +25,7 @@ from src.ui.components import (
     wrapped_chip_card,
     wrapped_metric_card,
 )
+from src.services.chip_strategy import get_chip_strategy_service
 from src.services.gameweek_wrapped import build_gameweek_wrapped, previous_completed_gameweek
 from src.services.league_analytics import get_league_analytics_service
 from src.services.squad_schedule_exposure import calculate_squad_schedule_exposure
@@ -579,15 +580,273 @@ def render_players(
         navigate_to("Player Detail")
 
 
-def render_recommendations(
-    players: pd.DataFrame, fixtures: pd.DataFrame, scoring: ScoringConfig
-) -> None:
-    del players, fixtures
-    page_header(
-        "Recommendation engine",
-        "A ranking you can interrogate.",
-        "Compare official position-relative scores and understand why each ranking appears.",
+def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
+    """Render data-driven chip deployment roadmap for Round 1 (GW 1–19)."""
+    service = st.session_state.get("chip_strategy_service")
+    if service is None:
+        service = get_chip_strategy_service()
+
+    # Determine current gameweek
+    ingestion = st.session_state.get("fpl_ingestion_service")
+    current_gw = 0
+    if ingestion is not None and hasattr(ingestion, "status_store"):
+        try:
+            current_gw = ingestion.status_store.load().current_gameweek or 0
+        except Exception:
+            current_gw = 0
+
+    if current_gw <= 0:
+        try:
+            boot = service.client.get_bootstrap()
+            for ev in boot.get("events", []):
+                if ev.get("is_current"):
+                    current_gw = int(ev["id"])
+                    break
+                if ev.get("is_next") and current_gw <= 0:
+                    current_gw = max(1, int(ev["id"]) - 1)
+        except Exception:
+            current_gw = 4
+
+    default_id = int(st.session_state.get("fpl_manager_id", 1158066))
+    col_id, col_btn = st.columns([1, 1.4])
+    with col_id:
+        manager_id = st.number_input(
+            "FPL Manager ID",
+            min_value=1,
+            value=default_id,
+            step=1,
+            help="Enter your FPL Manager ID to load your specific Round 1 chip usage history.",
+            key="chip_strat_mgr_id_input",
+        )
+    with col_btn:
+        st.caption("Synchronize active chip history with your official FPL profile.")
+        if st.button("Reload Chip Strategy", key="btn_reload_chip_strat"):
+            st.session_state["fpl_manager_id"] = int(manager_id)
+
+    st.session_state["fpl_manager_id"] = int(manager_id)
+
+    with st.spinner("Analyzing fixture swings, captain xP peaks, and clash schedules..."):
+        try:
+            report = service.generate_strategy_report(
+                manager_id=int(manager_id),
+                current_gw=current_gw,
+            )
+        except Exception as exc:
+            st.error(f"Failed to generate chip strategy report: {exc}")
+            return
+
+    # Section 1: Urgency Alert Box
+    inv = report.inventory
+    if inv.urgency_level == "CRITICAL":
+        st.error(inv.urgency_message)
+    elif inv.urgency_level == "HIGH":
+        st.warning(inv.urgency_message)
+    elif inv.urgency_level == "MODERATE":
+        st.info(inv.urgency_message)
+    else:
+        st.success(inv.urgency_message)
+
+    # Metric tiles
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        metric_tile(
+            "Round 1 Deadline",
+            "Gameweek 19",
+            "Use-it-or-lose-it rule",
+            "All unused Round 1 chips expire permanently when the GW 19 deadline passes.",
+        )
+    with m2:
+        metric_tile(
+            "Round 1 Inventory",
+            f"{inv.remaining_chips_count} of 4 Available",
+            f"{inv.used_chips_count} chips played so far",
+            "Each manager receives 4 chips for GW 1–19 (Wildcard 1, Free Hit 1, Triple Captain 1, Bench Boost 1).",
+        )
+    with m3:
+        metric_tile(
+            "GWs Remaining",
+            f"{inv.gws_until_expiry} Weeks Left",
+            f"Currently in GW {current_gw}",
+            "Number of gameweeks remaining in the first half of the season.",
+        )
+    with m4:
+        pace = inv.gws_until_expiry / max(1, inv.remaining_chips_count) if inv.remaining_chips_count > 0 else 0
+        pace_str = f"1 chip / {pace:.1f} GWs" if inv.remaining_chips_count > 0 else "All chips deployed!"
+        metric_tile(
+            "Required Pace",
+            pace_str,
+            "Max 1 chip per gameweek",
+            "Average spacing required to safely deploy all remaining Round 1 chips before the GW 19 deadline.",
+        )
+
+    # Section 2: Chip Inventory Badges
+    section_heading(
+        "Round 1 Chip Ammunition Status",
+        f"Manager ID {manager_id} · Gameweek 1–19 Allocation",
+        "Official status of all 4 chips allocated for the first half of the season.",
     )
+
+    badge_cols = st.columns(4)
+    chips_meta = [
+        ("Wildcard 1", inv.wc1_gw, "Unlimited permanent transfers until deadline"),
+        ("Triple Captain 1", inv.tc1_gw, "Armband points multiplied by 3×"),
+        ("Free Hit 1", inv.fh1_gw, "Unlimited transfers for 1 gameweek only"),
+        ("Bench Boost 1", inv.bb1_gw, "Points scored by all 15 squad players"),
+    ]
+    for idx, (c_label, c_gw, c_desc) in enumerate(chips_meta):
+        with badge_cols[idx]:
+            if c_gw is not None:
+                st.markdown(
+                    f"""
+                    <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:12px; text-align:center;">
+                        <div style="color:#8b95a5; font-size:0.75rem; text-transform:uppercase; font-weight:700;">{c_label}</div>
+                        <div style="color:#fca5a5; font-size:1.15rem; font-weight:800; margin:4px 0;">USED IN GW {c_gw}</div>
+                        <div style="color:#8b95a5; font-size:0.72rem;">{c_desc}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f"""
+                    <div style="background:rgba(24,245,155,0.1); border:1px solid rgba(24,245,155,0.3); border-radius:10px; padding:12px; text-align:center;">
+                        <div style="color:#8b95a5; font-size:0.75rem; text-transform:uppercase; font-weight:700;">{c_label}</div>
+                        <div style="color:#18f59b; font-size:1.15rem; font-weight:800; margin:4px 0;">AVAILABLE</div>
+                        <div style="color:#8b95a5; font-size:0.72rem;">Must use before GW 19</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+    # Section 3: AI Master Plan
+    if report.master_plan:
+        section_heading(
+            "AI Recommended Master Plan",
+            f"{len(report.master_plan)} unplayed chips scheduled without conflict",
+            "Optimal gameweek deployment based on fixture swings, international break gaps, captain xP peaks, and clash index.",
+        )
+        plan_cols = st.columns(len(report.master_plan))
+        for idx, plan_item in enumerate(report.master_plan):
+            with plan_cols[idx]:
+                alt_txt = f"<br><span style='color:#8b95a5; font-size:0.72rem;'>Backup: GW {plan_item.alternative_gw}</span>" if plan_item.alternative_gw else ""
+                st.markdown(
+                    f"""
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(24,245,155,0.3); border-radius:12px; padding:14px; height:100%;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="background:rgba(24,245,155,0.2); color:#18f59b; padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:800;">{plan_item.chip_label}</span>
+                            <span style="color:#ffcf5c; font-weight:800; font-size:0.85rem;">Score {plan_item.suitability_score:.0f}/100</span>
+                        </div>
+                        <div style="font-size:1.05rem; font-weight:800; color:#fff; margin-bottom:6px;">{escape(plan_item.headline)}</div>
+                        <div style="color:#c9d1d9; font-size:0.8rem; line-height:1.35; margin-bottom:8px;">{escape(plan_item.rationale)}</div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:6px; color:#8b95a5; font-size:0.72rem;">
+                            <strong>Contingency:</strong> {escape(plan_item.contingency_note)}{alt_txt}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+    else:
+        st.success("All Round 1 chips have been played! You are ready for Round 2 in GW 20.")
+
+    # Section 4: Gameweek Suitability Heatmap Table
+    section_heading(
+        f"Gameweek Suitability Calendar (GW {current_gw}–19)",
+        "Comprehensive radar across all 4 chips",
+        "Analyze suitability scores (0–100) and rationale for each upcoming gameweek in the first half of the season.",
+    )
+
+    _CAL_CSS = """
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: transparent; font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; color: #e0e6ed; }
+        .wrap { overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
+        thead tr { background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        thead th { padding: 10px 8px; color: #8b95a5; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.06em; font-weight: 600; white-space: nowrap; }
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+        tbody tr:hover { background: rgba(255,255,255,0.03); }
+        td { padding: 8px; vertical-align: middle; }
+        .score-high { background: rgba(24,245,155,0.16); border: 1px solid rgba(24,245,155,0.35); border-radius: 6px; color: #18f59b; display: inline-block; font-size: 0.73rem; font-weight: 800; padding: 2px 6px; }
+        .score-mid { background: rgba(255,207,92,0.15); border: 1px solid rgba(255,207,92,0.35); border-radius: 6px; color: #ffcf5c; display: inline-block; font-size: 0.73rem; font-weight: 800; padding: 2px 6px; }
+        .score-low { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #8b95a5; display: inline-block; font-size: 0.73rem; font-weight: 700; padding: 2px 6px; }
+        .tag-ib { background: rgba(139,92,246,0.2); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.4); border-radius: 4px; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; margin-top: 3px; display: inline-block; }
+        .tag-festive { background: rgba(239,68,68,0.18); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); border-radius: 4px; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; margin-top: 3px; display: inline-block; }
+        .reason-text { font-size: 0.73rem; color: #8b95a5; margin-top: 2px; line-height: 1.25; }
+        .center { text-align: center; }
+        .bold { font-weight: 800; }
+    </style>
+    """
+
+    def _score_badge(score: float) -> str:
+        if score >= 75:
+            return f'<span class="score-high">{score:.0f}</span>'
+        if score >= 55:
+            return f'<span class="score-mid">{score:.0f}</span>'
+        return f'<span class="score-low">{score:.0f}</span>'
+
+    cal_rows_html = []
+    for c in report.suitability_matrix:
+        tags_html = ""
+        if c.is_international_break:
+            tags_html += '<br><span class="tag-ib">🌍 Pasca-IB</span>'
+        if c.is_festive_period:
+            tags_html += '<br><span class="tag-festive">🎄 Festive Rotation</span>'
+
+        cal_rows_html.append(f"""
+        <tr>
+            <td class="bold center" style="white-space:nowrap; width:90px;">
+                GW {c.gameweek}<br>
+                <span style="font-size:0.68rem; color:#8b95a5; font-weight:400;">{c.deadline_display}</span>
+                {tags_html}
+            </td>
+            <td style="width:22%;">
+                {_score_badge(c.wc_score)}
+                <div class="reason-text">{escape(c.wc_reason)}</div>
+            </td>
+            <td style="width:24%;">
+                {_score_badge(c.tc_score)} <strong style="color:#ffcf5c; font-size:0.75rem;">{escape(c.tc_captain_pick)}</strong>
+                <div class="reason-text">{escape(c.tc_reason)}</div>
+            </td>
+            <td style="width:24%;">
+                {_score_badge(c.fh_score)}
+                <div class="reason-text">{escape(c.fh_reason)}</div>
+            </td>
+            <td style="width:24%;">
+                {_score_badge(c.bb_score)}
+                <div class="reason-text">{escape(c.bb_reason)}</div>
+            </td>
+        </tr>""")
+
+    num_cal_rows = len(report.suitability_matrix)
+    cal_height = min(62 + num_cal_rows * 65, 1200)
+
+    cal_table_html = f"""{_CAL_CSS}
+    <div class="wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th class="center">Gameweek</th>
+                    <th>Wildcard 1 (WC1)</th>
+                    <th>Triple Captain 1 (TC1)</th>
+                    <th>Free Hit 1 (FH1)</th>
+                    <th>Bench Boost 1 (BB1)</th>
+                </tr>
+            </thead>
+            <tbody>{''.join(cal_rows_html)}</tbody>
+        </table>
+    </div>
+    """
+    import streamlit.components.v1 as stc
+    stc.html(cal_table_html, height=cal_height, scrolling=True)
+
+    # Section 5: Strategic Takeaways & Pro Rules
+    if report.key_takeaways:
+        with st.expander("📌 Official FPL Rules & Strategic Insights", expanded=True):
+            for t in report.key_takeaways:
+                st.markdown(f" • {t}")
+
+
+def _render_player_recommendations_content(scoring: ScoringConfig) -> None:
     service = st.session_state.get("recommendation_engine_service")
     if service is None:
         render_empty_state("Recommendation engine unavailable", "Reopen the app to initialize the recommendation engine.")
@@ -812,6 +1071,28 @@ def render_recommendations(
             "reason": st.column_config.TextColumn("Top reasons", help="The two weighted components contributing most to this player's score."),
         },
     )
+
+
+def render_recommendations(
+    players: pd.DataFrame, fixtures: pd.DataFrame, scoring: ScoringConfig
+) -> None:
+    del players, fixtures
+    page_header(
+        "Recommendation engine",
+        "Rankings & Chip Deployment Radar",
+        "Explore official player rankings and data-driven chip deployment roadmap for Round 1 (GW 1–19).",
+    )
+
+    tab_players, tab_chips = st.tabs([
+        "⭐ Player Recommendations",
+        "🎯 Chip Strategy & Timing Radar (GW 1–19)",
+    ])
+
+    with tab_players:
+        _render_player_recommendations_content(scoring)
+
+    with tab_chips:
+        render_chip_strategy_tab(scoring)
 
 
 def render_fixtures(

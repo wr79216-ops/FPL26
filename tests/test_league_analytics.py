@@ -118,10 +118,16 @@ def test_parse_entry_chips_distinguishes_wc1_and_wc2() -> None:
     assert status.wc1 == 4  # GW <= 19 is WC1
     assert status.wc2 == 24  # GW >= 20 is WC2
     assert status.triple_captain == 7
+    assert status.tc1 == 7
     assert status.bench_boost == 32
+    assert status.bb2 == 32
     assert status.freehit is None
     assert status.total_used == 4
-    assert status.total_remaining == 1
+    assert status.total_remaining == 4  # 8 - 4
+    assert status.round_1_used == 2
+    assert status.round_1_remaining == 2
+    assert status.round_2_used == 2
+    assert status.round_2_remaining == 2
 
 
 def test_analyze_classic_league_calculates_metrics_and_standings() -> None:
@@ -216,7 +222,7 @@ def test_analyze_classic_league_calculates_metrics_and_standings() -> None:
     # Chip Summary
     assert report.chip_summary.total_teams == 2
     assert report.chip_summary.wc1_used_pct == 50.0  # 1 of 2
-    assert report.chip_summary.user_chips_remaining == 5  # 0 used
+    assert report.chip_summary.user_chips_remaining == 8  # 0 used out of 8
     assert report.chip_summary.user_chip_advantage > 0
 
     # Run rate needed (20 points behind with 35 GWs left)
@@ -292,5 +298,5 @@ def test_compare_teams_detects_shield_and_differentials() -> None:
     assert comp.rival_differentials == ("Isak", "Palmer")
     assert comp.user_bank == 1.5
     assert comp.rival_bank == 0.5
-    assert comp.user_chips.total_remaining == 5
-    assert comp.rival_chips.total_remaining == 4
+    assert comp.user_chips.total_remaining == 8
+    assert comp.rival_chips.total_remaining == 7

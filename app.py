@@ -11,6 +11,7 @@ from config.settings import PROJECT_ROOT, ensure_directories, load_app_settings,
 from src.services.advanced_planner import get_advanced_planner_service
 from src.services.application import initialize_core
 from src.services.backtesting import get_backtesting_service
+from src.services.chip_strategy import get_chip_strategy_service
 from src.services.decision_tools import get_decision_tools_service
 from src.services.fixture_analytics import get_fixture_analytics_service
 from src.services.fpl_ingestion import get_fpl_ingestion_service
@@ -54,6 +55,7 @@ def main() -> None:
     st.session_state["decision_tools_service"] = get_decision_tools_service()
     st.session_state["advanced_planner_service"] = get_advanced_planner_service()
     st.session_state["league_analytics_service"] = get_league_analytics_service()
+    st.session_state["chip_strategy_service"] = get_chip_strategy_service()
     st.session_state["schedule_congestion_service"] = get_schedule_congestion_service()
     st.session_state["set_piece_insights_service"] = get_set_piece_insights_service()
 
