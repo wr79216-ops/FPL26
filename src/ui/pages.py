@@ -3250,10 +3250,15 @@ def render_league_rivals(
             "Posisi resmi kamu di mini-league ini.",
         )
     with m2:
+        m2_sub = (
+            f"Top {report.chip_summary.total_teams} rival dianalisa"
+            if total_teams_display > report.chip_summary.total_teams
+            else f"{report.chip_summary.total_teams} rival dianalisa"
+        )
         metric_tile(
             "Wildcard 1 Terpakai",
             f"{report.chip_summary.wc1_used_pct:.0f}%",
-            f"{report.chip_summary.total_teams} rival dianalisa",
+            m2_sub,
             "Persentase rival di liga ini yang sudah mengaktifkan Wildcard 1 (GW 1–19).",
         )
     with m3:
@@ -3618,11 +3623,23 @@ def render_league_rivals(
     stc.html(chip_matrix_html, height=chip_iframe_height, scrolling=True)
 
     if report.captain_distribution:
-        section_heading(
-            "Radar Pilihan Kapten Mini-League",
-            f"Pilihan armband GW {current_gw} dari {len(report.standings)} rival",
-            "Konsentrasi armband di mini-league kamu untuk membaca risiko Effective Ownership (EO) lokal.",
-        )
+        total_in_league = report.total_league_teams or len(report.standings)
+        analyzed_count = len(report.standings)
+        if total_in_league > analyzed_count:
+            radar_title = f"Radar Pilihan Kapten (Top {analyzed_count} Rival)"
+            radar_sub = f"Pilihan armband GW {current_gw} dari Top {analyzed_count} tim teratas (dari total {total_in_league:,} tim di liga)"
+            radar_desc = "Konsentrasi armband di papan atas mini-league kamu untuk membaca risiko Effective Ownership (EO) lokal."
+            radar_note = f"💡 *Catatan: Pilihan kapten dianalisa dari Top {analyzed_count} tim teratas sebagai sampel persaingan papan atas liga. Karena FPL API mewajibkan 1 request jaringan terpisah untuk setiap tim manajer, pembatasan ini menjaga aplikasi tetap cepat dan mencegah pemblokiran request (rate limit) dari server resmi FPL jika harus menarik seluruh {total_in_league:,} tim.*"
+        else:
+            radar_title = "Radar Pilihan Kapten Mini-League"
+            radar_sub = f"Pilihan armband GW {current_gw} dari seluruh {analyzed_count} rival di liga"
+            radar_desc = "Konsentrasi armband di mini-league kamu untuk membaca risiko Effective Ownership (EO) lokal."
+            radar_note = None
+
+        section_heading(radar_title, radar_sub, radar_desc)
+        if radar_note:
+            st.caption(radar_note)
+
         total_caps = sum(report.captain_distribution.values())
         top_caps = list(report.captain_distribution.items())[:4]
         cap_cols = st.columns(min(len(top_caps), 4))
