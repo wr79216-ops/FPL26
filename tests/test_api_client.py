@@ -146,3 +146,42 @@ def test_raw_store_loads_the_newest_valid_snapshot(tmp_path) -> None:
     assert first.exists()
     assert second.exists()
     assert store.load_latest("bootstrap") == {"events": [{"id": 2}]}
+
+
+def test_entry_history_fetches_and_caches_chips() -> None:
+    session = FakeSession({"chips": [{"name": "wildcard", "event": 3}], "current": []})
+    client = FPLClient(session=session)
+
+    result = client.get_entry_history(1158066)
+    assert len(result["chips"]) == 1
+    assert result["chips"][0]["name"] == "wildcard"
+
+    # Second call should use cache
+    client.get_entry_history(1158066)
+    assert len(session.calls) == 1
+
+
+def test_classic_league_standings_validates_and_caches() -> None:
+    session = FakeSession({"league": {"id": 123}, "standings": {"results": []}})
+    client = FPLClient(session=session)
+
+    result = client.get_classic_league_standings(123, page=1)
+    assert result["league"]["id"] == 123
+    assert "standings" in result
+
+    # Second call hits cache
+    client.get_classic_league_standings(123, page=1)
+    assert len(session.calls) == 1
+    assert "leagues-classic/123/standings/" in session.calls[0][0]
+
+
+def test_h2h_league_standings_validates_and_caches() -> None:
+    session = FakeSession({"league": {"id": 456}, "standings": {"results": []}})
+    client = FPLClient(session=session)
+
+    result = client.get_h2h_league_standings(456, page=1)
+    assert result["league"]["id"] == 456
+
+    client.get_h2h_league_standings(456, page=1)
+    assert len(session.calls) == 1
+    assert "leagues-h2h/456/standings/" in session.calls[0][0]

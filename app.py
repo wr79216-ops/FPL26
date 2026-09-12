@@ -15,6 +15,7 @@ from src.services.decision_tools import get_decision_tools_service
 from src.services.fixture_analytics import get_fixture_analytics_service
 from src.services.fpl_ingestion import get_fpl_ingestion_service
 from src.services.historical_data import get_historical_data_service
+from src.services.league_analytics import get_league_analytics_service
 from src.services.player_analytics import get_player_analytics_service
 from src.services.recommendation_engine import get_recommendation_engine_service
 from src.services.schedule_congestion import get_schedule_congestion_service
@@ -52,6 +53,7 @@ def main() -> None:
     st.session_state["recommendation_engine_service"] = get_recommendation_engine_service()
     st.session_state["decision_tools_service"] = get_decision_tools_service()
     st.session_state["advanced_planner_service"] = get_advanced_planner_service()
+    st.session_state["league_analytics_service"] = get_league_analytics_service()
     st.session_state["schedule_congestion_service"] = get_schedule_congestion_service()
     st.session_state["set_piece_insights_service"] = get_set_piece_insights_service()
 

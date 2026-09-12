@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from datetime import datetime, timezone
+from html import escape
 from typing import Callable, Dict
 
 import pandas as pd
@@ -25,6 +26,7 @@ from src.ui.components import (
     wrapped_metric_card,
 )
 from src.services.gameweek_wrapped import build_gameweek_wrapped, previous_completed_gameweek
+from src.services.league_analytics import get_league_analytics_service
 from src.services.squad_schedule_exposure import calculate_squad_schedule_exposure
 from src.services.schedule_backtesting import current_team_priority_adjustments
 from src.services.set_piece_insights import SetPieceInsightsService
@@ -1816,10 +1818,11 @@ def render_advanced_planner(
     )
     import_controls = st.columns([1, 1.4])
     with import_controls[0]:
+        default_manager_id = int(st.session_state.get("fpl_manager_id", 1))
         manager_id = st.number_input(
             "Public FPL manager ID",
             min_value=1,
-            value=1,
+            value=default_manager_id,
             step=1,
             help="Numeric ID from the manager's official fantasy.premierleague.com URL. No login or credential is required.",
         )
@@ -1827,6 +1830,7 @@ def render_advanced_planner(
         st.caption("Optional: import a current squad before building the wildcard comparison.")
         import_squad = st.button("Import public official squad")
     if import_squad:
+        st.session_state["fpl_manager_id"] = int(manager_id)
         try:
             with st.spinner("Loading the public squad from official FPL..."):
                 imported = service.import_public_squad(int(manager_id), horizon)
@@ -1845,6 +1849,12 @@ def render_advanced_planner(
     if st.session_state.get("advanced_imported_horizon") != horizon:
         imported = None
     if imported is not None:
+        league_shortcut_cols = st.columns([3, 1])
+        with league_shortcut_cols[1]:
+            if st.button("🏆 View Leagues & Rival Chips →", key="btn_goto_leagues", help="Inspect your mini-leagues and rival chip usage"):
+                st.session_state["fpl_manager_id"] = int(imported.manager_id)
+                navigate_to("League & Rivals")
+
         imported_metrics = st.columns(4)
         with imported_metrics[0]:
             metric_tile("Team", imported.team_name, imported.manager_name)
@@ -2765,6 +2775,376 @@ def render_data_status(
         st.json(scoring.position_weights)
 
 
+def render_league_rivals(
+    players: pd.DataFrame,
+    fixtures: pd.DataFrame,
+    scoring: ScoringConfig,
+) -> None:
+    """Render official mini-league standings with live rival chip tracking."""
+    service = st.session_state.get("league_analytics_service")
+    if service is None:
+        service = get_league_analytics_service()
+
+    ingestion = st.session_state.get("fpl_ingestion_service")
+    current_gw = 0
+    if ingestion is not None:
+        status = ingestion.get_status()
+        current_gw = status.current_gameweek or 0
+
+    page_header(
+        "Mini-League & Rival Scout",
+        "League Standings & Chip Tracker",
+        "Track your mini-leagues, monitor rival chip usage (WC1, WC2, FH, TC, BB), captain choices, and calculate run-rate point gaps.",
+    )
+
+    section_heading(
+        "Manager entry",
+        "Public official FPL profile",
+        "Enter your public FPL manager ID to discover all classic and head-to-head mini-leagues.",
+    )
+
+    col_input, col_action = st.columns([1, 1.4])
+    default_id = int(st.session_state.get("fpl_manager_id", 1158066))
+    with col_input:
+        manager_id = st.number_input(
+            "FPL Manager ID",
+            min_value=1,
+            value=default_id,
+            step=1,
+            help="Numeric ID from your official fantasy.premierleague.com URL.",
+            key="league_manager_id_input",
+        )
+    with col_action:
+        st.caption("Fetch joined leagues directly from the official FPL profile endpoint.")
+        load_leagues = st.button("Load Manager Leagues", type="primary", key="btn_load_leagues")
+
+    should_load = (
+        load_leagues
+        or "discovered_leagues" not in st.session_state
+        or st.session_state.get("league_active_manager_id") != int(manager_id)
+    )
+
+    if should_load:
+        st.session_state["fpl_manager_id"] = int(manager_id)
+        with st.spinner("Fetching leagues from official FPL..."):
+            try:
+                leagues = service.get_manager_leagues(int(manager_id))
+                entry_info = service.client.get_entry(int(manager_id))
+                st.session_state["discovered_leagues"] = leagues
+                st.session_state["discovered_entry_info"] = entry_info
+                st.session_state["league_active_manager_id"] = int(manager_id)
+            except Exception as exc:
+                st.error(f"Failed to fetch manager profile: {exc}")
+                return
+
+    leagues = st.session_state.get("discovered_leagues", ())
+    entry_info = st.session_state.get("discovered_entry_info", {})
+
+    if not leagues:
+        render_empty_state("No leagues found", "This manager ID has not joined any public or private leagues.")
+        return
+
+    mgr_name = f"{entry_info.get('player_first_name', '')} {entry_info.get('player_last_name', '')}".strip()
+    team_name = entry_info.get("name", "Unknown team")
+    overall_rank = entry_info.get("summary_overall_rank")
+    overall_pts = entry_info.get("summary_overall_points")
+    rank_disp = f"#{overall_rank:,}" if overall_rank else "-"
+
+    st.markdown(
+        f"""
+        <div class="sample-banner" style="margin-top: 0.5rem; margin-bottom: 1.2rem;">
+            <div>
+                <strong>Manager:</strong> {escape(mgr_name)} &nbsp;·&nbsp; 
+                <strong>Team:</strong> {escape(team_name)} &nbsp;·&nbsp; 
+                <strong>Overall Rank:</strong> {rank_disp} &nbsp;·&nbsp; 
+                <strong>Total Points:</strong> {overall_pts or 0}
+            </div>
+            <span class="sample-chip">ID {manager_id}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    private_leagues = [l for l in leagues if l.is_private]
+    broad_leagues = [l for l in leagues if not l.is_private]
+
+    section_heading(
+        "Select league to inspect",
+        f"{len(private_leagues)} private mini-leagues · {len(broad_leagues)} broad leagues",
+        "Choose a league to analyze standings, chip usage, and captain choices.",
+    )
+
+    tab_priv, tab_broad = st.tabs([
+        f"🏆 Private Mini-Leagues ({len(private_leagues)})",
+        f"🌐 Broad Leagues ({len(broad_leagues)})",
+    ])
+
+    selected_league = None
+
+    with tab_priv:
+        if private_leagues:
+            league_options = {
+                f"{l.name} (Rank: #{l.entry_rank or '-'})": l for l in private_leagues
+            }
+            choice = st.selectbox(
+                "Choose private mini-league",
+                options=list(league_options.keys()),
+                key="select_priv_league",
+            )
+            selected_league = league_options[choice]
+        else:
+            st.info("No private mini-leagues found for this manager.")
+
+    with tab_broad:
+        if broad_leagues:
+            broad_options = {
+                f"{l.name} (Rank: #{l.entry_rank or '-'})": l for l in broad_leagues
+            }
+            choice_broad = st.selectbox(
+                "Choose broad / public league",
+                options=list(broad_options.keys()),
+                key="select_broad_league",
+            )
+            if not private_leagues:
+                selected_league = broad_options[choice_broad]
+            elif st.checkbox("Analyze this broad league instead", key="chk_broad_instead"):
+                selected_league = broad_options[choice_broad]
+        else:
+            st.info("No broad leagues found.")
+
+    if selected_league is None:
+        return
+
+    st.divider()
+    with st.spinner(f"Analyzing {selected_league.name} standings and rival chips..."):
+        try:
+            report = service.analyze_classic_league(
+                league_id=selected_league.id,
+                user_entry_id=int(manager_id),
+                current_gameweek=current_gw,
+                page=1,
+                max_teams_to_enrich=50,
+            )
+        except Exception as exc:
+            st.error(f"Failed to analyze league {selected_league.name}: {exc}")
+            return
+
+    user_row = next((r for r in report.standings if r.is_user), None)
+    user_rank_str = f"#{user_row.rank}" if user_row else f"#{selected_league.entry_rank or '-'}"
+    rank_change_txt = ""
+    if user_row and user_row.last_rank > 0:
+        chg = user_row.rank_change
+        if chg > 0:
+            rank_change_txt = f"▲ +{chg} from last week"
+        elif chg < 0:
+            rank_change_txt = f"▼ {chg} from last week"
+        else:
+            rank_change_txt = "No rank change"
+
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        metric_tile(
+            "League Rank",
+            user_rank_str,
+            rank_change_txt or f"Total {report.chip_summary.total_teams} teams",
+            "Your official standing in this mini-league.",
+        )
+    with m2:
+        metric_tile(
+            "Wildcard 1 Burnt",
+            f"{report.chip_summary.wc1_used_pct:.0f}%",
+            f"{report.chip_summary.total_teams} rivals analyzed",
+            "Percentage of rivals in this league that have already activated Wildcard 1 (GW 1–19).",
+        )
+    with m3:
+        tc_rem = 100 - report.chip_summary.tc_used_pct
+        metric_tile(
+            "Triple Captain Armed",
+            f"{tc_rem:.0f}%",
+            f"BB armed: {100 - report.chip_summary.bb_used_pct:.0f}%",
+            "Percentage of rivals still holding their Triple Captain and Bench Boost chips.",
+        )
+    with m4:
+        if report.run_rate_needed is not None and report.run_rate_needed > 0:
+            pts_behind = report.leader_points - report.user_points
+            metric_tile(
+                "Catch-Up Pace",
+                f"+{report.run_rate_needed:.1f} pts/GW",
+                f"{pts_behind} pts behind leader #{1}",
+                "Required average point gain per remaining gameweek to catch the league leader.",
+            )
+        else:
+            adv = report.chip_summary.user_chip_advantage
+            adv_str = f"{adv:+.1f} chips"
+            metric_tile(
+                "Tactical Advantage",
+                adv_str,
+                f"{report.chip_summary.user_chips_remaining} chips left vs {report.chip_summary.avg_rival_chips_remaining:.1f} avg",
+                "How many more chips you have saved compared to the league average.",
+            )
+
+    section_heading(
+        "Standings & Rival Chip Matrix",
+        f"{report.league_name} · Top {len(report.standings)} teams",
+        "Real-time chip tracking for each rival. Badges indicate gameweek played, ACTIVE if active this week, or Available.",
+    )
+
+    def _chip_cell(chip_gw: Optional[int], is_active: bool) -> str:
+        if is_active:
+            return '<span class="chip-badge-active">ACTIVE</span>'
+        if chip_gw is not None:
+            return f'<span class="chip-badge-used">GW {chip_gw}</span>'
+        return '<span class="chip-badge-avail">Available</span>'
+
+    table_rows_html = []
+    for row in report.standings:
+        is_me = row.is_user
+        bg_style = 'background: rgba(24, 245, 155, 0.08); border-left: 3px solid #18f59b;' if is_me else ''
+        me_badge = ' <span style="background:rgba(24,245,155,0.25); color:#18f59b; padding:2px 6px; border-radius:4px; font-size:0.68rem; font-weight:800;">YOU</span>' if is_me else ''
+
+        diff_str = f"{row.points_diff_from_user:+d}" if not is_me and user_row else "-"
+        if not is_me and user_row and row.points_diff_from_user > 0:
+            diff_badge = f'<span style="color:#ff7a90">{diff_str}</span>'
+        elif not is_me and user_row and row.points_diff_from_user < 0:
+            diff_badge = f'<span style="color:#18f59b">{diff_str}</span>'
+        else:
+            diff_badge = f'<span style="color:var(--muted)">{diff_str}</span>'
+
+        gap_lead = f"-{row.points_behind_leader}" if row.points_behind_leader > 0 else "Leader"
+
+        cap_cell = "-"
+        if row.captain_name:
+            mult_txt = f" ({row.captain_multiplier}x)" if row.captain_multiplier > 1 else ""
+            cap_cell = f'<span class="captain-tag">{escape(row.captain_name)}{mult_txt}</span>'
+
+        wc1_cell = _chip_cell(row.chips.wc1, row.active_chip == "wildcard" and current_gw <= 19)
+        wc2_cell = _chip_cell(row.chips.wc2, row.active_chip == "wildcard" and current_gw >= 20)
+        fh_cell = _chip_cell(row.chips.freehit, row.active_chip == "freehit")
+        tc_cell = _chip_cell(row.chips.triple_captain, row.active_chip in ("3xc", "triple_captain"))
+        bb_cell = _chip_cell(row.chips.bench_boost, row.active_chip in ("bboost", "bench_boost"))
+
+        table_rows_html.append(f"""
+        <tr style="{bg_style}">
+            <td style="font-weight:700; text-align:center; padding: 8px;">{row.rank}</td>
+            <td style="padding: 8px;">
+                <strong>{escape(row.team_name)}</strong>{me_badge}<br>
+                <span style="color:var(--muted); font-size:0.75rem;">{escape(row.manager_name)}</span>
+            </td>
+            <td style="font-weight:800; text-align:center; padding: 8px;">{row.total_points}</td>
+            <td style="text-align:center; color:var(--muted); padding: 8px;">{row.event_points}</td>
+            <td style="text-align:center; color:#ffcf5c; font-size:0.8rem; padding: 8px;">{gap_lead}</td>
+            <td style="text-align:center; font-size:0.8rem; padding: 8px;">{diff_badge}</td>
+            <td style="text-align:center; padding: 8px;">{cap_cell}</td>
+            <td style="text-align:center; padding: 8px;">{wc1_cell}</td>
+            <td style="text-align:center; padding: 8px;">{wc2_cell}</td>
+            <td style="text-align:center; padding: 8px;">{fh_cell}</td>
+            <td style="text-align:center; padding: 8px;">{tc_cell}</td>
+            <td style="text-align:center; padding: 8px;">{bb_cell}</td>
+        </tr>
+        """)
+
+    full_table_html = f"""
+    <div style="overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.5rem;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.83rem; text-align: left;">
+            <thead>
+                <tr style="background: rgba(255,255,255,0.04); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em;">
+                    <th style="padding: 10px; text-align:center;">#</th>
+                    <th style="padding: 10px;">Team & Manager</th>
+                    <th style="padding: 10px; text-align:center;">Total</th>
+                    <th style="padding: 10px; text-align:center;">GW</th>
+                    <th style="padding: 10px; text-align:center;">Gap #1</th>
+                    <th style="padding: 10px; text-align:center;">vs You</th>
+                    <th style="padding: 10px; text-align:center;">Captain</th>
+                    <th style="padding: 10px; text-align:center;">WC 1</th>
+                    <th style="padding: 10px; text-align:center;">WC 2</th>
+                    <th style="padding: 10px; text-align:center;">Free Hit</th>
+                    <th style="padding: 10px; text-align:center;">Triple C</th>
+                    <th style="padding: 10px; text-align:center;">Bench B</th>
+                </tr>
+            </thead>
+            <tbody>
+                {''.join(table_rows_html)}
+            </tbody>
+        </table>
+    </div>
+    """
+    st.markdown(full_table_html, unsafe_allow_html=True)
+
+    if report.captain_distribution:
+        section_heading(
+            "Mini-League Captaincy Radar",
+            f"GW {current_gw} armband choices across {len(report.standings)} rivals",
+            "Armband concentration inside your mini-league to measure local Effective Ownership (EO) risk.",
+        )
+        total_caps = sum(report.captain_distribution.values())
+        top_caps = list(report.captain_distribution.items())[:4]
+        cap_cols = st.columns(min(len(top_caps), 4))
+        for idx, (cap_name, cap_cnt) in enumerate(top_caps):
+            pct = round(100 * cap_cnt / max(1, total_caps), 1)
+            with cap_cols[idx]:
+                metric_tile(
+                    f"Captain Pick #{idx + 1}",
+                    f"{cap_name}",
+                    f"{cap_cnt} rivals ({pct}%)",
+                )
+
+    rival_candidates = [r for r in report.standings if not r.is_user]
+    if rival_candidates and current_gw > 0:
+        section_heading(
+            "Rival 1-on-1 Scout",
+            "Direct squad comparison",
+            "Select any rival to inspect common shield players, differentials, captain clash, and chip reserve.",
+        )
+        rival_map = {f"Rank #{r.rank} - {r.team_name} ({r.manager_name})": r.entry_id for r in rival_candidates}
+        chosen_rival_label = st.selectbox("Select rival to compare:", options=list(rival_map.keys()), key="rival_compare_select")
+        chosen_rival_id = rival_map[chosen_rival_label]
+
+        with st.spinner("Scouting rival squad..."):
+            try:
+                comp = service.compare_teams(
+                    user_entry_id=int(manager_id),
+                    rival_entry_id=chosen_rival_id,
+                    gameweek=current_gw,
+                )
+                comp_cols = st.columns(4)
+                with comp_cols[0]:
+                    metric_tile("Your Captain", comp.user_captain, comp.user_active_chip or "No active chip")
+                with comp_cols[1]:
+                    metric_tile("Rival Captain", comp.rival_captain, comp.rival_active_chip or "No active chip")
+                with comp_cols[2]:
+                    metric_tile("Squad Value", f"£{comp.user_cost:.1f}m vs £{comp.rival_cost:.1f}m", f"Bank: £{comp.user_bank:.1f}m vs £{comp.rival_bank:.1f}m")
+                with comp_cols[3]:
+                    metric_tile("Chips Remaining", f"{comp.user_chips.total_remaining} vs {comp.rival_chips.total_remaining}", "Arsenal of unused chips")
+
+                diff_c1, diff_c2, diff_c3 = st.columns(3)
+                with diff_c1:
+                    st.markdown(f"**🛡️ Common Shield ({len(comp.shared_players)} players)**")
+                    st.caption("Points here cancel out between you and this rival.")
+                    if comp.shared_players:
+                        st.markdown(" • " + "<br> • ".join(escape(p) for p in comp.shared_players), unsafe_allow_html=True)
+                    else:
+                        st.write("No shared players.")
+
+                with diff_c2:
+                    st.markdown(f"**⚔️ Your Weapons ({len(comp.user_differentials)} players)**")
+                    st.caption("Players only you own to gain ground.")
+                    if comp.user_differentials:
+                        st.markdown(" • " + "<br> • ".join(escape(p) for p in comp.user_differentials), unsafe_allow_html=True)
+                    else:
+                        st.write("None.")
+
+                with diff_c3:
+                    st.markdown(f"**⚠️ Rival Threats ({len(comp.rival_differentials)} players)**")
+                    st.caption("Rival differentials that pose risk to your rank.")
+                    if comp.rival_differentials:
+                        st.markdown(" • " + "<br> • ".join(escape(p) for p in comp.rival_differentials), unsafe_allow_html=True)
+                    else:
+                        st.write("None.")
+
+            except Exception as exc:
+                st.info(f"Rival squad scout unavailable: {exc}")
+
+
 PAGE_RENDERERS: Dict[str, PageRenderer] = {
     "Dashboard": render_dashboard,
     "Players": render_players,
@@ -2775,5 +3155,6 @@ PAGE_RENDERERS: Dict[str, PageRenderer] = {
     "Backtesting": render_backtesting,
     "Decision Tools": render_decision_tools,
     "Advanced Planner": render_advanced_planner,
+    "League & Rivals": render_league_rivals,
     "Data Status": render_data_status,
 }

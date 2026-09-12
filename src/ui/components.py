@@ -22,6 +22,7 @@ NAV_ITEMS = (
     "Player Detail",
     "Compare",
     "Advanced Planner",
+    "League & Rivals",
     "Decision Tools",
     "Backtesting",
     "Data Status",

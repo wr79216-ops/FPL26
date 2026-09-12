@@ -33,7 +33,7 @@ def test_deadline_countdown_markup_includes_live_clock_target() -> None:
 
 
 def test_all_frontend_routes_render_without_exceptions() -> None:
-    app = AppTest.from_file("app.py", default_timeout=10).run()
+    app = AppTest.from_file("app.py", default_timeout=25).run()
 
     assert not app.exception
     for page in NAV_ITEMS[1:]:

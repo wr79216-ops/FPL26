@@ -256,6 +256,77 @@ def apply_theme() -> None:
                 min-width: 0 !important;
             }
         }
+        /* Mini-League & Rival Chip Intelligence Styles */
+        .chip-badge-used {
+            background: rgba(239, 68, 68, 0.18);
+            border: 1px solid rgba(239, 68, 68, 0.38);
+            border-radius: 6px;
+            color: #fca5a5;
+            display: inline-block;
+            font-size: 0.74rem;
+            font-weight: 700;
+            padding: 0.18rem 0.45rem;
+            letter-spacing: 0.03em;
+        }
+        .chip-badge-avail {
+            background: rgba(24, 245, 155, 0.14);
+            border: 1px solid rgba(24, 245, 155, 0.32);
+            border-radius: 6px;
+            color: #18f59b;
+            display: inline-block;
+            font-size: 0.74rem;
+            font-weight: 700;
+            padding: 0.18rem 0.45rem;
+            letter-spacing: 0.03em;
+        }
+        .chip-badge-active {
+            background: linear-gradient(90deg, #8b5cf6, #d946ef);
+            border: 1px solid rgba(217, 70, 239, 0.6);
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.45);
+            color: #ffffff;
+            display: inline-block;
+            font-size: 0.74rem;
+            font-weight: 850;
+            padding: 0.2rem 0.5rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .captain-tag {
+            background: rgba(255, 207, 92, 0.15);
+            border: 1px solid rgba(255, 207, 92, 0.4);
+            border-radius: 4px;
+            color: #ffcf5c;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.15rem 0.35rem;
+        }
+        .league-stat-card {
+            background: linear-gradient(145deg, rgba(30, 27, 43, 0.95), rgba(20, 18, 29, 0.95));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 0.9rem 1.1rem;
+            position: relative;
+        }
+        .league-stat-card h4 {
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            margin: 0 0 0.4rem 0;
+            text-transform: uppercase;
+        }
+        .league-stat-card .stat-val {
+            color: var(--ink);
+            font-size: 1.6rem;
+            font-weight: 850;
+            line-height: 1.1;
+        }
+        .league-stat-card .stat-sub {
+            color: var(--muted);
+            font-size: 0.76rem;
+            margin-top: 0.3rem;
+        }
         @media (max-width: 760px) {
             [data-testid="stAppViewContainer"] .main .block-container {
                 padding: 4.25rem 1rem 2rem;

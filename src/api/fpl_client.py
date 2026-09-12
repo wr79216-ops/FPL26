@@ -78,6 +78,9 @@ class FPLClient:
     PLAYER_SUMMARY_PATH = "element-summary/{player_id}/"
     ENTRY_PATH = "entry/{manager_id}/"
     ENTRY_PICKS_PATH = "entry/{manager_id}/event/{gameweek}/picks/"
+    ENTRY_HISTORY_PATH = "entry/{manager_id}/history/"
+    LEAGUE_CLASSIC_STANDINGS_PATH = "leagues-classic/{league_id}/standings/"
+    LEAGUE_H2H_STANDINGS_PATH = "leagues-h2h/{league_id}/standings/"
 
     def __init__(
         self,
@@ -234,6 +237,54 @@ class FPLClient:
             for pick in picks
         ):
             raise FPLResponseValidationError("entry picks must contain integer element IDs")
+        return payload  # type: ignore[return-value]
+
+    def get_entry_history(self, manager_id: int) -> Dict[str, Any]:
+        """Fetch historical gameweek records and chips played for a manager."""
+        if manager_id <= 0:
+            raise ValueError("manager_id must be positive")
+        payload = self._get_json(
+            self.ENTRY_HISTORY_PATH.format(manager_id=manager_id),
+            cache_key=f"entry_history:{manager_id}",
+            ttl_seconds=15 * 60,
+            expected_type=dict,
+            required_keys=("chips",),
+            archive=False,
+        )
+        return payload  # type: ignore[return-value]
+
+    def get_classic_league_standings(self, league_id: int, page: int = 1) -> Dict[str, Any]:
+        """Fetch standings for a classic FPL mini-league."""
+        if league_id <= 0:
+            raise ValueError("league_id must be positive")
+        if page <= 0:
+            raise ValueError("page must be positive")
+        path = f"{self.LEAGUE_CLASSIC_STANDINGS_PATH.format(league_id=league_id)}?page_new_entries=1&page_standings={page}&phase=1"
+        payload = self._get_json(
+            path,
+            cache_key=f"league_classic_standings:{league_id}:{page}",
+            ttl_seconds=10 * 60,
+            expected_type=dict,
+            required_keys=("league", "standings"),
+            archive=False,
+        )
+        return payload  # type: ignore[return-value]
+
+    def get_h2h_league_standings(self, league_id: int, page: int = 1) -> Dict[str, Any]:
+        """Fetch standings for a head-to-head FPL mini-league."""
+        if league_id <= 0:
+            raise ValueError("league_id must be positive")
+        if page <= 0:
+            raise ValueError("page must be positive")
+        path = f"{self.LEAGUE_H2H_STANDINGS_PATH.format(league_id=league_id)}?page_new_entries=1&page_standings={page}"
+        payload = self._get_json(
+            path,
+            cache_key=f"league_h2h_standings:{league_id}:{page}",
+            ttl_seconds=10 * 60,
+            expected_type=dict,
+            required_keys=("league", "standings"),
+            archive=False,
+        )
         return payload  # type: ignore[return-value]
 
     def _get_json(
