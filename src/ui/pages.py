@@ -615,24 +615,24 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
             min_value=1,
             value=default_id,
             step=1,
-            help="Enter your FPL Manager ID to load your specific Round 1 chip usage history.",
+            help="Masukkan FPL Manager ID kamu untuk memuat riwayat pemakaian chip putaran pertama.",
             key="chip_strat_mgr_id_input",
         )
     with col_btn:
-        st.caption("Synchronize active chip history with your official FPL profile.")
-        if st.button("Reload Chip Strategy", key="btn_reload_chip_strat"):
+        st.caption("Sinkronisasi riwayat chip dengan profil resmi FPL kamu.")
+        if st.button("Muat Ulang Strategi Chip", key="btn_reload_chip_strat"):
             st.session_state["fpl_manager_id"] = int(manager_id)
 
     st.session_state["fpl_manager_id"] = int(manager_id)
 
-    with st.spinner("Analyzing fixture swings, captain xP peaks, and clash schedules..."):
+    with st.spinner("Menganalisa pergeseran fixture, proyeksi kapten, dan jadwal big match..."):
         try:
             report = service.generate_strategy_report(
                 manager_id=int(manager_id),
                 current_gw=current_gw,
             )
         except Exception as exc:
-            st.error(f"Failed to generate chip strategy report: {exc}")
+            st.error(f"Gagal memuat laporan strategi chip: {exc}")
             return
 
     # Section 1: Urgency Alert Box
@@ -650,48 +650,48 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
     m1, m2, m3, m4 = st.columns(4)
     with m1:
         metric_tile(
-            "Round 1 Deadline",
+            "Batas Akhir Putaran 1",
             "Gameweek 19",
-            "Use-it-or-lose-it rule",
-            "All unused Round 1 chips expire permanently when the GW 19 deadline passes.",
+            "Aturan pakai-atau-hangus",
+            "Semua chip putaran 1 yang belum dipakai akan otomatis hangus begitu deadline GW 19 lewat.",
         )
     with m2:
         metric_tile(
-            "Round 1 Inventory",
-            f"{inv.remaining_chips_count} of 4 Available",
-            f"{inv.used_chips_count} chips played so far",
-            "Each manager receives 4 chips for GW 1–19 (Wildcard 1, Free Hit 1, Triple Captain 1, Bench Boost 1).",
+            "Amunisi Putaran 1",
+            f"{inv.remaining_chips_count} dari 4 Tersedia",
+            f"{inv.used_chips_count} chip sudah dipakai",
+            "Tiap manajer menerima 4 chip untuk GW 1–19 (Wildcard 1, Free Hit 1, Triple Captain 1, Bench Boost 1).",
         )
     with m3:
         metric_tile(
-            "GWs Remaining",
-            f"{inv.gws_until_expiry} Weeks Left",
-            f"Currently in GW {current_gw}",
-            "Number of gameweeks remaining in the first half of the season.",
+            "Sisa Gameweek",
+            f"Sisa {inv.gws_until_expiry} GW",
+            f"Saat ini di GW {current_gw}",
+            "Jumlah pekan yang tersisa di paruh pertama musim.",
         )
     with m4:
         pace = inv.gws_until_expiry / max(1, inv.remaining_chips_count) if inv.remaining_chips_count > 0 else 0
-        pace_str = f"1 chip / {pace:.1f} GWs" if inv.remaining_chips_count > 0 else "All chips deployed!"
+        pace_str = f"1 chip / {pace:.1f} GW" if inv.remaining_chips_count > 0 else "Semua chip sudah terpakai!"
         metric_tile(
-            "Required Pace",
+            "Ritme Pemakaian",
             pace_str,
-            "Max 1 chip per gameweek",
-            "Average spacing required to safely deploy all remaining Round 1 chips before the GW 19 deadline.",
+            "Maksimal 1 chip per gameweek",
+            "Jarak rata-rata yang pas biar semua sisa chip putaran 1 bisa kepakai maksimal sebelum deadline GW 19.",
         )
 
     # Section 2: Chip Inventory Badges
     section_heading(
-        "Round 1 Chip Ammunition Status",
-        f"Manager ID {manager_id} · Gameweek 1–19 Allocation",
-        "Official status of all 4 chips allocated for the first half of the season.",
+        "Status Amunisi Chip Putaran 1",
+        f"ID Manajer {manager_id} · Alokasi Gameweek 1–19",
+        "Status resmi 4 chip yang dialokasikan untuk paruh pertama musim.",
     )
 
     badge_cols = st.columns(4)
     chips_meta = [
-        ("Wildcard 1", inv.wc1_gw, "Unlimited permanent transfers until deadline"),
-        ("Triple Captain 1", inv.tc1_gw, "Armband points multiplied by 3×"),
-        ("Free Hit 1", inv.fh1_gw, "Unlimited transfers for 1 gameweek only"),
-        ("Bench Boost 1", inv.bb1_gw, "Points scored by all 15 squad players"),
+        ("Wildcard 1", inv.wc1_gw, "Transfer permanen tanpa batas sampai deadline"),
+        ("Triple Captain 1", inv.tc1_gw, "Poin armband dikali 3×"),
+        ("Free Hit 1", inv.fh1_gw, "Transfer bebas tanpa batas hanya untuk 1 gameweek"),
+        ("Bench Boost 1", inv.bb1_gw, "Poin dari seluruh 15 pemain skuad ikut dihitung"),
     ]
     for idx, (c_label, c_gw, c_desc) in enumerate(chips_meta):
         with badge_cols[idx]:
@@ -700,7 +700,7 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
                     f"""
                     <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:12px; text-align:center;">
                         <div style="color:#8b95a5; font-size:0.75rem; text-transform:uppercase; font-weight:700;">{c_label}</div>
-                        <div style="color:#fca5a5; font-size:1.15rem; font-weight:800; margin:4px 0;">USED IN GW {c_gw}</div>
+                        <div style="color:#fca5a5; font-size:1.15rem; font-weight:800; margin:4px 0;">TERPAKAI DI GW {c_gw}</div>
                         <div style="color:#8b95a5; font-size:0.72rem;">{c_desc}</div>
                     </div>
                     """,
@@ -711,8 +711,8 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
                     f"""
                     <div style="background:rgba(24,245,155,0.1); border:1px solid rgba(24,245,155,0.3); border-radius:10px; padding:12px; text-align:center;">
                         <div style="color:#8b95a5; font-size:0.75rem; text-transform:uppercase; font-weight:700;">{c_label}</div>
-                        <div style="color:#18f59b; font-size:1.15rem; font-weight:800; margin:4px 0;">AVAILABLE</div>
-                        <div style="color:#8b95a5; font-size:0.72rem;">Must use before GW 19</div>
+                        <div style="color:#18f59b; font-size:1.15rem; font-weight:800; margin:4px 0;">TERSEDIA</div>
+                        <div style="color:#8b95a5; font-size:0.72rem;">Wajib pakai sebelum GW 19</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -721,38 +721,38 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
     # Section 3: AI Master Plan
     if report.master_plan:
         section_heading(
-            "AI Recommended Master Plan",
-            f"{len(report.master_plan)} unplayed chips scheduled without conflict",
-            "Optimal gameweek deployment based on fixture swings, international break gaps, captain xP peaks, and clash index.",
+            "Master Plan Rekomendasi AI",
+            f"{len(report.master_plan)} chip terjadwal rapi tanpa bentrok",
+            "Jadwal pemakaian paling optimal berdasarkan fixture swing, jeda International Break, potensi puncak xP kapten, dan clash big match.",
         )
         plan_cols = st.columns(len(report.master_plan))
         for idx, plan_item in enumerate(report.master_plan):
             with plan_cols[idx]:
-                alt_txt = f"<br><span style='color:#8b95a5; font-size:0.72rem;'>Backup: GW {plan_item.alternative_gw}</span>" if plan_item.alternative_gw else ""
+                alt_txt = f"<br><span style='color:#8b95a5; font-size:0.72rem;'>Cadangan: GW {plan_item.alternative_gw}</span>" if plan_item.alternative_gw else ""
                 st.markdown(
                     f"""
                     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(24,245,155,0.3); border-radius:12px; padding:14px; height:100%;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                             <span style="background:rgba(24,245,155,0.2); color:#18f59b; padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:800;">{plan_item.chip_label}</span>
-                            <span style="color:#ffcf5c; font-weight:800; font-size:0.85rem;">Score {plan_item.suitability_score:.0f}/100</span>
+                            <span style="color:#ffcf5c; font-weight:800; font-size:0.85rem;">Skor {plan_item.suitability_score:.0f}/100</span>
                         </div>
                         <div style="font-size:1.05rem; font-weight:800; color:#fff; margin-bottom:6px;">{escape(plan_item.headline)}</div>
                         <div style="color:#c9d1d9; font-size:0.8rem; line-height:1.35; margin-bottom:8px;">{escape(plan_item.rationale)}</div>
                         <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:6px; color:#8b95a5; font-size:0.72rem;">
-                            <strong>Contingency:</strong> {escape(plan_item.contingency_note)}{alt_txt}
+                            <strong>Antisipasi:</strong> {escape(plan_item.contingency_note)}{alt_txt}
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
     else:
-        st.success("All Round 1 chips have been played! You are ready for Round 2 in GW 20.")
+        st.success("Mantap! Semua chip putaran 1 sudah dipakai. Siap-siap amunisi baru untuk putaran 2 mulai GW 20!")
 
     # Section 4: Gameweek Suitability Heatmap Table
     section_heading(
-        f"Gameweek Suitability Calendar (GW {current_gw}–19)",
-        "Comprehensive radar across all 4 chips",
-        "Analyze suitability scores (0–100) and rationale for each upcoming gameweek in the first half of the season.",
+        f"Kalender Kelayakan Gameweek (GW {current_gw}–19)",
+        "Radar lengkap kesiapan untuk 4 chip",
+        "Analisa skor kelayakan (0–100) dan alasan strategis tiap gameweek di putaran pertama.",
     )
 
     _CAL_CSS = """
@@ -788,9 +788,9 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
     for c in report.suitability_matrix:
         tags_html = ""
         if c.is_international_break:
-            tags_html += '<br><span class="tag-ib">🌍 Post-IB</span>'
+            tags_html += '<br><span class="tag-ib">🌍 Pasca-IB</span>'
         if c.is_festive_period:
-            tags_html += '<br><span class="tag-festive">🎄 Festive Rotation</span>'
+            tags_html += '<br><span class="tag-festive">🎄 Rotasi Festive</span>'
 
         cal_rows_html.append(f"""
         <tr>
@@ -841,7 +841,7 @@ def render_chip_strategy_tab(scoring: ScoringConfig) -> None:
 
     # Section 5: Strategic Takeaways & Pro Rules
     if report.key_takeaways:
-        with st.expander("📌 Official FPL Rules & Strategic Insights", expanded=True):
+        with st.expander("📌 Aturan Resmi FPL & Catatan Strategi", expanded=True):
             for t in report.key_takeaways:
                 st.markdown(f" • {t}")
 
@@ -1078,14 +1078,14 @@ def render_recommendations(
 ) -> None:
     del players, fixtures
     page_header(
-        "Recommendation engine",
-        "Rankings & Chip Deployment Radar",
-        "Explore official player rankings and data-driven chip deployment roadmap for Round 1 (GW 1–19).",
+        "Recommendation Engine",
+        "Peringkat Pemain & Radar Pemakaian Chip",
+        "Pantau peringkat pemain terbaik dan roadmap pemakaian chip berbasis data untuk putaran 1 (GW 1–19).",
     )
 
     tab_players, tab_chips = st.tabs([
-        "⭐ Player Recommendations",
-        "🎯 Chip Strategy & Timing Radar (GW 1–19)",
+        "⭐ Rekomendasi Pemain",
+        "🎯 Strategi & Jadwal Chip (GW 1–19)",
     ])
 
     with tab_players:
@@ -3088,14 +3088,14 @@ def render_league_rivals(
 
     page_header(
         "Mini-League & Rival Scout",
-        "League Standings & Chip Tracker",
-        "Track your mini-leagues, monitor rival chip usage (WC1, WC2, FH, TC, BB), captain choices, and calculate run-rate point gaps.",
+        "Klasemen Liga & Pelacak Chip",
+        "Pantau mini-league kamu, lacak pemakaian chip rival (WC1, WC2, Free Hit, Triple Captain, Bench Boost), pilihan kapten, dan kalkulasi jarak poin ke puncak klasemen.",
     )
 
     section_heading(
-        "Manager entry",
-        "Public official FPL profile",
-        "Enter your public FPL manager ID to discover all classic and head-to-head mini-leagues.",
+        "Profil Manajer FPL",
+        "Data publik resmi FPL",
+        "Masukkan FPL Manager ID kamu untuk menemukan seluruh private dan broad mini-league yang kamu ikuti.",
     )
 
     col_input, col_action = st.columns([1, 1.4])
@@ -3106,12 +3106,12 @@ def render_league_rivals(
             min_value=1,
             value=default_id,
             step=1,
-            help="Numeric ID from your official fantasy.premierleague.com URL.",
+            help="Nomor ID manajer dari URL tim kamu di fantasy.premierleague.com.",
             key="league_manager_id_input",
         )
     with col_action:
-        st.caption("Fetch joined leagues directly from the official FPL profile endpoint.")
-        load_leagues = st.button("Load Manager Leagues", type="primary", key="btn_load_leagues")
+        st.caption("Tarik data liga langsung dari server resmi FPL.")
+        load_leagues = st.button("Muat Liga Manajer", type="primary", key="btn_load_leagues")
 
     should_load = (
         load_leagues
@@ -3121,7 +3121,7 @@ def render_league_rivals(
 
     if should_load:
         st.session_state["fpl_manager_id"] = int(manager_id)
-        with st.spinner("Fetching leagues from official FPL..."):
+        with st.spinner("Mengambil data liga dari server resmi FPL..."):
             try:
                 leagues = service.get_manager_leagues(int(manager_id))
                 entry_info = service.client.get_entry(int(manager_id))
@@ -3129,14 +3129,14 @@ def render_league_rivals(
                 st.session_state["discovered_entry_info"] = entry_info
                 st.session_state["league_active_manager_id"] = int(manager_id)
             except Exception as exc:
-                st.error(f"Failed to fetch manager profile: {exc}")
+                st.error(f"Gagal memuat profil manajer: {exc}")
                 return
 
     leagues = st.session_state.get("discovered_leagues", ())
     entry_info = st.session_state.get("discovered_entry_info", {})
 
     if not leagues:
-        render_empty_state("No leagues found", "This manager ID has not joined any public or private leagues.")
+        render_empty_state("Tidak ada liga ditemukan", "ID manajer ini belum bergabung ke private maupun public mini-league.")
         return
 
     mgr_name = f"{entry_info.get('player_first_name', '')} {entry_info.get('player_last_name', '')}".strip()
@@ -3149,10 +3149,10 @@ def render_league_rivals(
         f"""
         <div class="sample-banner" style="margin-top: 0.5rem; margin-bottom: 1.2rem;">
             <div>
-                <strong>Manager:</strong> {escape(mgr_name)} &nbsp;·&nbsp; 
-                <strong>Team:</strong> {escape(team_name)} &nbsp;·&nbsp; 
+                <strong>Manajer:</strong> {escape(mgr_name)} &nbsp;·&nbsp; 
+                <strong>Tim:</strong> {escape(team_name)} &nbsp;·&nbsp; 
                 <strong>Overall Rank:</strong> {rank_disp} &nbsp;·&nbsp; 
-                <strong>Total Points:</strong> {overall_pts or 0}
+                <strong>Total Poin:</strong> {overall_pts or 0}
             </div>
             <span class="sample-chip">ID {manager_id}</span>
         </div>
@@ -3164,14 +3164,14 @@ def render_league_rivals(
     broad_leagues = [l for l in leagues if not l.is_private]
 
     section_heading(
-        "Select league to inspect",
-        f"{len(private_leagues)} private mini-leagues · {len(broad_leagues)} broad leagues",
-        "Choose a league to analyze standings, chip usage, and captain choices.",
+        "Pilih liga yang ingin dipantau",
+        f"{len(private_leagues)} private mini-league · {len(broad_leagues)} broad league",
+        "Pilih salah satu liga untuk membedah klasemen, riwayat chip, dan kapten lawan.",
     )
 
     tab_priv, tab_broad = st.tabs([
-        f"🏆 Private Mini-Leagues ({len(private_leagues)})",
-        f"🌐 Broad Leagues ({len(broad_leagues)})",
+        f"🏆 Private Mini-League ({len(private_leagues)})",
+        f"🌐 Broad League ({len(broad_leagues)})",
     ])
 
     selected_league = None
@@ -3182,13 +3182,13 @@ def render_league_rivals(
                 f"{l.name} (Rank: #{l.entry_rank or '-'})": l for l in private_leagues
             }
             choice = st.selectbox(
-                "Choose private mini-league",
+                "Pilih private mini-league",
                 options=list(league_options.keys()),
                 key="select_priv_league",
             )
             selected_league = league_options[choice]
         else:
-            st.info("No private mini-leagues found for this manager.")
+            st.info("Tidak ada private mini-league untuk manajer ini.")
 
     with tab_broad:
         if broad_leagues:
@@ -3196,22 +3196,22 @@ def render_league_rivals(
                 f"{l.name} (Rank: #{l.entry_rank or '-'})": l for l in broad_leagues
             }
             choice_broad = st.selectbox(
-                "Choose broad / public league",
+                "Pilih broad / public league",
                 options=list(broad_options.keys()),
                 key="select_broad_league",
             )
             if not private_leagues:
                 selected_league = broad_options[choice_broad]
-            elif st.checkbox("Analyze this broad league instead", key="chk_broad_instead"):
+            elif st.checkbox("Analisa broad league ini", key="chk_broad_instead"):
                 selected_league = broad_options[choice_broad]
         else:
-            st.info("No broad leagues found.")
+            st.info("Tidak ada broad league ditemukan.")
 
     if selected_league is None:
         return
 
     st.divider()
-    with st.spinner(f"Analyzing {selected_league.name} standings and rival chips..."):
+    with st.spinner(f"Menganalisa klasemen {selected_league.name} dan status chip rival..."):
         try:
             report = service.analyze_classic_league(
                 league_id=selected_league.id,
@@ -3221,7 +3221,7 @@ def render_league_rivals(
                 max_teams_to_enrich=50,
             )
         except Exception as exc:
-            st.error(f"Failed to analyze league {selected_league.name}: {exc}")
+            st.error(f"Gagal menganalisa liga {selected_league.name}: {exc}")
             return
 
     user_row = next((r for r in report.standings if r.is_user), None)
@@ -3230,58 +3230,58 @@ def render_league_rivals(
     if user_row and user_row.last_rank > 0:
         chg = user_row.rank_change
         if chg > 0:
-            rank_change_txt = f"▲ +{chg} from last week"
+            rank_change_txt = f"▲ +{chg} dari pekan lalu"
         elif chg < 0:
-            rank_change_txt = f"▼ {chg} from last week"
+            rank_change_txt = f"▼ {chg} dari pekan lalu"
         else:
-            rank_change_txt = "No rank change"
+            rank_change_txt = "Peringkat tidak berubah"
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
         metric_tile(
-            "League Rank",
+            "Peringkat Liga",
             user_rank_str,
-            rank_change_txt or f"Total {report.chip_summary.total_teams} teams",
-            "Your official standing in this mini-league.",
+            rank_change_txt or f"Total {report.chip_summary.total_teams} tim",
+            "Posisi resmi kamu di mini-league ini.",
         )
     with m2:
         metric_tile(
-            "Wildcard 1 Burnt",
+            "Wildcard 1 Terpakai",
             f"{report.chip_summary.wc1_used_pct:.0f}%",
-            f"{report.chip_summary.total_teams} rivals analyzed",
-            "Percentage of rivals in this league that have already activated Wildcard 1 (GW 1–19).",
+            f"{report.chip_summary.total_teams} rival dianalisa",
+            "Persentase rival di liga ini yang sudah mengaktifkan Wildcard 1 (GW 1–19).",
         )
     with m3:
         tc_rem = 100 - report.chip_summary.tc_used_pct
         metric_tile(
-            "Triple Captain Armed",
+            "Triple Captain Siap Tempur",
             f"{tc_rem:.0f}%",
-            f"BB armed: {100 - report.chip_summary.bb_used_pct:.0f}%",
-            "Percentage of rivals still holding their Triple Captain and Bench Boost chips.",
+            f"Bench Boost tersisa: {100 - report.chip_summary.bb_used_pct:.0f}%",
+            "Persentase rival yang masih menyimpan chip Triple Captain dan Bench Boost.",
         )
     with m4:
         if report.run_rate_needed is not None and report.run_rate_needed > 0:
             pts_behind = report.leader_points - report.user_points
             metric_tile(
-                "Catch-Up Pace",
-                f"+{report.run_rate_needed:.1f} pts/GW",
-                f"{pts_behind} pts behind leader #{1}",
-                "Required average point gain per remaining gameweek to catch the league leader.",
+                "Target Poin Per GW",
+                f"+{report.run_rate_needed:.1f} poin/GW",
+                f"Tertinggal {pts_behind} poin dari pemuncak #{1}",
+                "Rata-rata keunggulan poin per GW yang kamu butuhkan untuk menyalip pemimpin klasemen.",
             )
         else:
             adv = report.chip_summary.user_chip_advantage
-            adv_str = f"{adv:+.1f} chips"
+            adv_str = f"{adv:+.1f} chip"
             metric_tile(
-                "Tactical Advantage",
+                "Keunggulan Taktis",
                 adv_str,
-                f"{report.chip_summary.user_chips_remaining} chips left vs {report.chip_summary.avg_rival_chips_remaining:.1f} avg",
-                "How many more chips you have saved compared to the league average.",
+                f"Sisa {report.chip_summary.user_chips_remaining} chip vs rata-rata {report.chip_summary.avg_rival_chips_remaining:.1f} rival",
+                "Selisih simpanan chip kamu dibandingkan rata-rata rival di liga.",
             )
 
     section_heading(
-        "Standings & Rival Chip Matrix",
-        f"{report.league_name} · Top {len(report.standings)} teams",
-        "Real-time chip tracking for each rival. Badges indicate gameweek played, ACTIVE if active this week, or Available.",
+        "Klasemen & Matriks Chip Rival",
+        f"{report.league_name} · Top {len(report.standings)} tim",
+        "Pantau pemakaian chip tiap rival secara real-time. Label menunjukkan GW saat chip dipakai, ACTIVE jika aktif pekan ini, atau Tersedia.",
     )
 
     # ---------- inline CSS (iframe can't inherit parent styles) ----------
@@ -3315,13 +3315,13 @@ def render_league_rivals(
             return '<span class="chip-active">ACTIVE</span>'
         if chip_gw is not None:
             return f'<span class="chip-used">GW {chip_gw}</span>'
-        return '<span class="chip-avail">Available</span>'
+        return '<span class="chip-avail">Tersedia</span>'
 
     table_rows_html = []
     for row in report.standings:
         is_me = row.is_user
         bg_style = 'background: rgba(24, 245, 155, 0.08); border-left: 3px solid #18f59b;' if is_me else ''
-        me_badge = ' <span class="you-badge">YOU</span>' if is_me else ''
+        me_badge = ' <span class="you-badge">KAMU</span>' if is_me else ''
 
         diff_str = f"{row.points_diff_from_user:+d}" if not is_me and user_row else "-"
         if not is_me and user_row and row.points_diff_from_user > 0:
@@ -3331,7 +3331,7 @@ def render_league_rivals(
         else:
             diff_badge = f'<span class="txt-muted">{diff_str}</span>'
 
-        gap_lead = f"-{row.points_behind_leader}" if row.points_behind_leader > 0 else "Leader"
+        gap_lead = f"-{row.points_behind_leader}" if row.points_behind_leader > 0 else "Pemuncak"
 
         cap_cell = "-"
         if row.captain_name:
@@ -3369,12 +3369,12 @@ def render_league_rivals(
             <thead>
                 <tr>
                     <th class="center">#</th>
-                    <th>Team &amp; Manager</th>
+                    <th>Tim &amp; Manajer</th>
                     <th class="center">Total</th>
                     <th class="center">GW</th>
-                    <th class="center">Gap #1</th>
-                    <th class="center">vs You</th>
-                    <th class="center">Captain</th>
+                    <th class="center">Jarak #1</th>
+                    <th class="center">vs Kamu</th>
+                    <th class="center">Kapten</th>
                     <th class="center">WC 1</th>
                     <th class="center">WC 2</th>
                     <th class="center">Free Hit</th>
@@ -3391,16 +3391,16 @@ def render_league_rivals(
 
     # ---------- Dedicated Per-Member Chip Usage Matrix ----------
     section_heading(
-        "Per-Member Chip Usage Matrix",
-        f"{report.league_name} · All 4 chips detailed",
-        "Exactly which Gameweek each member activated their Wildcard, Free Hit, Triple Captain, and Bench Boost.",
+        "Tabel Penggunaan Chip Per Anggota",
+        f"{report.league_name} · Rincian lengkap seluruh chip",
+        "Lihat di Gameweek berapa masing-masing anggota mengaktifkan Wildcard, Free Hit, Triple Captain, dan Bench Boost.",
     )
 
     chip_matrix_rows = []
     for row in report.standings:
         is_me = row.is_user
         bg_style = 'background: rgba(24,245,155,0.08); border-left: 3px solid #18f59b;' if is_me else ''
-        me_badge = ' <span class="you-badge">YOU</span>' if is_me else ''
+        me_badge = ' <span class="you-badge">KAMU</span>' if is_me else ''
 
         wc1_cell = _chip_cell(row.chips.wc1, row.active_chip == "wildcard" and current_gw <= 19)
         wc2_cell = _chip_cell(row.chips.wc2, row.active_chip == "wildcard" and current_gw >= 20)
@@ -3440,13 +3440,13 @@ def render_league_rivals(
             <thead>
                 <tr>
                     <th class="center">#</th>
-                    <th>Member</th>
+                    <th>Anggota</th>
                     <th class="center chip-header">Wildcard 1<span>GW 1-19</span></th>
                     <th class="center chip-header">Wildcard 2<span>GW 20-38</span></th>
-                    <th class="center chip-header">Free Hit<span>1-GW squad</span></th>
-                    <th class="center chip-header">Triple Captain<span>3x armband</span></th>
-                    <th class="center chip-header">Bench Boost<span>All 15 play</span></th>
-                    <th class="center chip-header">Remaining<span>out of 5</span></th>
+                    <th class="center chip-header">Free Hit<span>Skuad 1 GW</span></th>
+                    <th class="center chip-header">Triple Captain<span>Armband 3x</span></th>
+                    <th class="center chip-header">Bench Boost<span>15 pemain aktif</span></th>
+                    <th class="center chip-header">Sisa Chip<span>dari 5 chip</span></th>
                 </tr>
             </thead>
             <tbody>{''.join(chip_matrix_rows)}</tbody>
@@ -3457,9 +3457,9 @@ def render_league_rivals(
 
     if report.captain_distribution:
         section_heading(
-            "Mini-League Captaincy Radar",
-            f"GW {current_gw} armband choices across {len(report.standings)} rivals",
-            "Armband concentration inside your mini-league to measure local Effective Ownership (EO) risk.",
+            "Radar Pilihan Kapten Mini-League",
+            f"Pilihan armband GW {current_gw} dari {len(report.standings)} rival",
+            "Konsentrasi armband di mini-league kamu untuk membaca risiko Effective Ownership (EO) lokal.",
         )
         total_caps = sum(report.captain_distribution.values())
         top_caps = list(report.captain_distribution.items())[:4]
@@ -3468,23 +3468,23 @@ def render_league_rivals(
             pct = round(100 * cap_cnt / max(1, total_caps), 1)
             with cap_cols[idx]:
                 metric_tile(
-                    f"Captain Pick #{idx + 1}",
+                    f"Pilihan Kapten #{idx + 1}",
                     f"{cap_name}",
-                    f"{cap_cnt} rivals ({pct}%)",
+                    f"{cap_cnt} rival ({pct}%)",
                 )
 
     rival_candidates = [r for r in report.standings if not r.is_user]
     if rival_candidates and current_gw > 0:
         section_heading(
-            "Rival 1-on-1 Scout",
-            "Direct squad comparison",
-            "Select any rival to inspect common shield players, differentials, captain clash, and chip reserve.",
+            "Head-to-Head Lawan Rival",
+            "Perbandingan skuad langsung",
+            "Pilih salah satu rival untuk membedah pemain sama (shield), pemain diferensial, adu kapten, dan sisa amunisi chip.",
         )
         rival_map = {f"Rank #{r.rank} - {r.team_name} ({r.manager_name})": r.entry_id for r in rival_candidates}
-        chosen_rival_label = st.selectbox("Select rival to compare:", options=list(rival_map.keys()), key="rival_compare_select")
+        chosen_rival_label = st.selectbox("Pilih rival untuk dibandingkan:", options=list(rival_map.keys()), key="rival_compare_select")
         chosen_rival_id = rival_map[chosen_rival_label]
 
-        with st.spinner("Scouting rival squad..."):
+        with st.spinner("Membedah skuad rival..."):
             try:
                 comp = service.compare_teams(
                     user_entry_id=int(manager_id),
@@ -3493,41 +3493,41 @@ def render_league_rivals(
                 )
                 comp_cols = st.columns(4)
                 with comp_cols[0]:
-                    metric_tile("Your Captain", comp.user_captain, comp.user_active_chip or "No active chip")
+                    metric_tile("Kapten Kamu", comp.user_captain, comp.user_active_chip or "Tanpa chip aktif")
                 with comp_cols[1]:
-                    metric_tile("Rival Captain", comp.rival_captain, comp.rival_active_chip or "No active chip")
+                    metric_tile("Kapten Rival", comp.rival_captain, comp.rival_active_chip or "Tanpa chip aktif")
                 with comp_cols[2]:
-                    metric_tile("Squad Value", f"£{comp.user_cost:.1f}m vs £{comp.rival_cost:.1f}m", f"Bank: £{comp.user_bank:.1f}m vs £{comp.rival_bank:.1f}m")
+                    metric_tile("Nilai Skuad", f"£{comp.user_cost:.1f}m vs £{comp.rival_cost:.1f}m", f"Bank: £{comp.user_bank:.1f}m vs £{comp.rival_bank:.1f}m")
                 with comp_cols[3]:
-                    metric_tile("Chips Remaining", f"{comp.user_chips.total_remaining} vs {comp.rival_chips.total_remaining}", "Arsenal of unused chips")
+                    metric_tile("Sisa Chip", f"{comp.user_chips.total_remaining} vs {comp.rival_chips.total_remaining}", "Simpanan chip yang belum terpakai")
 
                 diff_c1, diff_c2, diff_c3 = st.columns(3)
                 with diff_c1:
-                    st.markdown(f"**🛡️ Common Shield ({len(comp.shared_players)} players)**")
-                    st.caption("Points here cancel out between you and this rival.")
+                    st.markdown(f"**🛡️ Pemain Sama / Shield ({len(comp.shared_players)} pemain)**")
+                    st.caption("Poin dari pemain ini saling meniadakan antara kamu dan rival.")
                     if comp.shared_players:
                         st.markdown(" • " + "<br> • ".join(escape(p) for p in comp.shared_players), unsafe_allow_html=True)
                     else:
-                        st.write("No shared players.")
+                        st.write("Tidak ada pemain yang sama.")
 
                 with diff_c2:
-                    st.markdown(f"**⚔️ Your Weapons ({len(comp.user_differentials)} players)**")
-                    st.caption("Players only you own to gain ground.")
+                    st.markdown(f"**⚔️ Senjata Kamu ({len(comp.user_differentials)} pemain)**")
+                    st.caption("Pemain pembeda yang cuma kamu yang punya untuk mengejar atau memperlebar jarak.")
                     if comp.user_differentials:
                         st.markdown(" • " + "<br> • ".join(escape(p) for p in comp.user_differentials), unsafe_allow_html=True)
                     else:
-                        st.write("None.")
+                        st.write("Tidak ada.")
 
                 with diff_c3:
-                    st.markdown(f"**⚠️ Rival Threats ({len(comp.rival_differentials)} players)**")
-                    st.caption("Rival differentials that pose risk to your rank.")
+                    st.markdown(f"**⚠️ Ancaman Rival ({len(comp.rival_differentials)} pemain)**")
+                    st.caption("Pemain diferensial milik rival yang berpotensi mengancam peringkatmu.")
                     if comp.rival_differentials:
                         st.markdown(" • " + "<br> • ".join(escape(p) for p in comp.rival_differentials), unsafe_allow_html=True)
                     else:
-                        st.write("None.")
+                        st.write("Tidak ada.")
 
             except Exception as exc:
-                st.info(f"Rival squad scout unavailable: {exc}")
+                st.info(f"Pemantau skuad rival tidak tersedia: {exc}")
 
 
 PAGE_RENDERERS: Dict[str, PageRenderer] = {

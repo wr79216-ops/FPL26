@@ -168,20 +168,20 @@ def render_sidebar(scoring: ScoringConfig) -> str:
             '<path d="M11 17.5 16.5 13l6 3.2 5.8-3.5 2.8 6.2-5.1 4.8-6-1.8-5.5 3.4L11 17.5Z" fill="none" stroke="#f7f7fb" stroke-width="2" stroke-linejoin="round"/>'
             '<path d="M12 29h3v-5h3v5h3v-9h3v9h3v-13h3v13" fill="none" stroke="#18f59b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'
             '</svg><span class="sidebar-brand-name">FPL <span>Signal</span></span></div>'
-            '<div class="sidebar-caption">Decisions backed by transparent signals</div>',
+            '<div class="sidebar-caption">Keputusan cerdas berbasis data &amp; sinyal transparan</div>',
             unsafe_allow_html=True,
         )
         selected = st.radio(
             "Navigation", NAV_ITEMS, key="navigation", label_visibility="collapsed",
-            help="Navigate between the official FPL analysis views.",
+            help="Navigasi ke berbagai menu analisis resmi FPL.",
         )
         st.divider()
-        st.caption("CURRENT CONTEXT")
+        st.caption("KONTEKS SAAT INI")
         st.markdown(
-            f"**Fixture horizon:** Next {scoring.default_horizon} GW  \n"
-            f"**Model version:** {scoring.model_version}"
+            f"**Horizon fixture:** {scoring.default_horizon} GW ke depan  \n"
+            f"**Versi model:** {scoring.model_version}"
         )
-        st.caption("All pages use the official FPL cache. Recommendation scores are calculated by the transparent v1 model.")
+        st.caption("Seluruh halaman menggunakan cache resmi FPL. Skor rekomendasi dihitung otomatis lewat model transparan v1.")
     return selected
 
 
