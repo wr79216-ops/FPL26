@@ -3003,26 +3003,52 @@ def render_league_rivals(
         "Real-time chip tracking for each rival. Badges indicate gameweek played, ACTIVE if active this week, or Available.",
     )
 
+    # ---------- inline CSS (iframe can't inherit parent styles) ----------
+    _TABLE_CSS = """
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: transparent; font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; color: #e0e6ed; }
+        .wrap { overflow-x: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; text-align: left; }
+        thead tr { background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        thead th { padding: 10px 8px; color: #8b95a5; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.06em; font-weight: 600; white-space: nowrap; }
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+        tbody tr:hover { background: rgba(255,255,255,0.03); }
+        td { padding: 8px; vertical-align: middle; }
+        .chip-used { background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.38); border-radius: 6px; color: #fca5a5; display: inline-block; font-size: 0.73rem; font-weight: 700; padding: 2px 7px; letter-spacing: 0.03em; }
+        .chip-avail { background: rgba(24,245,155,0.14); border: 1px solid rgba(24,245,155,0.32); border-radius: 6px; color: #18f59b; display: inline-block; font-size: 0.73rem; font-weight: 700; padding: 2px 7px; letter-spacing: 0.03em; }
+        .chip-active { background: linear-gradient(90deg,#8b5cf6,#d946ef); border: 1px solid rgba(217,70,239,0.6); border-radius: 6px; box-shadow: 0 0 10px rgba(139,92,246,0.45); color: #fff; display: inline-block; font-size: 0.73rem; font-weight: 850; padding: 2px 8px; letter-spacing: 0.05em; text-transform: uppercase; }
+        .captain-tag { background: rgba(255,207,92,0.15); border: 1px solid rgba(255,207,92,0.4); border-radius: 4px; color: #ffcf5c; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; display: inline-block; }
+        .you-badge { background: rgba(24,245,155,0.25); color: #18f59b; padding: 2px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 800; margin-left: 4px; }
+        .muted { color: #8b95a5; font-size: 0.75rem; }
+        .txt-green { color: #18f59b; }
+        .txt-red { color: #ff7a90; }
+        .txt-muted { color: #8b95a5; }
+        .center { text-align: center; }
+        .bold { font-weight: 800; }
+    </style>
+    """
+
     def _chip_cell(chip_gw: Optional[int], is_active: bool) -> str:
         if is_active:
-            return '<span class="chip-badge-active">ACTIVE</span>'
+            return '<span class="chip-active">ACTIVE</span>'
         if chip_gw is not None:
-            return f'<span class="chip-badge-used">GW {chip_gw}</span>'
-        return '<span class="chip-badge-avail">Available</span>'
+            return f'<span class="chip-used">GW {chip_gw}</span>'
+        return '<span class="chip-avail">Available</span>'
 
     table_rows_html = []
     for row in report.standings:
         is_me = row.is_user
         bg_style = 'background: rgba(24, 245, 155, 0.08); border-left: 3px solid #18f59b;' if is_me else ''
-        me_badge = ' <span style="background:rgba(24,245,155,0.25); color:#18f59b; padding:2px 6px; border-radius:4px; font-size:0.68rem; font-weight:800;">YOU</span>' if is_me else ''
+        me_badge = ' <span class="you-badge">YOU</span>' if is_me else ''
 
         diff_str = f"{row.points_diff_from_user:+d}" if not is_me and user_row else "-"
         if not is_me and user_row and row.points_diff_from_user > 0:
-            diff_badge = f'<span style="color:#ff7a90">{diff_str}</span>'
+            diff_badge = f'<span class="txt-red">{diff_str}</span>'
         elif not is_me and user_row and row.points_diff_from_user < 0:
-            diff_badge = f'<span style="color:#18f59b">{diff_str}</span>'
+            diff_badge = f'<span class="txt-green">{diff_str}</span>'
         else:
-            diff_badge = f'<span style="color:var(--muted)">{diff_str}</span>'
+            diff_badge = f'<span class="txt-muted">{diff_str}</span>'
 
         gap_lead = f"-{row.points_behind_leader}" if row.points_behind_leader > 0 else "Leader"
 
@@ -3039,50 +3065,114 @@ def render_league_rivals(
 
         table_rows_html.append(f"""
         <tr style="{bg_style}">
-            <td style="font-weight:700; text-align:center; padding: 8px;">{row.rank}</td>
-            <td style="padding: 8px;">
-                <strong>{escape(row.team_name)}</strong>{me_badge}<br>
-                <span style="color:var(--muted); font-size:0.75rem;">{escape(row.manager_name)}</span>
-            </td>
-            <td style="font-weight:800; text-align:center; padding: 8px;">{row.total_points}</td>
-            <td style="text-align:center; color:var(--muted); padding: 8px;">{row.event_points}</td>
-            <td style="text-align:center; color:#ffcf5c; font-size:0.8rem; padding: 8px;">{gap_lead}</td>
-            <td style="text-align:center; font-size:0.8rem; padding: 8px;">{diff_badge}</td>
-            <td style="text-align:center; padding: 8px;">{cap_cell}</td>
-            <td style="text-align:center; padding: 8px;">{wc1_cell}</td>
-            <td style="text-align:center; padding: 8px;">{wc2_cell}</td>
-            <td style="text-align:center; padding: 8px;">{fh_cell}</td>
-            <td style="text-align:center; padding: 8px;">{tc_cell}</td>
-            <td style="text-align:center; padding: 8px;">{bb_cell}</td>
-        </tr>
-        """)
+            <td class="bold center">{row.rank}</td>
+            <td><strong>{escape(row.team_name)}</strong>{me_badge}<br><span class="muted">{escape(row.manager_name)}</span></td>
+            <td class="bold center">{row.total_points}</td>
+            <td class="center muted">{row.event_points}</td>
+            <td class="center" style="color:#ffcf5c; font-size:0.8rem;">{gap_lead}</td>
+            <td class="center" style="font-size:0.8rem;">{diff_badge}</td>
+            <td class="center">{cap_cell}</td>
+            <td class="center">{wc1_cell}</td>
+            <td class="center">{wc2_cell}</td>
+            <td class="center">{fh_cell}</td>
+            <td class="center">{tc_cell}</td>
+            <td class="center">{bb_cell}</td>
+        </tr>""")
 
-    full_table_html = f"""
-    <div style="overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.5rem;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.83rem; text-align: left;">
+    num_rows = len(report.standings)
+    iframe_height = min(62 + num_rows * 50, 1200)
+
+    full_table_html = f"""{_TABLE_CSS}
+    <div class="wrap">
+        <table>
             <thead>
-                <tr style="background: rgba(255,255,255,0.04); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em;">
-                    <th style="padding: 10px; text-align:center;">#</th>
-                    <th style="padding: 10px;">Team & Manager</th>
-                    <th style="padding: 10px; text-align:center;">Total</th>
-                    <th style="padding: 10px; text-align:center;">GW</th>
-                    <th style="padding: 10px; text-align:center;">Gap #1</th>
-                    <th style="padding: 10px; text-align:center;">vs You</th>
-                    <th style="padding: 10px; text-align:center;">Captain</th>
-                    <th style="padding: 10px; text-align:center;">WC 1</th>
-                    <th style="padding: 10px; text-align:center;">WC 2</th>
-                    <th style="padding: 10px; text-align:center;">Free Hit</th>
-                    <th style="padding: 10px; text-align:center;">Triple C</th>
-                    <th style="padding: 10px; text-align:center;">Bench B</th>
+                <tr>
+                    <th class="center">#</th>
+                    <th>Team &amp; Manager</th>
+                    <th class="center">Total</th>
+                    <th class="center">GW</th>
+                    <th class="center">Gap #1</th>
+                    <th class="center">vs You</th>
+                    <th class="center">Captain</th>
+                    <th class="center">WC 1</th>
+                    <th class="center">WC 2</th>
+                    <th class="center">Free Hit</th>
+                    <th class="center">Triple C</th>
+                    <th class="center">Bench B</th>
                 </tr>
             </thead>
-            <tbody>
-                {''.join(table_rows_html)}
-            </tbody>
+            <tbody>{''.join(table_rows_html)}</tbody>
         </table>
     </div>
     """
-    st.markdown(full_table_html, unsafe_allow_html=True)
+    import streamlit.components.v1 as stc
+    stc.html(full_table_html, height=iframe_height, scrolling=True)
+
+    # ---------- Dedicated Per-Member Chip Usage Matrix ----------
+    section_heading(
+        "Per-Member Chip Usage Matrix",
+        f"{report.league_name} · All 4 chips detailed",
+        "Exactly which Gameweek each member activated their Wildcard, Free Hit, Triple Captain, and Bench Boost.",
+    )
+
+    chip_matrix_rows = []
+    for row in report.standings:
+        is_me = row.is_user
+        bg_style = 'background: rgba(24,245,155,0.08); border-left: 3px solid #18f59b;' if is_me else ''
+        me_badge = ' <span class="you-badge">YOU</span>' if is_me else ''
+
+        wc1_cell = _chip_cell(row.chips.wc1, row.active_chip == "wildcard" and current_gw <= 19)
+        wc2_cell = _chip_cell(row.chips.wc2, row.active_chip == "wildcard" and current_gw >= 20)
+        fh_cell = _chip_cell(row.chips.freehit, row.active_chip == "freehit")
+        tc_cell = _chip_cell(row.chips.triple_captain, row.active_chip in ("3xc", "triple_captain"))
+        bb_cell = _chip_cell(row.chips.bench_boost, row.active_chip in ("bboost", "bench_boost"))
+
+        remaining = row.chips.total_remaining
+        if remaining >= 4:
+            rem_color = "#18f59b"
+        elif remaining >= 2:
+            rem_color = "#ffcf5c"
+        else:
+            rem_color = "#ff7a90"
+
+        chip_matrix_rows.append(f"""
+        <tr style="{bg_style}">
+            <td class="bold center">{row.rank}</td>
+            <td><strong>{escape(row.team_name)}</strong>{me_badge}<br><span class="muted">{escape(row.manager_name)}</span></td>
+            <td class="center">{wc1_cell}</td>
+            <td class="center">{wc2_cell}</td>
+            <td class="center">{fh_cell}</td>
+            <td class="center">{tc_cell}</td>
+            <td class="center">{bb_cell}</td>
+            <td class="center bold" style="color:{rem_color}; font-size:0.9rem;">{remaining}/5</td>
+        </tr>""")
+
+    chip_iframe_height = min(62 + num_rows * 50, 1200)
+
+    chip_matrix_html = f"""{_TABLE_CSS}
+    <style>
+        .chip-header {{ font-size: 0.68rem; }}
+        .chip-header span {{ display: block; font-size: 0.62rem; color: #6b7280; font-weight: 400; text-transform: none; letter-spacing: 0; margin-top: 2px; }}
+    </style>
+    <div class="wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th class="center">#</th>
+                    <th>Member</th>
+                    <th class="center chip-header">Wildcard 1<span>GW 1-19</span></th>
+                    <th class="center chip-header">Wildcard 2<span>GW 20-38</span></th>
+                    <th class="center chip-header">Free Hit<span>1-GW squad</span></th>
+                    <th class="center chip-header">Triple Captain<span>3x armband</span></th>
+                    <th class="center chip-header">Bench Boost<span>All 15 play</span></th>
+                    <th class="center chip-header">Remaining<span>out of 5</span></th>
+                </tr>
+            </thead>
+            <tbody>{''.join(chip_matrix_rows)}</tbody>
+        </table>
+    </div>
+    """
+    stc.html(chip_matrix_html, height=chip_iframe_height, scrolling=True)
 
     if report.captain_distribution:
         section_heading(
